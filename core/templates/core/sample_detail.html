@@ -175,25 +175,66 @@
         <a href="{% url 'core:sample_list' %}" class="btn btn-outline">
             ← Back to Samples
         </a>
+        
+        <!-- Front Desk Actions -->
         {% if user.is_frontdesk or user.is_admin %}
-        <a href="{% url 'core:sample_edit' sample.pk %}" class="btn btn-warning">
-            ✏️ Edit Sample
-        </a>
+            <a href="{% url 'core:sample_edit' sample.pk %}" class="btn btn-warning">
+                ✏️ Edit Sample
+            </a>
+            
+            <!-- Send to Lab Button -->
+            {% if sample.current_status == 'RECEIVED_FRONT_DESK' %}
+                <form method="post" action="{% url 'core:sample_status_update' sample.pk %}" style="display: inline;">
+                    {% csrf_token %}
+                    <input type="hidden" name="new_status" value="SENT_TO_LAB">
+                    <button type="submit" class="btn btn-primary" onclick="return confirm('Send this sample to lab for testing?')">
+                        🚀 Send to Lab
+                    </button>
+                </form>
+            {% endif %}
         {% endif %}
+        
+        <!-- Lab Technician Actions -->
         {% if user.is_lab_tech or user.is_admin %}
-        <a href="{% url 'core:test_result_entry' sample.pk %}" class="btn btn-success">
-            🧪 Enter Results
-        </a>
+            {% if sample.current_status in 'SENT_TO_LAB,TESTING_IN_PROGRESS,RESULTS_ENTERED' %}
+                <a href="{% url 'core:test_result_entry' sample.pk %}" class="btn btn-success">
+                    🧪 Enter Results
+                </a>
+            {% endif %}
         {% endif %}
+        
+        <!-- Consultant Actions -->
         {% if user.is_consultant or user.is_admin %}
-        <a href="{% url 'core:consultant_review' sample.pk %}" class="btn btn-primary">
-            👨‍⚕️ Review
-        </a>
+            {% if sample.current_status in 'RESULTS_ENTERED,REVIEW_PENDING' %}
+                <a href="{% url 'core:consultant_review' sample.pk %}" class="btn btn-primary">
+                    👨‍⚕️ Review Sample
+                </a>
+            {% endif %}
         {% endif %}
+        
+        <!-- Admin Actions -->
         {% if user.is_admin %}
-        <a href="{% url 'core:audit_trail' %}?model=Sample&object_id={{ sample.pk }}" class="btn btn-info">
-            📋 View History
-        </a>
+            <a href="{% url 'core:audit_trail' %}?model=Sample&object_id={{ sample.pk }}" class="btn btn-info">
+                📋 View History
+            </a>
+            
+            <!-- Admin Status Override -->
+            <div class="dropdown" style="display: inline-block;">
+                <button class="btn btn-secondary dropdown-toggle" type="button" data-toggle="dropdown">
+                    ⚙️ Admin Actions
+                </button>
+                <div class="dropdown-menu">
+                    {% if sample.current_status != 'CANCELLED' %}
+                        <form method="post" action="{% url 'core:sample_status_update' sample.pk %}" style="margin: 0;">
+                            {% csrf_token %}
+                            <input type="hidden" name="new_status" value="CANCELLED">
+                            <button type="submit" class="dropdown-item text-danger" onclick="return confirm('Cancel this sample?')">
+                                ❌ Cancel Sample
+                            </button>
+                        </form>
+                    {% endif %}
+                </div>
+            </div>
         {% endif %}
     </div>
 </div>

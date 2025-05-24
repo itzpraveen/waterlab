@@ -701,20 +701,35 @@ class AuditTrailView(AdminRequiredMixin, ListView):
         }
         return context
 
-@frontdesk_required
 def sample_status_update(request, sample_id):
-    """Allow front desk to update sample status (send to lab)"""
+    """Allow users to update sample status based on their role and workflow"""
     sample = get_object_or_404(Sample, sample_id=sample_id)
     
     if request.method == 'POST':
         new_status = request.POST.get('new_status')
         
         try:
-            if new_status == 'SENT_TO_LAB' and sample.current_status == 'RECEIVED_FRONT_DESK':
-                sample.update_status('SENT_TO_LAB', request.user)
+            # Check user permissions for specific status changes
+            if new_status == 'SENT_TO_LAB':
+                if not (request.user.is_frontdesk() or request.user.is_admin()):
+                    messages.error(request, 'Only front desk staff can send samples to lab.')
+                    return redirect('core:sample_detail', pk=sample.sample_id)
+                    
+            elif new_status == 'CANCELLED':
+                if not request.user.is_admin():
+                    messages.error(request, 'Only administrators can cancel samples.')
+                    return redirect('core:sample_detail', pk=sample.sample_id)
+            
+            # Update the status using the business logic
+            sample.update_status(new_status, request.user)
+            
+            # Success messages based on status
+            if new_status == 'SENT_TO_LAB':
                 messages.success(request, f'Sample {sample.sample_id} sent to lab successfully!')
+            elif new_status == 'CANCELLED':
+                messages.warning(request, f'Sample {sample.sample_id} has been cancelled.')
             else:
-                messages.error(request, 'Invalid status transition.')
+                messages.success(request, f'Sample status updated to {sample.get_current_status_display()}.')
                 
         except Exception as e:
             messages.error(request, f'Error updating status: {str(e)}')
