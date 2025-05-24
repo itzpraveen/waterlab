@@ -56,7 +56,7 @@
                         <a href="{% url 'core:password_change' %}" class="user-menu-item">
                             🔒 Change Password
                         </a>
-                        <a href="{% url 'logout' %}" class="user-menu-item logout">
+                        <a href="{% url 'core:logout' %}" class="user-menu-item logout">
                             🚪 Logout
                         </a>
                     </div>
@@ -64,7 +64,7 @@
             </div>
             {% else %}
             <div class="nav-user">
-                <a href="{% url 'core:login' %}" class="btn btn-primary">
+                <a href="{% url 'core:login_selector' %}" class="btn btn-primary">
                     🔑 Login
                 </a>
             </div>
