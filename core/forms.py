@@ -1,5 +1,7 @@
 from django import forms
 from django.contrib.auth.forms import PasswordChangeForm
+from django.core.exceptions import ValidationError
+from django.utils import timezone
 from .models import Customer, Sample
 
 class CustomerForm(forms.ModelForm):
@@ -69,8 +71,39 @@ class SampleForm(forms.ModelForm):
                 'class': 'form-control',
                 'placeholder': 'Name of person who collected the sample'
             }),
-            'tests_requested': forms.CheckboxSelectMultiple(),
+            'tests_requested': forms.CheckboxSelectMultiple(attrs={
+                'class': 'form-check-input'
+            }),
         }
+    
+    def clean_collection_datetime(self):
+        collection_datetime = self.cleaned_data.get('collection_datetime')
+        if collection_datetime and collection_datetime > timezone.now():
+            raise ValidationError("Collection date cannot be in the future.")
+        return collection_datetime
+    
+    def clean_tests_requested(self):
+        tests_requested = self.cleaned_data.get('tests_requested')
+        
+        # Check if any test parameters exist at all
+        from .models import TestParameter
+        if not TestParameter.objects.exists():
+            # If no test parameters exist, don't require selection
+            return tests_requested
+            
+        if not tests_requested:
+            raise ValidationError("At least one test must be requested.")
+        return tests_requested
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        
+        # Check if test parameters exist
+        from .models import TestParameter
+        if not TestParameter.objects.exists():
+            # Create a helpful message
+            self.fields['tests_requested'].help_text = "⚠️ No test parameters available. Please contact admin to set up test parameters first."
+            self.fields['tests_requested'].required = False
 
 class CustomPasswordChangeForm(PasswordChangeForm):
     def __init__(self, *args, **kwargs):

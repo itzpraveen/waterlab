@@ -22,7 +22,9 @@ from .views import (
     create_admin_web,
     debug_view,
     form_test,
-    fix_admin_role_web
+    fix_admin_role_web,
+    sample_status_update,
+    setup_test_parameters
 )
 
 from .auth_views import (
@@ -75,6 +77,10 @@ urlpatterns = [
     path('samples/<uuid:pk>/edit/', SampleUpdateView.as_view(), name='sample_edit'),
     path('samples/<uuid:sample_id>/test-results/', test_result_entry, name='test_result_entry'),
     path('samples/<uuid:sample_id>/review/', consultant_review, name='consultant_review'),
+    path('samples/<uuid:sample_id>/status-update/', sample_status_update, name='sample_status_update'),
+    
+    # Test Parameters Setup
+    path('setup-test-parameters/', setup_test_parameters, name='setup_test_parameters'),
     
     # Audit Trail
     path('audit/', AuditTrailView.as_view(), name='audit_trail'),

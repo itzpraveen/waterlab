@@ -479,68 +479,182 @@ class SampleUpdateView(AuditMixin, FrontDeskRequiredMixin, UpdateView):
 def test_result_entry(request, sample_id):
     sample = get_object_or_404(Sample, sample_id=sample_id)
     
+    # Check if sample is in correct status for testing
+    if sample.current_status not in ['SENT_TO_LAB', 'TESTING_IN_PROGRESS', 'RESULTS_ENTERED']:
+        messages.error(request, f'Sample is not available for testing. Current status: {sample.get_current_status_display()}')
+        return redirect('core:sample_detail', pk=sample.sample_id)
+    
     if request.method == 'POST':
-        for test_param in sample.tests_requested.all():
-            result_value = request.POST.get(f'result_{test_param.parameter_id}')
-            observation = request.POST.get(f'observation_{test_param.parameter_id}')
+        try:
+            # Update status to testing in progress if not already
+            if sample.current_status == 'SENT_TO_LAB':
+                sample.update_status('TESTING_IN_PROGRESS', request.user)
             
-            if result_value:
-                # Get technician (use None if anonymous user)
-                technician = request.user if request.user.is_authenticated else None
+            results_entered = 0
+            errors = []
+            
+            for test_param in sample.tests_requested.all():
+                result_value = request.POST.get(f'result_{test_param.parameter_id}')
+                observation = request.POST.get(f'observation_{test_param.parameter_id}', '')
                 
-                test_result, created = TestResult.objects.get_or_create(
-                    sample=sample,
-                    parameter=test_param,
-                    defaults={
-                        'result_value': result_value,
-                        'observation': observation,
-                        'technician': technician
-                    }
-                )
-                if not created:
-                    test_result.result_value = result_value
-                    test_result.observation = observation
-                    test_result.save()
+                if result_value and result_value.strip():
+                    try:
+                        test_result, created = TestResult.objects.get_or_create(
+                            sample=sample,
+                            parameter=test_param,
+                            defaults={
+                                'result_value': result_value.strip(),
+                                'observation': observation,
+                                'technician': request.user
+                            }
+                        )
+                        if not created:
+                            # Log the update for audit trail
+                            old_value = test_result.result_value
+                            test_result.result_value = result_value.strip()
+                            test_result.observation = observation
+                            test_result.technician = request.user
+                            test_result.full_clean()  # Validate the result
+                            test_result.save()
+                            
+                            # Log the change
+                            AuditTrail.log_change(
+                                user=request.user,
+                                action='UPDATE',
+                                instance=test_result,
+                                old_values={'result_value': old_value},
+                                new_values={'result_value': result_value.strip()},
+                                request=request
+                            )
+                        else:
+                            test_result.full_clean()  # Validate the result
+                            results_entered += 1
+                            
+                    except Exception as e:
+                        errors.append(f'Error with {test_param.name}: {str(e)}')
+            
+            if errors:
+                for error in errors:
+                    messages.error(request, error)
+            else:
+                # Check if all results are now complete
+                if sample.has_all_test_results():
+                    try:
+                        sample.update_status('RESULTS_ENTERED', request.user)
+                        messages.success(request, 'All test results completed! Sample ready for review.')
+                    except Exception as e:
+                        messages.warning(request, f'Results saved but status update failed: {str(e)}')
+                else:
+                    missing_tests = sample.get_missing_test_results()
+                    missing_names = [test.name for test in missing_tests]
+                    messages.info(request, f'Results saved. Still missing: {", ".join(missing_names)}')
+                
+                if results_entered > 0:
+                    messages.success(request, f'{results_entered} new test results saved successfully!')
+                    
+        except Exception as e:
+            messages.error(request, f'Error saving results: {str(e)}')
         
-        sample.current_status = 'RESULTS_ENTERED'
-        sample.save()
-        messages.success(request, 'Test results saved successfully!')
         return redirect('core:sample_detail', pk=sample.sample_id)
     
     existing_results = {r.parameter.parameter_id: r for r in sample.results.all()}
+    missing_tests = sample.get_missing_test_results()
+    
     return render(request, 'core/test_result_entry.html', {
         'sample': sample,
         'existing_results': existing_results,
+        'missing_tests': missing_tests,
+        'can_edit': sample.current_status in ['TESTING_IN_PROGRESS', 'RESULTS_ENTERED'],
     })
 
 @consultant_required
 def consultant_review(request, sample_id):
     sample = get_object_or_404(Sample, sample_id=sample_id)
     
-    # Get reviewer (use None if anonymous user)
-    reviewer = request.user if request.user.is_authenticated else None
+    # Check if sample is ready for review
+    if not sample.can_be_reviewed():
+        messages.error(request, f'Sample is not ready for review. Current status: {sample.get_current_status_display()}. All test results must be completed first.')
+        return redirect('core:sample_detail', pk=sample.sample_id)
     
-    review, created = ConsultantReview.objects.get_or_create(
-        sample=sample,
-        defaults={'reviewer': reviewer}
-    )
+    try:
+        review = ConsultantReview.objects.get(sample=sample)
+        created = False
+    except ConsultantReview.DoesNotExist:
+        # Create new review and update sample status
+        try:
+            sample.update_status('REVIEW_PENDING', request.user)
+            review = ConsultantReview.objects.create(
+                sample=sample,
+                reviewer=request.user
+            )
+            created = True
+        except Exception as e:
+            messages.error(request, f'Error creating review: {str(e)}')
+            return redirect('core:sample_detail', pk=sample.sample_id)
     
     if request.method == 'POST':
-        review.comments = request.POST.get('comments', '')
-        review.recommendations = request.POST.get('recommendations', '')
-        review.status = request.POST.get('status', 'PENDING')
-        review.save()
+        try:
+            old_status = review.status
+            review.comments = request.POST.get('comments', '')
+            review.recommendations = request.POST.get('recommendations', '')
+            new_status = request.POST.get('status', 'PENDING')
+            
+            # Validate status change
+            if new_status != old_status:
+                if new_status == 'APPROVED' and not review.comments.strip():
+                    messages.error(request, 'Comments are required when approving a sample.')
+                    return render(request, 'core/consultant_review.html', {
+                        'sample': sample,
+                        'review': review,
+                        'test_results': sample.results.all().select_related('parameter'),
+                        'out_of_limit_results': [r for r in sample.results.all() if not r.is_within_limits()],
+                    })
+                
+                if new_status == 'REJECTED' and not review.recommendations.strip():
+                    messages.error(request, 'Recommendations are required when rejecting a sample.')
+                    return render(request, 'core/consultant_review.html', {
+                        'sample': sample,
+                        'review': review,
+                        'test_results': sample.results.all().select_related('parameter'),
+                        'out_of_limit_results': [r for r in sample.results.all() if not r.is_within_limits()],
+                    })
+            
+            review.status = new_status
+            review.full_clean()  # Validate the review
+            review.save()  # This will trigger the sample status update in the model
+            
+            # Log the review change
+            AuditTrail.log_change(
+                user=request.user,
+                action='UPDATE',
+                instance=review,
+                old_values={'status': old_status},
+                new_values={'status': new_status},
+                request=request
+            )
+            
+            if new_status == 'APPROVED':
+                messages.success(request, 'Sample approved! Report is ready for delivery.')
+            elif new_status == 'REJECTED':
+                messages.warning(request, 'Sample rejected and sent back for retesting.')
+            else:
+                messages.success(request, 'Review saved successfully!')
+                
+        except Exception as e:
+            messages.error(request, f'Error saving review: {str(e)}')
         
-        if review.status == 'APPROVED':
-            sample.current_status = 'REPORT_APPROVED'
-            sample.save()
-        
-        messages.success(request, 'Review saved successfully!')
         return redirect('core:sample_detail', pk=sample.sample_id)
+    
+    # Get test results with limit status for review
+    test_results = sample.results.all().select_related('parameter')
+    out_of_limit_results = [r for r in test_results if not r.is_within_limits()]
     
     return render(request, 'core/consultant_review.html', {
         'sample': sample,
         'review': review,
+        'test_results': test_results,
+        'out_of_limit_results': out_of_limit_results,
+        'is_new_review': created,
     })
 
 class AuditTrailView(AdminRequiredMixin, ListView):
@@ -586,3 +700,46 @@ class AuditTrailView(AdminRequiredMixin, ListView):
             'action': self.request.GET.get('action', ''),
         }
         return context
+
+@frontdesk_required
+def sample_status_update(request, sample_id):
+    """Allow front desk to update sample status (send to lab)"""
+    sample = get_object_or_404(Sample, sample_id=sample_id)
+    
+    if request.method == 'POST':
+        new_status = request.POST.get('new_status')
+        
+        try:
+            if new_status == 'SENT_TO_LAB' and sample.current_status == 'RECEIVED_FRONT_DESK':
+                sample.update_status('SENT_TO_LAB', request.user)
+                messages.success(request, f'Sample {sample.sample_id} sent to lab successfully!')
+            else:
+                messages.error(request, 'Invalid status transition.')
+                
+        except Exception as e:
+            messages.error(request, f'Error updating status: {str(e)}')
+    
+    return redirect('core:sample_detail', pk=sample.sample_id)
+
+@admin_required  
+def setup_test_parameters(request):
+    """Web interface to set up test parameters"""
+    from django.core.management import call_command
+    
+    if request.method == 'POST':
+        try:
+            # Run the management command
+            call_command('create_test_parameters')
+            messages.success(request, 'Test parameters created successfully! You can now create samples with test requests.')
+        except Exception as e:
+            messages.error(request, f'Error creating test parameters: {str(e)}')
+        
+        return redirect('core:sample_add')
+    
+    # Show current test parameters
+    from .models import TestParameter
+    existing_params = TestParameter.objects.all()
+    
+    return render(request, 'core/setup_test_parameters.html', {
+        'existing_params': existing_params,
+    })

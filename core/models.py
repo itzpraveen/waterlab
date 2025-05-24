@@ -127,6 +127,7 @@ class Sample(models.Model):
         ('REVIEW_PENDING', 'Review Pending'),
         ('REPORT_APPROVED', 'Report Approved'),
         ('REPORT_SENT', 'Report Sent'),
+        ('CANCELLED', 'Cancelled'),
     ]
 
     sample_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -141,6 +142,92 @@ class Sample(models.Model):
 
     def __str__(self):
         return f"{self.sample_id} - {self.customer.name}"
+    
+    def clean(self):
+        from django.core.exceptions import ValidationError
+        from django.utils import timezone
+        
+        # Validate collection datetime is not in the future
+        if self.collection_datetime and self.collection_datetime > timezone.now():
+            raise ValidationError("Collection date cannot be in the future.")
+        
+        # Validate date received at lab is after collection
+        if self.date_received_at_lab and self.collection_datetime:
+            if self.date_received_at_lab < self.collection_datetime:
+                raise ValidationError("Date received at lab cannot be before collection date.")
+    
+    def can_transition_to(self, new_status):
+        """Check if sample can transition to new status based on business rules"""
+        valid_transitions = {
+            'RECEIVED_FRONT_DESK': ['SENT_TO_LAB', 'CANCELLED'],
+            'SENT_TO_LAB': ['TESTING_IN_PROGRESS', 'CANCELLED'],
+            'TESTING_IN_PROGRESS': ['RESULTS_ENTERED', 'CANCELLED'],
+            'RESULTS_ENTERED': ['REVIEW_PENDING'],
+            'REVIEW_PENDING': ['REPORT_APPROVED', 'TESTING_IN_PROGRESS'],  # Can send back for retesting
+            'REPORT_APPROVED': ['REPORT_SENT'],
+            'REPORT_SENT': [],  # Final status
+            'CANCELLED': [],  # Final status
+        }
+        return new_status in valid_transitions.get(self.current_status, [])
+    
+    def update_status(self, new_status, user=None):
+        """Safely update sample status with validation"""
+        from django.core.exceptions import ValidationError
+        
+        if not self.can_transition_to(new_status):
+            raise ValidationError(f"Cannot transition from {self.current_status} to {new_status}")
+        
+        # Additional business rule validations
+        if new_status == 'RESULTS_ENTERED':
+            if not self.has_all_test_results():
+                raise ValidationError("Cannot mark as results entered - missing test results for some parameters")
+        
+        if new_status == 'REVIEW_PENDING':
+            if not self.has_all_test_results():
+                raise ValidationError("Cannot send for review - missing test results")
+        
+        # Update status and related fields
+        old_status = self.current_status
+        self.current_status = new_status
+        
+        # Auto-update related timestamps
+        if new_status == 'SENT_TO_LAB' and not self.date_received_at_lab:
+            from django.utils import timezone
+            self.date_received_at_lab = timezone.now()
+        
+        self.save()
+        
+        # Log the status change
+        if user:
+            from .models import AuditTrail
+            AuditTrail.log_change(
+                user=user,
+                action='UPDATE',
+                instance=self,
+                old_values={'current_status': old_status},
+                new_values={'current_status': new_status}
+            )
+    
+    def has_all_test_results(self):
+        """Check if all requested tests have results"""
+        requested_count = self.tests_requested.count()
+        results_count = self.results.count()
+        return requested_count > 0 and requested_count == results_count
+    
+    def get_missing_test_results(self):
+        """Get list of test parameters that don't have results yet"""
+        completed_params = self.results.values_list('parameter_id', flat=True)
+        return self.tests_requested.exclude(parameter_id__in=completed_params)
+    
+    def can_be_reviewed(self):
+        """Check if sample is ready for consultant review"""
+        return (self.current_status == 'RESULTS_ENTERED' and 
+                self.has_all_test_results())
+    
+    @property
+    def is_completed(self):
+        """Check if sample processing is completed"""
+        return self.current_status in ['REPORT_APPROVED', 'REPORT_SENT']
 
 class TestParameter(models.Model):
     parameter_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -171,6 +258,68 @@ class TestResult(models.Model):
 
     def __str__(self):
         return f"Result for {self.sample.sample_id} - {self.parameter.name}: {self.result_value}"
+    
+    def clean(self):
+        from django.core.exceptions import ValidationError
+        import re
+        
+        # Validate that technician has appropriate role
+        if self.technician and not self.technician.is_lab_tech() and not self.technician.is_admin():
+            raise ValidationError("Only lab technicians and admins can enter test results.")
+        
+        # Validate result value format and limits
+        if self.parameter:
+            # Check if result should be numeric
+            if self.parameter.min_permissible_limit is not None or self.parameter.max_permissible_limit is not None:
+                try:
+                    numeric_value = float(self.result_value)
+                    
+                    # Check against limits
+                    if self.parameter.min_permissible_limit is not None and numeric_value < self.parameter.min_permissible_limit:
+                        # Don't raise error, but could add warning flag
+                        pass
+                    if self.parameter.max_permissible_limit is not None and numeric_value > self.parameter.max_permissible_limit:
+                        # Don't raise error, but could add warning flag  
+                        pass
+                        
+                except ValueError:
+                    # If limits are set but value is not numeric, it might be valid (e.g., "Absent")
+                    pass
+    
+    def is_within_limits(self):
+        """Check if result is within permissible limits"""
+        if not self.parameter:
+            return None
+            
+        try:
+            numeric_value = float(self.result_value)
+            
+            within_min = (self.parameter.min_permissible_limit is None or 
+                         numeric_value >= self.parameter.min_permissible_limit)
+            within_max = (self.parameter.max_permissible_limit is None or 
+                         numeric_value <= self.parameter.max_permissible_limit)
+            
+            return within_min and within_max
+        except ValueError:
+            # Non-numeric result, assume valid
+            return True
+    
+    def get_limit_status(self):
+        """Get status of result relative to limits"""
+        if not self.parameter:
+            return "UNKNOWN"
+            
+        try:
+            numeric_value = float(self.result_value)
+            
+            if self.parameter.min_permissible_limit is not None and numeric_value < self.parameter.min_permissible_limit:
+                return "BELOW_LIMIT"
+            elif self.parameter.max_permissible_limit is not None and numeric_value > self.parameter.max_permissible_limit:
+                return "ABOVE_LIMIT"
+            else:
+                return "WITHIN_LIMITS"
+        except ValueError:
+            return "NON_NUMERIC"
 
 class ConsultantReview(models.Model):
     REVIEW_STATUS_CHOICES = [
@@ -188,6 +337,49 @@ class ConsultantReview(models.Model):
 
     def __str__(self):
         return f"Review for {self.sample.sample_id} by {self.reviewer.username if self.reviewer else 'N/A'}"
+    
+    def clean(self):
+        from django.core.exceptions import ValidationError
+        
+        # Validate that reviewer has consultant role
+        if self.reviewer and not self.reviewer.is_consultant() and not self.reviewer.is_admin():
+            raise ValidationError("Only consultants and admins can review samples.")
+        
+        # Validate that sample is ready for review
+        if self.sample and not self.sample.can_be_reviewed():
+            raise ValidationError("Sample is not ready for review - missing test results or incorrect status.")
+    
+    def save(self, *args, **kwargs):
+        # Update sample status based on review status
+        is_new = self.pk is None
+        old_status = None
+        
+        if not is_new:
+            try:
+                old_review = ConsultantReview.objects.get(pk=self.pk)
+                old_status = old_review.status
+            except ConsultantReview.DoesNotExist:
+                pass
+        
+        super().save(*args, **kwargs)
+        
+        # Only update sample status if review status actually changed
+        if not is_new and old_status != self.status:
+            if self.status == 'APPROVED':
+                try:
+                    self.sample.update_status('REPORT_APPROVED', self.reviewer)
+                except Exception as e:
+                    # Log the error but don't fail the save
+                    import logging
+                    logger = logging.getLogger(__name__)
+                    logger.error(f"Failed to update sample status to REPORT_APPROVED: {e}")
+            elif self.status == 'REJECTED':
+                try:
+                    self.sample.update_status('TESTING_IN_PROGRESS', self.reviewer)
+                except Exception as e:
+                    import logging
+                    logger = logging.getLogger(__name__)
+                    logger.error(f"Failed to update sample status to TESTING_IN_PROGRESS: {e}")
 
 class AuditTrail(models.Model):
     ACTION_CHOICES = [
