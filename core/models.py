@@ -363,8 +363,13 @@ class ConsultantReview(models.Model):
         
         super().save(*args, **kwargs)
         
-        # Only update sample status if review status actually changed
-        if not is_new and old_status != self.status:
+        # Update sample status if review status changed OR if this is a new review with non-pending status
+        status_should_update = (
+            (not is_new and old_status != self.status) or  # Existing review status changed
+            (is_new and self.status != 'PENDING')  # New review with non-pending status
+        )
+        
+        if status_should_update:
             if self.status == 'APPROVED':
                 try:
                     self.sample.update_status('REPORT_APPROVED', self.reviewer)
