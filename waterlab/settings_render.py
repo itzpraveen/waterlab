@@ -4,6 +4,7 @@ Render.com specific settings for waterlab project.
 
 import os
 import dj_database_url
+from pathlib import Path
 from .settings import *
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -42,9 +43,9 @@ INSTALLED_APPS = [
 AUTH_USER_MODEL = 'core.CustomUser'
 
 # Login/Logout URLs
-LOGIN_URL = '/login/'
+LOGIN_URL = '/accounts/login/'
 LOGIN_REDIRECT_URL = '/dashboard/'
-LOGOUT_REDIRECT_URL = '/login/'
+LOGOUT_REDIRECT_URL = '/accounts/login/'
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
