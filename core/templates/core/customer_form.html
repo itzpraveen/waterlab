@@ -1,0 +1,279 @@
+{% extends 'core/base.html' %}
+
+{% block title %}{% if is_edit %}Edit Customer{% else %}Add Customer{% endif %} - Water Lab LIMS{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h1 class="card-title">👤 {% if is_edit %}Edit Customer{% else %}Add New Customer{% endif %}</h1>
+        <p class="card-subtitle">{% if is_edit %}Update customer information{% else %}Register a new customer in the system{% endif %}</p>
+    </div>
+
+    <form method="post" data-validate>
+        {% csrf_token %}
+        
+        <div class="form-group">
+            <label for="{{ form.name.id_for_label }}" class="form-label">
+                Customer Name <span style="color: red;">*</span>
+            </label>
+            <input type="text" name="{{ form.name.name }}" id="{{ form.name.id_for_label }}" 
+                   class="form-control" placeholder="Enter full customer name" required
+                   value="{{ form.name.value|default:'' }}">
+        </div>
+        
+        <div class="form-group">
+            <label for="{{ form.email.id_for_label }}" class="form-label">
+                Email Address <span style="color: red;">*</span>
+            </label>
+            <input type="email" name="{{ form.email.name }}" id="{{ form.email.id_for_label }}" 
+                   class="form-control" placeholder="customer@example.com" required
+                   value="{{ form.email.value|default:'' }}">
+        </div>
+        
+        <div class="form-group">
+            <label for="{{ form.phone.id_for_label }}" class="form-label">
+                Phone Number <span style="color: red;">*</span>
+            </label>
+            <input type="tel" name="{{ form.phone.name }}" id="{{ form.phone.id_for_label }}" 
+                   class="form-control" placeholder="10-digit phone number" required
+                   value="{{ form.phone.value|default:'' }}">
+            <small class="text-muted">Enter 10-digit mobile number (e.g., 9876543210)</small>
+        </div>
+        
+        <!-- Kerala Address Fields -->
+        <div class="form-section">
+            <h3 class="form-section-title">📍 Address Details</h3>
+            <p class="text-muted mb-3">Enter address details as per Kerala postal standards</p>
+            
+            <div class="form-group">
+                <label for="{{ form.house_name_door_no.id_for_label }}" class="form-label">
+                    House Name / Door Number
+                </label>
+                <input type="text" name="{{ form.house_name_door_no.name }}" id="{{ form.house_name_door_no.id_for_label }}" 
+                       class="form-control" placeholder="e.g., Sreelakshmi, H.No. 123"
+                       value="{{ form.house_name_door_no.value|default:'' }}">
+                <small class="text-muted">Optional but recommended for accurate delivery</small>
+            </div>
+            
+            <div class="form-group">
+                <label for="{{ form.street_locality_landmark.id_for_label }}" class="form-label">
+                    Street / Locality / Landmark <span style="color: red;">*</span>
+                </label>
+                <input type="text" name="{{ form.street_locality_landmark.name }}" id="{{ form.street_locality_landmark.id_for_label }}" 
+                       class="form-control" placeholder="e.g., M.G. Road, Near Temple" required
+                       value="{{ form.street_locality_landmark.value|default:'' }}">
+            </div>
+            
+            <div class="form-group">
+                <label for="{{ form.village_town_city.id_for_label }}" class="form-label">
+                    Village / Town / City <span style="color: red;">*</span>
+                </label>
+                <input type="text" name="{{ form.village_town_city.name }}" id="{{ form.village_town_city.id_for_label }}" 
+                       class="form-control" placeholder="e.g., Varkala, Kochi" required
+                       value="{{ form.village_town_city.value|default:'' }}">
+            </div>
+            
+            <div class="form-group">
+                <label for="{{ form.panchayat_municipality.id_for_label }}" class="form-label">
+                    Panchayat / Municipality / Corporation <span style="color: red;">*</span>
+                </label>
+                <input type="text" name="{{ form.panchayat_municipality.name }}" id="{{ form.panchayat_municipality.id_for_label }}" 
+                       class="form-control" placeholder="e.g., Varkala Panchayat, Kochi Corporation" required
+                       value="{{ form.panchayat_municipality.value|default:'' }}">
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group" style="flex: 1;">
+                    <label for="{{ form.taluk.id_for_label }}" class="form-label">
+                        Taluk <span style="color: red;">*</span>
+                    </label>
+                    <input type="text" name="{{ form.taluk.name }}" id="{{ form.taluk.id_for_label }}" 
+                           class="form-control" placeholder="e.g., Chirayinkeezhu" required
+                           value="{{ form.taluk.value|default:'' }}">
+                </div>
+                
+                <div class="form-group" style="flex: 1; margin-left: 1rem;">
+                    <label for="{{ form.district.id_for_label }}" class="form-label">
+                        District <span style="color: red;">*</span>
+                    </label>
+                    <select name="{{ form.district.name }}" id="{{ form.district.id_for_label }}" 
+                            class="form-control" required>
+                        <option value="">Select District</option>
+                        {% for choice in form.district.field.choices %}
+                            <option value="{{ choice.0 }}" {% if form.district.value == choice.0 %}selected{% endif %}>
+                                {{ choice.1 }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="{{ form.pincode.id_for_label }}" class="form-label">
+                    PIN Code <span style="color: red;">*</span>
+                </label>
+                <input type="text" name="{{ form.pincode.name }}" id="{{ form.pincode.id_for_label }}" 
+                       class="form-control" placeholder="6-digit PIN code" required maxlength="6"
+                       value="{{ form.pincode.value|default:'' }}">
+                <small class="text-muted">Kerala PIN codes start with 6 (e.g., 695141)</small>
+            </div>
+            
+            <!-- Auto-populated address field (hidden) -->
+            <input type="hidden" name="{{ form.address.name }}" id="{{ form.address.id_for_label }}" 
+                   value="{{ form.address.value|default:'' }}">
+        </div>
+        
+        <div class="btn-group mt-3">
+            <button type="submit" class="btn btn-primary">
+                💾 {% if is_edit %}Update Customer{% else %}Save Customer{% endif %}
+            </button>
+            {% if is_edit %}
+            <a href="{% url 'core:customer_detail' object.pk %}" class="btn btn-outline">
+                ❌ Cancel
+            </a>
+            {% else %}
+            <a href="{% url 'core:customer_list' %}" class="btn btn-outline">
+                ❌ Cancel
+            </a>
+            {% endif %}
+        </div>
+    </form>
+    
+    <!-- Form Errors -->
+    {% if form.errors %}
+    <div class="alert alert-danger mt-3">
+        <strong>Please correct the following errors:</strong>
+        <ul style="margin: 0.5rem 0 0 1rem;">
+        {% for field, errors in form.errors.items %}
+            {% for error in errors %}
+                <li>{{ field|capfirst }}: {{ error }}</li>
+            {% endfor %}
+        {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Help Card -->
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">💡 Tips</h2>
+    </div>
+    <div class="p-3">
+        <ul style="margin: 0; padding-left: 1.5rem;">
+            <li>Ensure email address is unique for each customer</li>
+            <li>Phone number should be a valid 10-digit Indian mobile number</li>
+            <li>Complete address helps in sample collection and report delivery</li>
+            <li>All fields marked with <span style="color: red;">*</span> are required</li>
+        </ul>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-format phone number
+    const phoneInput = document.getElementById('{{ form.phone.id_for_label }}');
+    if (phoneInput) {
+        phoneInput.addEventListener('input', function() {
+            // Remove non-digits
+            this.value = this.value.replace(/\D/g, '');
+            // Limit to 10 digits
+            if (this.value.length > 10) {
+                this.value = this.value.slice(0, 10);
+            }
+        });
+    }
+    
+    // PIN code validation and formatting
+    const pincodeInput = document.getElementById('{{ form.pincode.id_for_label }}');
+    if (pincodeInput) {
+        pincodeInput.addEventListener('input', function() {
+            // Remove non-digits
+            this.value = this.value.replace(/\D/g, '');
+            // Limit to 6 digits
+            if (this.value.length > 6) {
+                this.value = this.value.slice(0, 6);
+            }
+            
+            // Validate Kerala PIN codes (should start with 6)
+            if (this.value.length > 0 && !this.value.startsWith('6')) {
+                this.setCustomValidity('Kerala PIN codes start with 6');
+                this.classList.add('is-invalid');
+            } else {
+                this.setCustomValidity('');
+                this.classList.remove('is-invalid');
+                if (this.value.length === 6) {
+                    this.classList.add('is-valid');
+                }
+            }
+            
+            updateAddress();
+        });
+    }
+    
+    // Auto-populate address field
+    function updateAddress() {
+        const addressFields = [
+            'house_name_door_no',
+            'street_locality_landmark', 
+            'village_town_city',
+            'panchayat_municipality',
+            'taluk',
+            'district',
+            'pincode'
+        ];
+        
+        let addressParts = [];
+        
+        addressFields.forEach(fieldName => {
+            const element = document.querySelector(`[name="${fieldName}"]`);
+            if (element && element.value.trim()) {
+                if (fieldName === 'taluk') {
+                    addressParts.push(element.value.trim() + ' Taluk');
+                } else if (fieldName === 'district') {
+                    const selectedOption = element.options[element.selectedIndex];
+                    if (selectedOption && selectedOption.text !== 'Select District') {
+                        addressParts.push(selectedOption.text + ' District');
+                    }
+                } else if (fieldName === 'pincode') {
+                    addressParts.push('Kerala - ' + element.value.trim());
+                } else {
+                    addressParts.push(element.value.trim());
+                }
+            }
+        });
+        
+        const addressField = document.querySelector('[name="address"]');
+        if (addressField) {
+            addressField.value = addressParts.join(', ');
+        }
+    }
+    
+    // Add event listeners to all address fields
+    const addressFields = ['house_name_door_no', 'street_locality_landmark', 'village_town_city', 
+                          'panchayat_municipality', 'taluk', 'district'];
+    
+    addressFields.forEach(fieldName => {
+        const element = document.querySelector(`[name="${fieldName}"]`);
+        if (element) {
+            element.addEventListener('input', updateAddress);
+            element.addEventListener('change', updateAddress);
+        }
+    });
+    
+    // Form submission success message
+    const form = document.querySelector('form[data-validate]');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            updateAddress(); // Ensure address is updated before submission
+            showAlert('Creating customer...', 'info');
+        });
+    }
+    
+    // Initialize address on page load
+    updateAddress();
+});
+</script>
+{% endblock %}

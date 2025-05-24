@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Water Lab LIMS</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+<body class="login-body">
+    <div class="login-container">
+        <div class="login-card">
+            <div class="login-header">
+                <h1>🧪 Water Lab LIMS</h1>
+                <p>Laboratory Information Management System</p>
+            </div>
+            
+            <form method="post" class="login-form">
+                {% csrf_token %}
+                
+                {% if form.errors %}
+                    <div class="alert alert-danger">
+                        {% for field, errors in form.errors.items %}
+                            {% for error in errors %}
+                                <p>{{ error }}</p>
+                            {% endfor %}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+                
+                <div class="form-group">
+                    <label for="{{ form.username.id_for_label }}" class="form-label">
+                        👤 Username
+                    </label>
+                    <input type="text" name="{{ form.username.name }}" id="{{ form.username.id_for_label }}" 
+                           class="form-control" placeholder="Enter your username" required
+                           value="{{ form.username.value|default:'' }}">
+                </div>
+                
+                <div class="form-group">
+                    <label for="{{ form.password.id_for_label }}" class="form-label">
+                        🔒 Password
+                    </label>
+                    <input type="password" name="{{ form.password.name }}" id="{{ form.password.id_for_label }}" 
+                           class="form-control" placeholder="Enter your password" required>
+                </div>
+                
+                <button type="submit" class="btn btn-primary btn-full">
+                    🚀 Sign In
+                </button>
+                
+                <div class="login-footer">
+                    <p>Kerala Water Testing Laboratory</p>
+                    <small>Secure access to laboratory management system</small>
+                </div>
+            </form>
+        </div>
+        
+        <div class="login-info">
+            <h3>🔐 Role-Based Access</h3>
+            <div class="role-info">
+                <div class="role-item">
+                    <strong>👨‍💼 Administrator:</strong> Full system access and user management
+                </div>
+                <div class="role-item">
+                    <strong>🧬 Lab Technician:</strong> Test result entry and laboratory operations
+                </div>
+                <div class="role-item">
+                    <strong>📋 Front Desk:</strong> Customer and sample registration
+                </div>
+                <div class="role-item">
+                    <strong>👨‍⚕️ Consultant:</strong> Result review and report approval
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

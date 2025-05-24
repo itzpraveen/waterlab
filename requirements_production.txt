@@ -1,0 +1,47 @@
+# Production Requirements for Water Lab LIMS
+
+# Core Django
+Django==5.2.1
+
+# Database
+psycopg2-binary==2.9.9
+
+# Production Server
+gunicorn==21.2.0
+whitenoise==6.6.0
+
+# Environment Management
+python-decouple==3.8
+
+# Caching (Optional)
+redis==5.0.1
+django-redis==5.4.0
+
+# Monitoring & Logging
+sentry-sdk==1.38.0
+
+# Security
+django-csp==3.7
+django-security==0.20.0
+
+# Performance
+django-debug-toolbar==4.2.0  # Remove in production
+django-extensions==3.2.3
+
+# API Development (Future)
+djangorestframework==3.14.0
+django-cors-headers==4.3.1
+
+# File Processing
+Pillow==10.1.0
+openpyxl==3.1.2
+reportlab==4.0.7
+
+# Testing
+pytest-django==4.7.0
+coverage==7.3.2
+
+# Development Tools (Remove in production)
+black==23.11.0
+flake8==6.1.0
+isort==5.12.0

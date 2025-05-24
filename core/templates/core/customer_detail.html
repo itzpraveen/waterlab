@@ -1,0 +1,154 @@
+{% extends "core/base.html" %}
+
+{% block title %}{{ customer.name }} - Details{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h1 class="card-title">👤 {{ customer.name }}</h1>
+        <p class="card-subtitle">Customer Details & Information</p>
+    </div>
+    
+    <div class="grid-2-col">
+        <!-- Personal Information -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">📱 Contact Information</h2>
+            </div>
+            <div class="p-3">
+                <div class="info-row">
+                    <span class="info-label">Full Name:</span>
+                    <span class="info-value">{{ customer.name }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Email:</span>
+                    <span class="info-value">
+                        <a href="mailto:{{ customer.email }}">{{ customer.email }}</a>
+                    </span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Phone:</span>
+                    <span class="info-value">
+                        <a href="tel:{{ customer.phone }}">{{ customer.phone }}</a>
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Address Information -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">📍 Address Details</h2>
+            </div>
+            <div class="p-3">
+                {% if customer.house_name_door_no %}
+                <div class="info-row">
+                    <span class="info-label">House/Door No:</span>
+                    <span class="info-value">{{ customer.house_name_door_no }}</span>
+                </div>
+                {% endif %}
+                <div class="info-row">
+                    <span class="info-label">Street/Locality:</span>
+                    <span class="info-value">{{ customer.street_locality_landmark }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Village/Town:</span>
+                    <span class="info-value">{{ customer.village_town_city }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Panchayat/Municipality:</span>
+                    <span class="info-value">{{ customer.panchayat_municipality }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Taluk:</span>
+                    <span class="info-value">{{ customer.taluk }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">District:</span>
+                    <span class="info-value">{{ customer.get_district_display }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">PIN Code:</span>
+                    <span class="info-value">{{ customer.pincode }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Complete Address:</span>
+                    <span class="info-value">{{ customer.address }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Samples Section -->
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">🧪 Sample History</h2>
+            <p class="card-subtitle">Samples collected from this customer</p>
+        </div>
+        
+        {% if customer.samples.all %}
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Sample ID</th>
+                        <th>Collection Date</th>
+                        <th>Source</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for sample in customer.samples.all %}
+                    <tr>
+                        <td>
+                            <a href="{% url 'core:sample_detail' sample.pk %}" class="link">
+                                {{ sample.sample_id|truncatechars:13 }}
+                            </a>
+                        </td>
+                        <td>{{ sample.collection_datetime|date:"d M Y H:i" }}</td>
+                        <td>{{ sample.get_sample_source_display }}</td>
+                        <td>
+                            <span class="badge badge-{% if sample.current_status == 'REPORT_APPROVED' %}success{% elif sample.current_status == 'TESTING_IN_PROGRESS' %}warning{% else %}info{% endif %}">
+                                {{ sample.get_current_status_display }}
+                            </span>
+                        </td>
+                        <td>
+                            <a href="{% url 'core:sample_detail' sample.pk %}" class="btn btn-sm btn-outline">
+                                View Details
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="p-3 text-center text-muted">
+            <p>No samples found for this customer.</p>
+            <a href="{% url 'core:sample_list' %}" class="btn btn-primary">Register New Sample</a>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="btn-group">
+        <a href="{% url 'core:customer_list' %}" class="btn btn-outline">
+            ← Back to Customers
+        </a>
+        {% if user.is_frontdesk or user.is_admin %}
+        <a href="{% url 'core:customer_edit' customer.pk %}" class="btn btn-warning">
+            ✏️ Edit Customer
+        </a>
+        {% endif %}
+        <a href="{% url 'core:sample_add' %}" class="btn btn-primary">
+            🧪 New Sample
+        </a>
+        {% if user.is_admin %}
+        <a href="{% url 'core:audit_trail' %}?model=Customer&object_id={{ customer.pk }}" class="btn btn-info">
+            📋 View History
+        </a>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

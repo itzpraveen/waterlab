@@ -1,0 +1,326 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Lab Dashboard - Water Lab LIMS{% endblock %}
+
+{% block content %}
+<div class="dashboard-header">
+    <h1 class="page-title">🧬 Laboratory Dashboard</h1>
+    <div class="user-info">
+        <span class="role-badge lab">{{ user.get_role_display }}</span>
+        <span>Welcome, {{ user.first_name|default:user.username }}!</span>
+    </div>
+</div>
+
+<!-- Lab Testing Stats -->
+<div class="dashboard-stats">
+    <div class="stat-card warning">
+        <div class="stat-value">{{ pending_tests }}</div>
+        <div class="stat-label">Pending Tests</div>
+    </div>
+    <div class="stat-card success">
+        <div class="stat-value">{{ completed_tests }}</div>
+        <div class="stat-label">Completed Tests</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">{{ my_tests }}</div>
+        <div class="stat-label">My Total Tests</div>
+    </div>
+    <div class="stat-card info">
+        <div class="stat-value">{{ today_tests }}</div>
+        <div class="stat-label">Today's Tests</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">{{ total_parameters }}</div>
+        <div class="stat-label">Test Parameters</div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="dashboard-section">
+    <div class="section-header">
+        <h2 class="section-title">⚡ Quick Actions</h2>
+    </div>
+    <div class="quick-actions">
+        <a href="{% url 'core:sample_list' %}" class="btn btn-primary">🔬 View Samples</a>
+        <a href="/admin/core/testparameter/" class="btn btn-outline">⚙️ Manage Parameters</a>
+        <a href="/admin/core/testresult/" class="btn btn-outline">📊 Test Results</a>
+    </div>
+</div>
+
+<div class="grid-2-col">
+    <!-- Samples for Testing -->
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">🧪 Samples Awaiting Testing</h3>
+        </div>
+        {% if samples_for_testing %}
+        <div class="p-3">
+            <div class="sample-list">
+                {% for sample in samples_for_testing %}
+                <div class="sample-item">
+                    <div class="sample-info">
+                        <a href="{% url 'core:sample_detail' sample.pk %}" class="sample-id">
+                            {{ sample.sample_id|truncatechars:13 }}
+                        </a>
+                        <div class="sample-meta">
+                            👤 {{ sample.customer.name }}
+                        </div>
+                        <div class="sample-meta">
+                            📅 Collected: {{ sample.collection_datetime|date:"M d, H:i" }}
+                        </div>
+                        <div class="sample-meta">
+                            🏷️ {{ sample.get_sample_source_display }}
+                        </div>
+                    </div>
+                    <div class="sample-actions">
+                        <span class="badge badge-warning">{{ sample.get_current_status_display }}</span>
+                        <a href="{% url 'core:test_result_entry' sample.pk %}" class="btn btn-sm btn-primary">
+                            Enter Results
+                        </a>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% else %}
+        <div class="p-3 text-center text-muted">
+            <p>No samples pending testing</p>
+            <p>Great job! All samples are up to date.</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- My Recent Test Results -->
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">📋 My Recent Test Results</h3>
+        </div>
+        {% if recent_results %}
+        <div class="p-3">
+            <div class="results-list">
+                {% for result in recent_results %}
+                <div class="result-item">
+                    <div class="result-info">
+                        <div class="result-parameter">{{ result.parameter.name }}</div>
+                        <div class="result-sample">
+                            Sample: <a href="{% url 'core:sample_detail' result.sample.pk %}" class="link">
+                                {{ result.sample.sample_id|truncatechars:10 }}
+                            </a>
+                        </div>
+                        <div class="result-value">
+                            Result: <strong>{{ result.result_value }} {{ result.parameter.unit }}</strong>
+                        </div>
+                        <div class="result-date">{{ result.test_date|date:"M d, H:i" }}</div>
+                    </div>
+                    {% if result.parameter.min_permissible_limit and result.parameter.max_permissible_limit %}
+                    <div class="result-status">
+                        {% with result.result_value|floatformat:3|add:0 as numeric_value %}
+                        {% if numeric_value >= result.parameter.min_permissible_limit and numeric_value <= result.parameter.max_permissible_limit %}
+                            <span class="badge badge-success">Within Limits</span>
+                        {% else %}
+                            <span class="badge badge-danger">Out of Range</span>
+                        {% endif %}
+                        {% endwith %}
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% else %}
+        <div class="p-3 text-center text-muted">
+            <p>No test results entered yet</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Laboratory Equipment Status -->
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">🔬 Laboratory Status</h3>
+    </div>
+    <div class="p-3">
+        <div class="equipment-grid">
+            <div class="equipment-item">
+                <div class="equipment-name">pH Meter</div>
+                <span class="badge badge-success">Operational</span>
+                <div class="equipment-meta">Last calibrated: 2 days ago</div>
+            </div>
+            <div class="equipment-item">
+                <div class="equipment-name">Turbidity Meter</div>
+                <span class="badge badge-success">Operational</span>
+                <div class="equipment-meta">Last calibrated: 1 day ago</div>
+            </div>
+            <div class="equipment-item">
+                <div class="equipment-name">Conductivity Meter</div>
+                <span class="badge badge-warning">Needs Calibration</span>
+                <div class="equipment-meta">Last calibrated: 7 days ago</div>
+            </div>
+            <div class="equipment-item">
+                <div class="equipment-name">Spectrophotometer</div>
+                <span class="badge badge-success">Operational</span>
+                <div class="equipment-meta">Last calibrated: 3 days ago</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quality Control Reminders -->
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">✅ Quality Control Checklist</h3>
+    </div>
+    <div class="p-3">
+        <div class="qc-list">
+            <div class="qc-item">
+                <input type="checkbox" id="qc1" checked>
+                <label for="qc1">Daily equipment calibration check</label>
+                <span class="qc-status completed">✓</span>
+            </div>
+            <div class="qc-item">
+                <input type="checkbox" id="qc2" checked>
+                <label for="qc2">Reagent preparation and labeling</label>
+                <span class="qc-status completed">✓</span>
+            </div>
+            <div class="qc-item">
+                <input type="checkbox" id="qc3">
+                <label for="qc3">Run quality control standards</label>
+                <span class="qc-status pending">Pending</span>
+            </div>
+            <div class="qc-item">
+                <input type="checkbox" id="qc4">
+                <label for="qc4">Laboratory temperature and humidity log</label>
+                <span class="qc-status pending">Pending</span>
+            </div>
+            <div class="qc-item">
+                <input type="checkbox" id="qc5">
+                <label for="qc5">Waste disposal documentation</label>
+                <span class="qc-status pending">Pending</span>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.sample-list, .results-list {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.sample-item, .result-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.sample-item:last-child, .result-item:last-child {
+    border-bottom: none;
+}
+
+.sample-info, .result-info {
+    flex: 1;
+}
+
+.sample-id {
+    font-weight: 600;
+    color: var(--primary-color);
+    text-decoration: none;
+}
+
+.sample-id:hover {
+    text-decoration: underline;
+}
+
+.sample-meta {
+    font-size: 0.85rem;
+    color: var(--secondary-color);
+    margin-top: 0.25rem;
+}
+
+.sample-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.5rem;
+}
+
+.result-parameter {
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+.result-sample, .result-value, .result-date {
+    font-size: 0.85rem;
+    color: var(--secondary-color);
+    margin-top: 0.25rem;
+}
+
+.result-value {
+    color: var(--dark-color);
+}
+
+.equipment-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem;
+}
+
+.equipment-item {
+    padding: 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--light-color);
+}
+
+.equipment-name {
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.equipment-meta {
+    font-size: 0.85rem;
+    color: var(--secondary-color);
+    margin-top: 0.5rem;
+}
+
+.qc-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.qc-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+}
+
+.qc-item input[type="checkbox"] {
+    margin: 0;
+}
+
+.qc-item label {
+    flex: 1;
+    margin: 0;
+    cursor: pointer;
+}
+
+.qc-status.completed {
+    color: var(--success-color);
+    font-weight: 600;
+}
+
+.qc-status.pending {
+    color: var(--warning-color);
+    font-weight: 600;
+}
+</style>
+{% endblock %}

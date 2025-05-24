@@ -1,0 +1,205 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Test Result Entry - Water Lab LIMS{% endblock %}
+
+{% block content %}
+<!-- Sample Information -->
+<div class="card">
+    <div class="card-header">
+        <h1 class="card-title">🧪 Test Result Entry</h1>
+        <p class="card-subtitle">Enter test results for sample parameters</p>
+    </div>
+    
+    <div class="p-3" style="background-color: #f8f9fa; border-bottom: 1px solid #dee2e6;">
+        <div class="row" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+            <div>
+                <strong>Sample ID:</strong><br>
+                <code>{{ sample.sample_id }}</code>
+            </div>
+            <div>
+                <strong>Customer:</strong><br>
+                <a href="{% url 'core:customer_detail' pk=sample.customer.customer_id %}">{{ sample.customer.name }}</a>
+            </div>
+            <div>
+                <strong>Source:</strong><br>
+                <span class="badge badge-info">{{ sample.get_sample_source_display }}</span>
+            </div>
+            <div>
+                <strong>Collection Date:</strong><br>
+                {{ sample.collection_datetime|date:"M d, Y H:i" }}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Test Parameters Form -->
+<form method="post" data-validate>
+    {% csrf_token %}
+    
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">📊 Test Parameters</h2>
+            <p class="card-subtitle">Enter results for each requested test parameter</p>
+        </div>
+        
+        {% for test_param in sample.tests_requested.all %}
+        <div class="card" style="margin: 1rem;">
+            <div class="card-header">
+                <h3 style="margin: 0; color: #0d6efd;">{{ test_param.name }}</h3>
+                <div style="display: flex; gap: 1rem; margin-top: 0.5rem; font-size: 0.9rem; color: #6c757d;">
+                    <span><strong>Unit:</strong> {{ test_param.unit }}</span>
+                    {% if test_param.standard_method %}
+                        <span><strong>Method:</strong> {{ test_param.standard_method }}</span>
+                    {% endif %}
+                </div>
+            </div>
+            
+            {% if test_param.min_permissible_limit or test_param.max_permissible_limit %}
+            <div class="p-3" style="background-color: #e7f3ff; border-bottom: 1px solid #dee2e6;">
+                <strong>📋 Permissible Range:</strong>
+                <span class="badge badge-info">
+                    {% if test_param.min_permissible_limit %}{{ test_param.min_permissible_limit }}{% endif %}
+                    {% if test_param.min_permissible_limit and test_param.max_permissible_limit %} - {% endif %}
+                    {% if test_param.max_permissible_limit %}{{ test_param.max_permissible_limit }}{% endif %}
+                    {{ test_param.unit }}
+                </span>
+            </div>
+            {% endif %}
+            
+            <div class="p-3">
+                <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 1.5rem; align-items: start;">
+                    <div class="form-group">
+                        <label for="result_{{ test_param.parameter_id }}" class="form-label">
+                            Result Value <span style="color: red;">*</span>
+                        </label>
+                        <input type="text" name="result_{{ test_param.parameter_id }}" 
+                               id="result_{{ test_param.parameter_id }}" 
+                               class="form-control" 
+                               placeholder="Enter result ({{ test_param.unit }})"
+                               required>
+                        <small class="text-muted">Unit: {{ test_param.unit }}</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="observation_{{ test_param.parameter_id }}" class="form-label">
+                            Observation/Notes
+                        </label>
+                        <textarea name="observation_{{ test_param.parameter_id }}" 
+                                  id="observation_{{ test_param.parameter_id }}" 
+                                  class="form-control" 
+                                  rows="3" 
+                                  placeholder="Any observations, comments, or notes about this test..."></textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+        
+        <div class="p-3" style="background-color: #f8f9fa; border-top: 1px solid #dee2e6;">
+            <div class="btn-group">
+                <button type="submit" class="btn btn-success">
+                    💾 Save Test Results
+                </button>
+                <a href="{% url 'core:sample_detail' pk=sample.sample_id %}" class="btn btn-outline">
+                    ❌ Cancel
+                </a>
+            </div>
+        </div>
+    </div>
+</form>
+
+<!-- Instructions -->
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">📝 Instructions</h2>
+    </div>
+    <div class="p-3">
+        <ul style="margin: 0; padding-left: 1.5rem;">
+            <li>Enter precise numerical values for quantitative tests</li>
+            <li>For qualitative tests, use standard terms (e.g., "Present", "Absent", "Positive", "Negative")</li>
+            <li>Include relevant observations that might affect interpretation</li>
+            <li>All result values are required before submission</li>
+            <li>Double-check all entries before saving</li>
+        </ul>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-validation for numeric inputs
+    const resultInputs = document.querySelectorAll('input[name^="result_"]');
+    resultInputs.forEach(input => {
+        input.addEventListener('input', function() {
+            validateResult(this);
+        });
+        
+        input.addEventListener('blur', function() {
+            validateResult(this);
+        });
+    });
+    
+    function validateResult(input) {
+        const value = input.value.trim();
+        if (!value) return;
+        
+        // Check if it's a valid number or text
+        const isNumeric = !isNaN(value) && !isNaN(parseFloat(value));
+        
+        if (isNumeric) {
+            input.classList.add('is-valid');
+            input.classList.remove('is-invalid');
+            
+            // Check against permissible limits if available
+            const paramCard = input.closest('.card');
+            const rangeInfo = paramCard.querySelector('.badge-info');
+            if (rangeInfo) {
+                checkPermissibleRange(input, parseFloat(value), rangeInfo.textContent);
+            }
+        } else {
+            // For text values, just mark as valid if not empty
+            input.classList.add('is-valid');
+            input.classList.remove('is-invalid');
+        }
+    }
+    
+    function checkPermissibleRange(input, value, rangeText) {
+        // Extract min/max from range text
+        const parts = rangeText.split(' - ');
+        if (parts.length === 2) {
+            const min = parseFloat(parts[0]);
+            const max = parseFloat(parts[1]);
+            
+            if (value < min || value > max) {
+                showAlert(`Value ${value} is outside permissible range (${min} - ${max})`, 'warning');
+            }
+        }
+    }
+    
+    // Form submission
+    const form = document.querySelector('form[data-validate]');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            const requiredInputs = form.querySelectorAll('input[required]');
+            let allFilled = true;
+            
+            requiredInputs.forEach(input => {
+                if (!input.value.trim()) {
+                    allFilled = false;
+                    input.classList.add('is-invalid');
+                }
+            });
+            
+            if (!allFilled) {
+                e.preventDefault();
+                showAlert('Please fill in all required result values.', 'danger');
+                return;
+            }
+            
+            showAlert('Saving test results...', 'info');
+        });
+    }
+});
+</script>
+{% endblock %}

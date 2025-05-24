@@ -1,0 +1,311 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Audit Trail - Water Lab LIMS{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h1 class="card-title">📋 Audit Trail</h1>
+        <p class="card-subtitle">Track all system changes and user activities</p>
+    </div>
+
+    <!-- Filters -->
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">🔍 Filters</h3>
+        </div>
+        <div class="p-3">
+            <form method="get" class="filter-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="model" class="form-label">Model Type:</label>
+                        <select name="model" id="model" class="form-control">
+                            <option value="">All Models</option>
+                            {% for model in model_choices %}
+                                <option value="{{ model }}" {% if filters.model == model %}selected{% endif %}>
+                                    {{ model }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="action" class="form-label">Action:</label>
+                        <select name="action" id="action" class="form-control">
+                            <option value="">All Actions</option>
+                            {% for action in action_choices %}
+                                <option value="{{ action }}" {% if filters.action == action %}selected{% endif %}>
+                                    {{ action|capfirst }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="user" class="form-label">User:</label>
+                        <select name="user" id="user" class="form-control">
+                            <option value="">All Users</option>
+                            {% for user in users %}
+                                <option value="{{ user.pk }}" {% if filters.user == user.pk|stringformat:"s" %}selected{% endif %}>
+                                    {{ user.first_name|default:user.username }} ({{ user.get_role_display }})
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="object_id" class="form-label">Object ID:</label>
+                        <input type="text" name="object_id" id="object_id" class="form-control" 
+                               value="{{ filters.object_id }}" placeholder="Enter specific object ID">
+                    </div>
+                </div>
+                
+                <div class="btn-group">
+                    <button type="submit" class="btn btn-primary">🔍 Apply Filters</button>
+                    <a href="{% url 'core:audit_trail' %}" class="btn btn-outline">🔄 Clear Filters</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Audit Logs -->
+    {% if audit_logs %}
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Timestamp</th>
+                    <th>User</th>
+                    <th>Action</th>
+                    <th>Model</th>
+                    <th>Object</th>
+                    <th>Changes</th>
+                    <th>IP Address</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in audit_logs %}
+                <tr>
+                    <td>{{ log.timestamp|date:"M d, Y H:i:s" }}</td>
+                    <td>
+                        {% if log.user %}
+                            <div class="user-info">
+                                <span class="user-name">{{ log.user.first_name|default:log.user.username }}</span>
+                                <span class="role-badge {{ log.user.role }}">{{ log.user.get_role_display }}</span>
+                            </div>
+                        {% else %}
+                            <span class="text-muted">System</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <span class="badge badge-{% if log.action == 'CREATE' %}success{% elif log.action == 'UPDATE' %}warning{% elif log.action == 'DELETE' %}danger{% else %}info{% endif %}">
+                            {{ log.get_action_display }}
+                        </span>
+                    </td>
+                    <td>{{ log.model_name }}</td>
+                    <td>
+                        <div class="object-info">
+                            <div class="object-id">{{ log.object_id|truncatechars:13 }}</div>
+                            <div class="object-repr">{{ log.object_repr|truncatechars:30 }}</div>
+                        </div>
+                    </td>
+                    <td>
+                        {% if log.changes %}
+                            <button class="btn btn-sm btn-outline changes-btn" onclick="toggleChanges('{{ log.audit_id }}')">
+                                📝 View Changes ({{ log.changes|length }})
+                            </button>
+                            <div id="changes-{{ log.audit_id }}" class="changes-detail" style="display: none;">
+                                {% for field, change in log.changes.items %}
+                                    <div class="change-item">
+                                        <strong>{{ field|capfirst }}:</strong>
+                                        <div class="change-values">
+                                            <span class="old-value">{{ change.old|default:"(empty)" }}</span>
+                                            <span class="change-arrow">→</span>
+                                            <span class="new-value">{{ change.new|default:"(empty)" }}</span>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <span class="text-muted">No changes recorded</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ log.ip_address|default:"N/A" }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination -->
+    {% if is_paginated %}
+    <div class="pagination-container">
+        <div class="pagination">
+            {% if page_obj.has_previous %}
+                <a href="?page=1{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" class="page-link">« First</a>
+                <a href="?page={{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" class="page-link">‹ Previous</a>
+            {% endif %}
+            
+            <span class="page-info">
+                Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                ({{ page_obj.start_index }}-{{ page_obj.end_index }} of {{ page_obj.paginator.count }} entries)
+            </span>
+            
+            {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" class="page-link">Next ›</a>
+                <a href="?page={{ page_obj.paginator.num_pages }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" class="page-link">Last »</a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    {% else %}
+    <div class="p-3 text-center text-muted">
+        <p>No audit logs found.</p>
+        <p>Audit logs will appear here as users make changes to the system.</p>
+    </div>
+    {% endif %}
+
+    <!-- Back Button -->
+    <div class="btn-group mt-3">
+        <a href="{% url 'core:admin_dashboard' %}" class="btn btn-outline">
+            ← Back to Dashboard
+        </a>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.filter-form .form-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.user-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.user-name {
+    font-weight: 500;
+}
+
+.object-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.object-id {
+    font-family: monospace;
+    font-size: 0.85rem;
+    color: var(--secondary-color);
+}
+
+.object-repr {
+    font-weight: 500;
+}
+
+.changes-detail {
+    margin-top: 0.5rem;
+    padding: 0.75rem;
+    background: var(--light-color);
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+}
+
+.change-item {
+    margin-bottom: 0.5rem;
+}
+
+.change-item:last-child {
+    margin-bottom: 0;
+}
+
+.change-values {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.25rem;
+}
+
+.old-value {
+    background: #fee;
+    color: #c53030;
+    padding: 0.125rem 0.25rem;
+    border-radius: 3px;
+    font-size: 0.85rem;
+}
+
+.new-value {
+    background: #f0fff4;
+    color: #38a169;
+    padding: 0.125rem 0.25rem;
+    border-radius: 3px;
+    font-size: 0.85rem;
+}
+
+.change-arrow {
+    color: var(--secondary-color);
+    font-weight: bold;
+}
+
+.pagination-container {
+    padding: 1rem;
+    border-top: 1px solid var(--border-color);
+}
+
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+}
+
+.page-link {
+    padding: 0.5rem 1rem;
+    color: var(--primary-color);
+    text-decoration: none;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    transition: all 0.3s ease;
+}
+
+.page-link:hover {
+    background: var(--primary-color);
+    color: white;
+}
+
+.page-info {
+    font-weight: 500;
+    color: var(--secondary-color);
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function toggleChanges(auditId) {
+    const element = document.getElementById('changes-' + auditId);
+    if (element.style.display === 'none') {
+        element.style.display = 'block';
+    } else {
+        element.style.display = 'none';
+    }
+}
+
+// Auto-submit form when filter changes
+document.addEventListener('DOMContentLoaded', function() {
+    const filterSelects = document.querySelectorAll('.filter-form select');
+    filterSelects.forEach(select => {
+        select.addEventListener('change', function() {
+            // Optional: Auto-submit form on change
+            // this.closest('form').submit();
+        });
+    });
+});
+</script>
+{% endblock %}

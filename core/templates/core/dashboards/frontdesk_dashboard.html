@@ -1,0 +1,264 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Front Desk Dashboard - Water Lab LIMS{% endblock %}
+
+{% block content %}
+<div class="dashboard-header">
+    <h1 class="page-title">📋 Front Desk Dashboard</h1>
+    <div class="user-info">
+        <span class="role-badge frontdesk">{{ user.get_role_display }}</span>
+        <span>Welcome, {{ user.first_name|default:user.username }}!</span>
+    </div>
+</div>
+
+<!-- Customer & Sample Stats -->
+<div class="dashboard-stats">
+    <div class="stat-card">
+        <div class="stat-value">{{ total_customers }}</div>
+        <div class="stat-label">Total Customers</div>
+    </div>
+    <div class="stat-card warning">
+        <div class="stat-value">{{ pending_samples }}</div>
+        <div class="stat-label">Pending Samples</div>
+    </div>
+    <div class="stat-card info">
+        <div class="stat-value">{{ today_samples }}</div>
+        <div class="stat-label">Today's Samples</div>
+    </div>
+    <div class="stat-card success">
+        <div class="stat-value">{{ ready_reports }}</div>
+        <div class="stat-label">Ready Reports</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">{{ week_samples }}</div>
+        <div class="stat-label">This Week</div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="dashboard-section">
+    <div class="section-header">
+        <h2 class="section-title">⚡ Quick Actions</h2>
+    </div>
+    <div class="quick-actions">
+        <a href="{% url 'core:customer_add' %}" class="btn btn-primary">👤 Register Customer</a>
+        <a href="{% url 'core:sample_add' %}" class="btn btn-primary">🧪 Register Sample</a>
+        <a href="{% url 'core:customer_list' %}" class="btn btn-outline">📋 View Customers</a>
+        <a href="{% url 'core:sample_list' %}" class="btn btn-outline">🔬 View Samples</a>
+    </div>
+</div>
+
+<div class="grid-2-col">
+    <!-- Recent Customers -->
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">👥 Recent Customers</h3>
+            <a href="{% url 'core:customer_add' %}" class="btn btn-sm btn-primary">Add New</a>
+        </div>
+        {% if recent_customers %}
+        <div class="p-3">
+            <div class="customer-list">
+                {% for customer in recent_customers %}
+                <div class="customer-item">
+                    <div class="customer-info">
+                        <a href="{% url 'core:customer_detail' customer.pk %}" class="customer-name">
+                            {{ customer.name }}
+                        </a>
+                        <div class="customer-meta">
+                            📧 {{ customer.email }} | 📞 {{ customer.phone }}
+                        </div>
+                        <div class="customer-location">
+                            📍 {{ customer.village_town_city }}, {{ customer.get_district_display }}
+                        </div>
+                    </div>
+                    <a href="{% url 'core:sample_add' %}" class="btn btn-sm btn-outline">Add Sample</a>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% else %}
+        <div class="p-3 text-center text-muted">
+            <p>No customers registered yet</p>
+            <a href="{% url 'core:customer_add' %}" class="btn btn-primary">Register First Customer</a>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Sample Status Overview -->
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">📊 Sample Status Overview</h3>
+        </div>
+        <div class="p-3">
+            {% if samples_by_status %}
+                {% for status in samples_by_status %}
+                <div class="status-item">
+                    <span class="status-label">{{ status.current_status|capfirst|replace:"_":" " }}:</span>
+                    <span class="status-value">{{ status.count }}</span>
+                </div>
+                {% endfor %}
+            {% else %}
+                <p class="text-muted">No samples in system</p>
+            {% endif %}
+            
+            <div class="mt-3">
+                <h4>Weekly Progress</h4>
+                <div class="status-item">
+                    <span class="status-label">New Customers:</span>
+                    <span class="status-value">{{ week_customers }}</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">New Samples:</span>
+                    <span class="status-value">{{ week_samples }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Samples -->
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">🧪 Recent Samples</h3>
+        <a href="{% url 'core:sample_add' %}" class="btn btn-sm btn-primary">Register New</a>
+    </div>
+    {% if recent_samples %}
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Sample ID</th>
+                    <th>Customer</th>
+                    <th>Collection Date</th>
+                    <th>Source</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for sample in recent_samples %}
+                <tr>
+                    <td>
+                        <a href="{% url 'core:sample_detail' sample.pk %}" class="link">
+                            {{ sample.sample_id|truncatechars:13 }}
+                        </a>
+                    </td>
+                    <td>
+                        <a href="{% url 'core:customer_detail' sample.customer.pk %}" class="link">
+                            {{ sample.customer.name }}
+                        </a>
+                    </td>
+                    <td>{{ sample.collection_datetime|date:"M d, H:i" }}</td>
+                    <td>{{ sample.get_sample_source_display }}</td>
+                    <td>
+                        <span class="badge badge-{% if sample.current_status == 'REPORT_APPROVED' %}success{% elif sample.current_status == 'TESTING_IN_PROGRESS' %}warning{% else %}info{% endif %}">
+                            {{ sample.get_current_status_display }}
+                        </span>
+                    </td>
+                    <td>
+                        <a href="{% url 'core:sample_detail' sample.pk %}" class="btn btn-sm btn-outline">
+                            View
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="p-3 text-center text-muted">
+        <p>No samples registered yet</p>
+        <a href="{% url 'core:sample_add' %}" class="btn btn-primary">Register First Sample</a>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Tasks for Front Desk -->
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">✅ Today's Tasks</h3>
+    </div>
+    <div class="p-3">
+        <div class="task-list">
+            <div class="task-item">
+                <input type="checkbox" id="task1" checked>
+                <label for="task1">Check for ready reports to deliver</label>
+            </div>
+            <div class="task-item">
+                <input type="checkbox" id="task2">
+                <label for="task2">Follow up on pending sample collections</label>
+            </div>
+            <div class="task-item">
+                <input type="checkbox" id="task3">
+                <label for="task3">Update customer contact information</label>
+            </div>
+            <div class="task-item">
+                <input type="checkbox" id="task4">
+                <label for="task4">Prepare daily sample summary</label>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.customer-list {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.customer-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.customer-item:last-child {
+    border-bottom: none;
+}
+
+.customer-info {
+    flex: 1;
+}
+
+.customer-name {
+    font-weight: 600;
+    color: var(--primary-color);
+    text-decoration: none;
+}
+
+.customer-name:hover {
+    text-decoration: underline;
+}
+
+.customer-meta, .customer-location {
+    font-size: 0.85rem;
+    color: var(--secondary-color);
+    margin-top: 0.25rem;
+}
+
+.task-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.task-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.task-item input[type="checkbox"] {
+    margin: 0;
+}
+
+.task-item label {
+    margin: 0;
+    cursor: pointer;
+}
+</style>
+{% endblock %}

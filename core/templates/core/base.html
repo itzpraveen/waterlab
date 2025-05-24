@@ -1,0 +1,103 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Water Lab LIMS{% endblock %}</title>
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    
+    <!-- Favicon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧪</text></svg>">
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <nav class="navbar">
+            <a href="{% url 'core:home' %}" class="logo">
+                🧪 WaterLab LIMS
+            </a>
+            
+            {% if user.is_authenticated %}
+            <ul class="nav-menu">
+                <li><a href="{% url 'core:dashboard' %}" class="{% if 'dashboard' in request.resolver_match.url_name %}active{% endif %}">
+                    🏠 Dashboard
+                </a></li>
+                
+                {% if user.is_frontdesk or user.is_admin %}
+                <li><a href="{% url 'core:customer_list' %}" class="{% if 'customer' in request.resolver_match.url_name %}active{% endif %}">
+                    👥 Customers
+                </a></li>
+                {% endif %}
+                
+                <li><a href="{% url 'core:sample_list' %}" class="{% if 'sample' in request.resolver_match.url_name %}active{% endif %}">
+                    🧪 Samples
+                </a></li>
+                
+                {% if user.is_admin %}
+                <li><a href="{% url 'admin:index' %}" target="_blank">
+                    ⚙️ Admin
+                </a></li>
+                {% endif %}
+            </ul>
+            
+            <div class="nav-user">
+                <div class="user-dropdown">
+                    <span class="user-greeting">
+                        <span class="role-badge {{ user.role }}">{{ user.get_role_display }}</span>
+                        {{ user.first_name|default:user.username }}
+                        <span class="dropdown-arrow">▼</span>
+                    </span>
+                    <div class="user-menu">
+                        <a href="{% url 'core:password_change' %}" class="user-menu-item">
+                            🔒 Change Password
+                        </a>
+                        <a href="{% url 'logout' %}" class="user-menu-item logout">
+                            🚪 Logout
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div class="nav-user">
+                <a href="{% url 'core:login' %}" class="btn btn-primary">
+                    🔑 Login
+                </a>
+            </div>
+            {% endif %}
+        </nav>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container">
+        <!-- Alert Messages -->
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }}" data-auto-dismiss="5000">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <!-- Page Content -->
+        <div class="page-content">
+            {% block content %}
+            {% endblock %}
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer style="text-align: center; padding: 2rem; color: #6c757d; border-top: 1px solid #dee2e6; margin-top: 3rem;">
+        <p>&copy; 2025 Water Testing Lab LIMS - Kerala, India</p>
+        <p><small>Built with Django • Designed for Excellence</small></p>
+    </footer>
+
+    <!-- JavaScript -->
+    <script src="{% static 'js/main.js' %}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

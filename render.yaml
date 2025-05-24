@@ -1,0 +1,20 @@
+services:
+  # Web Service
+  - type: web
+    name: waterlab-lims
+    env: python
+    buildCommand: "./build.sh"
+    startCommand: "gunicorn waterlab.wsgi:application"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: DJANGO_SETTINGS_MODULE
+        value: waterlab.settings_render
+      - key: WEB_CONCURRENCY
+        value: 4
+    
+  # PostgreSQL Database
+databases:
+  - name: waterlab-db
+    databaseName: waterlab_prod
+    user: waterlab

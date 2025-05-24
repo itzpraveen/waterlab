@@ -1,0 +1,282 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Sample Details - Water Lab LIMS{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h1 class="card-title">🧪 Sample Details</h1>
+        <p class="card-subtitle">{{ sample.sample_id|truncatechars:13 }}</p>
+    </div>
+    
+    <div class="grid-2-col">
+        <!-- Sample Information -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">📋 Sample Information</h3>
+            </div>
+            <div class="p-3">
+                <div class="info-row">
+                    <span class="info-label">Sample ID:</span>
+                    <span class="info-value">{{ sample.sample_id }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Customer:</span>
+                    <span class="info-value">
+                        <a href="{% url 'core:customer_detail' sample.customer.pk %}" class="link">
+                            {{ sample.customer.name }}
+                        </a>
+                    </span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Collection Date:</span>
+                    <span class="info-value">{{ sample.collection_datetime|date:"M d, Y H:i" }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Sample Source:</span>
+                    <span class="info-value">{{ sample.get_sample_source_display }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Collected By:</span>
+                    <span class="info-value">{{ sample.collected_by }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Date Received:</span>
+                    <span class="info-value">{{ sample.date_received_at_lab|date:"M d, Y H:i"|default:"Not yet received" }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Current Status:</span>
+                    <span class="info-value">
+                        <span class="badge badge-{% if sample.current_status == 'REPORT_APPROVED' %}success{% elif sample.current_status == 'TESTING_IN_PROGRESS' %}warning{% else %}info{% endif %}">
+                            {{ sample.get_current_status_display }}
+                        </span>
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tests Requested -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">🧬 Tests Requested</h3>
+            </div>
+            <div class="p-3">
+                {% if sample.tests_requested.all %}
+                <div class="test-list">
+                    {% for test in sample.tests_requested.all %}
+                    <div class="test-item">
+                        <div class="test-name">{{ test.name }}</div>
+                        <div class="test-unit">{{ test.unit }}</div>
+                        {% if test.min_permissible_limit and test.max_permissible_limit %}
+                        <div class="test-range">
+                            Range: {{ test.min_permissible_limit }} - {{ test.max_permissible_limit }} {{ test.unit }}
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-muted">No tests requested</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Test Results Section -->
+    {% if sample.results.exists %}
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">📊 Test Results</h3>
+        </div>
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Parameter</th>
+                        <th>Result</th>
+                        <th>Unit</th>
+                        <th>Status</th>
+                        <th>Test Date</th>
+                        <th>Technician</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for result in sample.results.all %}
+                    <tr>
+                        <td>{{ result.parameter.name }}</td>
+                        <td class="result-value">{{ result.result_value }}</td>
+                        <td>{{ result.parameter.unit }}</td>
+                        <td>
+                            {% if result.parameter.min_permissible_limit and result.parameter.max_permissible_limit %}
+                                {% with result.result_value|floatformat:3|add:0 as numeric_value %}
+                                {% if numeric_value >= result.parameter.min_permissible_limit and numeric_value <= result.parameter.max_permissible_limit %}
+                                    <span class="badge badge-success">Within Limits</span>
+                                {% else %}
+                                    <span class="badge badge-danger">Out of Range</span>
+                                {% endif %}
+                                {% endwith %}
+                            {% else %}
+                                <span class="badge badge-info">No Limits Set</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ result.test_date|date:"M d, H:i" }}</td>
+                        <td>{{ result.technician.first_name|default:result.technician.username|default:"N/A" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Consultant Review Section -->
+    {% if sample.review %}
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">👨‍⚕️ Consultant Review</h3>
+        </div>
+        <div class="p-3">
+            <div class="review-info">
+                <div class="info-row">
+                    <span class="info-label">Reviewer:</span>
+                    <span class="info-value">{{ sample.review.reviewer.first_name|default:sample.review.reviewer.username|default:"N/A" }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Status:</span>
+                    <span class="info-value">
+                        <span class="badge badge-{% if sample.review.status == 'APPROVED' %}success{% elif sample.review.status == 'REJECTED' %}danger{% else %}warning{% endif %}">
+                            {{ sample.review.get_status_display }}
+                        </span>
+                    </span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Review Date:</span>
+                    <span class="info-value">{{ sample.review.review_date|date:"M d, Y H:i" }}</span>
+                </div>
+                {% if sample.review.comments %}
+                <div class="info-row">
+                    <span class="info-label">Comments:</span>
+                    <span class="info-value">{{ sample.review.comments }}</span>
+                </div>
+                {% endif %}
+                {% if sample.review.recommendations %}
+                <div class="info-row">
+                    <span class="info-label">Recommendations:</span>
+                    <span class="info-value">{{ sample.review.recommendations }}</span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Action Buttons -->
+    <div class="btn-group">
+        <a href="{% url 'core:sample_list' %}" class="btn btn-outline">
+            ← Back to Samples
+        </a>
+        {% if user.is_frontdesk or user.is_admin %}
+        <a href="{% url 'core:sample_edit' sample.pk %}" class="btn btn-warning">
+            ✏️ Edit Sample
+        </a>
+        {% endif %}
+        {% if user.is_lab_tech or user.is_admin %}
+        <a href="{% url 'core:test_result_entry' sample.pk %}" class="btn btn-success">
+            🧪 Enter Results
+        </a>
+        {% endif %}
+        {% if user.is_consultant or user.is_admin %}
+        <a href="{% url 'core:consultant_review' sample.pk %}" class="btn btn-primary">
+            👨‍⚕️ Review
+        </a>
+        {% endif %}
+        {% if user.is_admin %}
+        <a href="{% url 'core:audit_trail' %}?model=Sample&object_id={{ sample.pk }}" class="btn btn-info">
+            📋 View History
+        </a>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.test-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.test-item {
+    padding: 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--light-color);
+}
+
+.test-name {
+    font-weight: 600;
+    color: var(--primary-color);
+    margin-bottom: 0.25rem;
+}
+
+.test-unit {
+    color: var(--secondary-color);
+    font-size: 0.9rem;
+}
+
+.test-range {
+    color: var(--secondary-color);
+    font-size: 0.85rem;
+    margin-top: 0.25rem;
+}
+
+.result-value {
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+.review-info .info-row {
+    margin-bottom: 1rem;
+}
+
+.review-info .info-row:last-child {
+    margin-bottom: 0;
+}
+
+.info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.info-row:last-child {
+    border-bottom: none;
+}
+
+.info-label {
+    font-weight: 600;
+    color: var(--secondary-color);
+    flex: 0 0 150px;
+}
+
+.info-value {
+    flex: 1;
+    text-align: right;
+}
+
+@media (max-width: 768px) {
+    .info-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .info-value {
+        text-align: left;
+        margin-top: 0.25rem;
+    }
+}
+</style>
+{% endblock %}
