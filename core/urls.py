@@ -10,19 +10,24 @@ from .views import (
     SampleUpdateView,
     test_result_entry,
     consultant_review,
-    dashboard_redirect,
     AdminDashboardView,
     LabDashboardView,
     FrontDeskDashboardView,
     ConsultantDashboardView,
-    CustomLoginView,
     CustomPasswordChangeView,
     password_change_done,
     AuditTrailView,
     health_check,
     debug_admin,
-    create_admin_web,
-    simple_home
+    create_admin_web
+)
+
+from .auth_views import (
+    AdminLoginView,
+    UserLoginView, 
+    SecureLogoutView,
+    DashboardView,
+    login_selector
 )
 
 app_name = 'core'
@@ -33,18 +38,23 @@ urlpatterns = [
     path('debug-admin/', debug_admin, name='debug_admin'),
     path('create-admin/', create_admin_web, name='create_admin_web'),
     
-    # Home and Dashboard URLs
-    path('', simple_home, name='home'),
-    path('dashboard/', dashboard_redirect, name='dashboard'),
+    # Professional Authentication URLs
+    path('', login_selector, name='home'),
+    path('login/', login_selector, name='login_selector'),
+    path('admin-login/', AdminLoginView.as_view(), name='admin_login'),
+    path('user-login/', UserLoginView.as_view(), name='user_login'),
+    path('logout/', SecureLogoutView.as_view(), name='logout'),
+    
+    # Dashboard URLs  
+    path('dashboard/', DashboardView.as_view(), name='dashboard'),
     path('dashboard/admin/', AdminDashboardView.as_view(), name='admin_dashboard'),
     path('dashboard/lab/', LabDashboardView.as_view(), name='lab_dashboard'),
     path('dashboard/frontdesk/', FrontDeskDashboardView.as_view(), name='frontdesk_dashboard'),
     path('dashboard/consultant/', ConsultantDashboardView.as_view(), name='consultant_dashboard'),
     
-    # Authentication URLs
-    path('accounts/login/', CustomLoginView.as_view(), name='login'),
-    path('accounts/password-change/', CustomPasswordChangeView.as_view(), name='password_change'),
-    path('accounts/password-change/done/', password_change_done, name='password_change_done'),
+    # Password Management
+    path('password-change/', CustomPasswordChangeView.as_view(), name='password_change'),
+    path('password-change/done/', password_change_done, name='password_change_done'),
     
     # Customer URLs
     path('customers/', CustomerListView.as_view(), name='customer_list'),
