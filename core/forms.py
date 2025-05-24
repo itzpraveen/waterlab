@@ -22,7 +22,7 @@ class CustomerForm(forms.ModelForm):
             'phone': forms.TextInput(attrs={
                 'class': 'form-control',
                 'placeholder': '10-digit phone number',
-                'maxlength': '10'
+                'maxlength': '20'
             }),
             'house_name_door_no': forms.TextInput(attrs={
                 'class': 'form-control',

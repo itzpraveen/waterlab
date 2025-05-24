@@ -53,10 +53,10 @@ class UserLoginView(LoginView):
         
         # Role-based welcome message
         role_name = {
-            'ADMIN': 'Administrator',
-            'LAB': 'Lab Technician', 
-            'FRONTDESK': 'Front Desk Staff',
-            'CONSULTANT': 'Consultant'
+            'admin': 'Administrator',
+            'lab': 'Lab Technician', 
+            'frontdesk': 'Front Desk Staff',
+            'consultant': 'Consultant'
         }.get(user.role, 'User')
         
         messages.success(self.request, f'Welcome {user.get_full_name() or user.username}! ({role_name})')

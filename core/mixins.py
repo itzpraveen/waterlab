@@ -47,7 +47,7 @@ class AuditMixin:
         
         # Get old values if this is an update
         old_values = {}
-        if hasattr(self, 'object') and self.object.pk:
+        if hasattr(self, 'object') and self.object and self.object.pk:
             # This is an update
             old_instance = self.model.objects.get(pk=self.object.pk)
             old_values = self._get_field_values(old_instance)
