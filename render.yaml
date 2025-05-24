@@ -3,6 +3,7 @@ services:
   - type: web
     name: waterlab-lims
     env: python
+    plan: free
     buildCommand: "./build.sh"
     startCommand: "gunicorn waterlab.wsgi:application"
     envVars:
@@ -12,9 +13,15 @@ services:
         value: waterlab.settings_render
       - key: WEB_CONCURRENCY
         value: 4
-    
-  # PostgreSQL Database
+      - key: SECRET_KEY
+        value: zq2l3m(e!kxeoraihpp980_y+a)b(l%)$__h1b90v9&!02hyug  # Replace with a secure key
+      - key: DATABASE_URL
+        fromDatabase:
+          name: waterlab-db
+          property: connectionString
+
 databases:
   - name: waterlab-db
+    plan: free
     databaseName: waterlab_prod
     user: waterlab
