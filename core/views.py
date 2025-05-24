@@ -380,6 +380,12 @@ class ConsultantDashboardView(ConsultantRequiredMixin, TemplateView):
                 reviewer=self.request.user
             ).select_related('sample').order_by('-review_date')[:10],
             
+            # Recently reviewed samples for better visibility
+            'recently_reviewed_samples': Sample.objects.filter(
+                consultantreview__reviewer=self.request.user,
+                consultantreview__status__in=['APPROVED', 'REJECTED']
+            ).select_related('customer').order_by('-consultantreview__review_date')[:10],
+            
             # Review statistics
             'review_stats': ConsultantReview.objects.filter(reviewer=self.request.user).values('status').annotate(count=Count('review_id')),
         })
