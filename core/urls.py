@@ -19,7 +19,9 @@ from .views import (
     AuditTrailView,
     health_check,
     debug_admin,
-    create_admin_web
+    create_admin_web,
+    debug_view,
+    form_test
 )
 
 from .auth_views import (
@@ -37,6 +39,8 @@ urlpatterns = [
     path('health/', health_check, name='health_check'),
     path('debug-admin/', debug_admin, name='debug_admin'),
     path('create-admin/', create_admin_web, name='create_admin_web'),
+    path('debug/', debug_view, name='debug_view'),
+    path('form-test/', form_test, name='form_test'),
     
     # Professional Authentication URLs
     path('', login_selector, name='home'),

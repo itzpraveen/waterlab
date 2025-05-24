@@ -125,8 +125,12 @@ STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'static'),
 ]
 
-# Configure WhiteNoise for static files
+# Configure WhiteNoise for static files (compatible version)
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
+# Additional static files settings for production
+WHITENOISE_USE_FINDERS = True
+WHITENOISE_AUTOREFRESH = True
 
 # Media files
 MEDIA_URL = '/media/'
@@ -148,6 +152,11 @@ SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 # CSRF Protection
 CSRF_COOKIE_SECURE = True
 CSRF_COOKIE_HTTPONLY = True
+CSRF_TRUSTED_ORIGINS = [
+    'https://*.onrender.com',
+    'https://waterlab-lims.onrender.com',
+]
+CSRF_COOKIE_SAMESITE = 'Lax'
 
 # Logging configuration
 LOGGING = {

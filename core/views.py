@@ -60,6 +60,84 @@ def create_admin_web(request):
     except Exception as e:
         return HttpResponse(f"Error creating admin: {str(e)}", content_type="text/plain")
 
+def debug_view(request):
+    """Debug endpoint to check configuration and functionality"""
+    from django.conf import settings
+    import os
+    
+    debug_info = []
+    debug_info.append("=== Django Configuration Debug ===")
+    debug_info.append(f"DEBUG: {settings.DEBUG}")
+    debug_info.append(f"STATIC_URL: {settings.STATIC_URL}")
+    debug_info.append(f"STATIC_ROOT: {settings.STATIC_ROOT}")
+    debug_info.append(f"ALLOWED_HOSTS: {settings.ALLOWED_HOSTS}")
+    
+    # Check static files
+    debug_info.append("\n=== Static Files Check ===")
+    static_css_path = os.path.join(settings.STATIC_ROOT, 'css', 'style.css')
+    debug_info.append(f"CSS file exists: {os.path.exists(static_css_path)}")
+    
+    # Check database
+    debug_info.append("\n=== Database Check ===")
+    try:
+        from core.models import Customer, Sample, CustomUser
+        debug_info.append(f"Customers: {Customer.objects.count()}")
+        debug_info.append(f"Samples: {Sample.objects.count()}")
+        debug_info.append(f"Users: {CustomUser.objects.count()}")
+        debug_info.append(f"Admin users: {CustomUser.objects.filter(role='admin').count()}")
+    except Exception as e:
+        debug_info.append(f"Database error: {e}")
+    
+    # Check user session
+    debug_info.append("\n=== User Session ===")
+    debug_info.append(f"User authenticated: {request.user.is_authenticated}")
+    if request.user.is_authenticated:
+        debug_info.append(f"Username: {request.user.username}")
+        debug_info.append(f"Role: {request.user.role}")
+        debug_info.append(f"Is admin: {request.user.is_admin()}")
+    
+    # Environment variables
+    debug_info.append("\n=== Environment Variables ===")
+    debug_info.append(f"DATABASE_URL set: {'DATABASE_URL' in os.environ}")
+    debug_info.append(f"SECRET_KEY set: {'SECRET_KEY' in os.environ}")
+    
+    return HttpResponse("\n".join(debug_info), content_type="text/plain")
+
+def form_test(request):
+    """Simple form test to debug form submission issues"""
+    if request.method == 'POST':
+        name = request.POST.get('name', 'No name provided')
+        return HttpResponse(f"Form submitted successfully! Name: {name}", content_type="text/plain")
+    
+    html = '''
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Form Test</title>
+        <link rel="stylesheet" href="/static/css/style.css">
+    </head>
+    <body style="padding: 20px;">
+        <h1>🧪 Water Lab LIMS - Form Test</h1>
+        <form method="post">
+            <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+            <div class="form-group">
+                <label for="name">Test Name:</label>
+                <input type="text" name="name" id="name" class="form-control" placeholder="Enter test name" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Test Submit</button>
+        </form>
+        <p><a href="/debug/">View Debug Info</a></p>
+    </body>
+    </html>
+    '''
+    
+    from django.template import Template, Context
+    from django.middleware.csrf import get_token
+    
+    template = Template(html)
+    context = Context({'csrf_token': get_token(request)})
+    return HttpResponse(template.render(context))
+
 def simple_home(request):
     """Simple home page to avoid redirect loops"""
     if request.user.is_authenticated:
