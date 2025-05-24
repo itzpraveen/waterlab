@@ -7,6 +7,7 @@ from django.contrib.auth.views import LoginView, LogoutView, PasswordChangeView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Count, Q
 from django.utils import timezone
+from django.db import transaction
 from datetime import timedelta
 
 from .models import Customer, Sample, TestParameter, TestResult, ConsultantReview, CustomUser, AuditTrail
@@ -313,6 +314,12 @@ class LabDashboardView(LabRequiredMixin, TemplateView):
                 current_status__in=['SENT_TO_LAB', 'TESTING_IN_PROGRESS']
             ).select_related('customer').order_by('collection_datetime')[:10],
             
+            # Recently completed samples by this technician
+            'recently_completed_samples': Sample.objects.filter(
+                results__technician=self.request.user,
+                current_status__in=['RESULTS_ENTERED', 'REVIEW_PENDING', 'REPORT_APPROVED']
+            ).distinct().select_related('customer').order_by('-updated_at')[:10],
+            
             # Recent test results
             'recent_results': TestResult.objects.filter(
                 technician=self.request.user
@@ -473,12 +480,48 @@ class SampleUpdateView(AuditMixin, FrontDeskRequiredMixin, UpdateView):
         return reverse_lazy('core:sample_detail', kwargs={'pk': self.object.pk})
     
     def form_valid(self, form):
+        # Get the sample before saving to check status
+        sample = self.get_object()
+        
+        # Check if sample can be edited based on current status
+        if sample.current_status not in ['RECEIVED_FRONT_DESK', 'SENT_TO_LAB']:
+            messages.error(self.request, 
+                f'Cannot edit sample in status "{sample.get_current_status_display()}". '
+                f'Only samples that are "Received at Front Desk" or "Sent to Lab" can be modified.')
+            return redirect('core:sample_detail', pk=sample.sample_id)
+        
+        # Check if tests_requested is being modified after lab work has started
+        if sample.current_status == 'SENT_TO_LAB':
+            original_tests = set(sample.tests_requested.all())
+            new_tests = set(form.cleaned_data.get('tests_requested', []))
+            
+            if original_tests != new_tests:
+                messages.error(self.request,
+                    'Cannot modify test requests after sample has been sent to lab. '
+                    'Contact lab staff if changes are needed.')
+                return redirect('core:sample_detail', pk=sample.sample_id)
+        
+        # Additional validation for collection datetime changes
+        if sample.current_status != 'RECEIVED_FRONT_DESK':
+            if sample.collection_datetime != form.cleaned_data.get('collection_datetime'):
+                messages.error(self.request,
+                    'Cannot modify collection date/time after sample processing has begun.')
+                return redirect('core:sample_detail', pk=sample.sample_id)
+        
         messages.success(self.request, f'Sample has been updated successfully!')
         return super().form_valid(form)
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['is_edit'] = True
+        
+        # Add status information to help users understand edit limitations
+        sample = self.get_object()
+        context['sample_status'] = sample.current_status
+        context['can_edit_tests'] = sample.current_status == 'RECEIVED_FRONT_DESK'
+        context['can_edit_datetime'] = sample.current_status == 'RECEIVED_FRONT_DESK'
+        context['status_display'] = sample.get_current_status_display()
+        
         return context
 
 @lab_required
@@ -492,64 +535,77 @@ def test_result_entry(request, sample_id):
     
     if request.method == 'POST':
         try:
-            # Update status to testing in progress if not already
-            if sample.current_status == 'SENT_TO_LAB':
-                sample.update_status('TESTING_IN_PROGRESS', request.user)
-            
-            results_entered = 0
-            errors = []
-            
-            for test_param in sample.tests_requested.all():
-                result_value = request.POST.get(f'result_{test_param.parameter_id}')
-                observation = request.POST.get(f'observation_{test_param.parameter_id}', '')
+            with transaction.atomic():  # Ensure all operations succeed or fail together
+                # Update status to testing in progress if not already
+                if sample.current_status == 'SENT_TO_LAB':
+                    sample.update_status('TESTING_IN_PROGRESS', request.user)
                 
-                if result_value and result_value.strip():
-                    try:
-                        test_result, created = TestResult.objects.get_or_create(
-                            sample=sample,
-                            parameter=test_param,
-                            defaults={
-                                'result_value': result_value.strip(),
-                                'observation': observation,
-                                'technician': request.user
-                            }
-                        )
-                        if not created:
-                            # Log the update for audit trail
-                            old_value = test_result.result_value
-                            test_result.result_value = result_value.strip()
-                            test_result.observation = observation
-                            test_result.technician = request.user
-                            test_result.full_clean()  # Validate the result
-                            test_result.save()
-                            
-                            # Log the change
-                            AuditTrail.log_change(
-                                user=request.user,
-                                action='UPDATE',
-                                instance=test_result,
-                                old_values={'result_value': old_value},
-                                new_values={'result_value': result_value.strip()},
-                                request=request
+                results_entered = 0
+                results_updated = 0
+                errors = []
+                
+                for test_param in sample.tests_requested.all():
+                    result_value = request.POST.get(f'result_{test_param.parameter_id}')
+                    observation = request.POST.get(f'observation_{test_param.parameter_id}', '')
+                    
+                    if result_value and result_value.strip():
+                        try:
+                            test_result, created = TestResult.objects.get_or_create(
+                                sample=sample,
+                                parameter=test_param,
+                                defaults={
+                                    'result_value': result_value.strip(),
+                                    'observation': observation,
+                                    'technician': request.user
+                                }
                             )
-                        else:
-                            test_result.full_clean()  # Validate the result
-                            results_entered += 1
-                            
-                    except Exception as e:
-                        errors.append(f'Error with {test_param.name}: {str(e)}')
-            
-            if errors:
-                for error in errors:
-                    messages.error(request, error)
-            else:
+                            if created:
+                                # Log new result creation for audit trail
+                                AuditTrail.log_change(
+                                    user=request.user,
+                                    action='CREATE',
+                                    instance=test_result,
+                                    request=request
+                                )
+                                test_result.full_clean()  # Validate the result
+                                results_entered += 1
+                            else:
+                                # Update existing result, preserve original technician
+                                old_values = {
+                                    'result_value': test_result.result_value,
+                                    'observation': test_result.observation
+                                }
+                                test_result.result_value = result_value.strip()
+                                test_result.observation = observation
+                                # Don't overwrite original technician - keep existing one
+                                test_result.full_clean()  # Validate the result
+                                test_result.save()
+                                
+                                # Log the update for audit trail
+                                AuditTrail.log_change(
+                                    user=request.user,
+                                    action='UPDATE',
+                                    instance=test_result,
+                                    old_values=old_values,
+                                    new_values={
+                                        'result_value': result_value.strip(),
+                                        'observation': observation
+                                    },
+                                    request=request
+                                )
+                                results_updated += 1
+                                
+                        except Exception as e:
+                            errors.append(f'Error with {test_param.name}: {str(e)}')
+                
+                if errors:
+                    # Transaction will rollback due to exception
+                    raise Exception('; '.join(errors))
+                
                 # Check if all results are now complete
                 if sample.has_all_test_results():
-                    try:
-                        sample.update_status('RESULTS_ENTERED', request.user)
-                        messages.success(request, 'All test results completed! Sample ready for review.')
-                    except Exception as e:
-                        messages.warning(request, f'Results saved but status update failed: {str(e)}')
+                    sample.update_status('RESULTS_ENTERED', request.user)
+                    messages.success(request, 'All test results completed! Sample ready for review.')
                 else:
                     missing_tests = sample.get_missing_test_results()
                     missing_names = [test.name for test in missing_tests]
@@ -557,6 +613,8 @@ def test_result_entry(request, sample_id):
                 
                 if results_entered > 0:
                     messages.success(request, f'{results_entered} new test results saved successfully!')
+                if results_updated > 0:
+                    messages.success(request, f'{results_updated} test results updated successfully!')
                     
         except Exception as e:
             messages.error(request, f'Error saving results: {str(e)}')
