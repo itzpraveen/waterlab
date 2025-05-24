@@ -1,127 +1,23 @@
 {% extends 'core/base.html' %}
 
-{% block title %}Dashboard - Water Lab LIMS{% endblock %}
+{% block title %}Customers - Water Lab LIMS{% endblock %}
 
 {% block content %}
-<!-- Dashboard Header -->
-<div class="card">
-    <div class="card-header">
-        <h1 class="card-title">🏠 Dashboard</h1>
-        <p class="card-subtitle">Overview of your laboratory operations</p>
-    </div>
-</div>
-
-<!-- Statistics Grid -->
-<div class="stats-grid">
-    <div class="stat-card">
-        <div class="stat-number">{{ stats.total_customers }}</div>
-        <div class="stat-label">Total Customers</div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-number">{{ stats.total_samples }}</div>
-        <div class="stat-label">Total Samples</div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-number">{{ stats.pending_samples }}</div>
-        <div class="stat-label">Pending Samples</div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-number">{{ stats.completed_samples }}</div>
-        <div class="stat-label">Completed Samples</div>
-    </div>
-</div>
-
-<!-- Quick Actions -->
-<div class="card">
-    <div class="card-header">
-        <h2 class="card-title">⚡ Quick Actions</h2>
-    </div>
-    <div class="btn-group">
-        <a href="{% url 'core:customer_add' %}" class="btn btn-primary">
-            👤 Add New Customer
-        </a>
-        <a href="{% url 'core:sample_add' %}" class="btn btn-success">
-            🧪 Add New Sample
-        </a>
-        <a href="{% url 'core:sample_list' %}" class="btn btn-outline">
-            📊 View All Samples
-        </a>
-    </div>
-</div>
-
-<!-- Recent Activity -->
-{% if recent_samples %}
-<div class="card">
-    <div class="card-header">
-        <h2 class="card-title">📈 Recent Samples</h2>
-        <p class="card-subtitle">Latest samples registered in the system</p>
-    </div>
-    
-    <div class="table-container">
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>Sample ID</th>
-                    <th>Customer</th>
-                    <th>Collection Date</th>
-                    <th>Source</th>
-                    <th>Status</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for sample in recent_samples %}
-                <tr>
-                    <td>
-                        <a href="{% url 'core:sample_detail' pk=sample.sample_id %}">
-                            {{ sample.sample_id|truncatechars:8 }}...
-                        </a>
-                    </td>
-                    <td>
-                        <a href="{% url 'core:customer_detail' pk=sample.customer.customer_id %}">
-                            {{ sample.customer.name }}
-                        </a>
-                    </td>
-                    <td>{{ sample.collection_datetime|date:"M d, Y" }}</td>
-                    <td>{{ sample.get_sample_source_display }}</td>
-                    <td>
-                        {% if sample.current_status == 'REPORT_APPROVED' %}
-                            <span class="badge badge-success">{{ sample.get_current_status_display }}</span>
-                        {% elif sample.current_status == 'RESULTS_ENTERED' %}
-                            <span class="badge badge-warning">{{ sample.get_current_status_display }}</span>
-                        {% elif sample.current_status == 'TESTING_IN_PROGRESS' %}
-                            <span class="badge badge-info">{{ sample.get_current_status_display }}</span>
-                        {% else %}
-                            <span class="badge badge-danger">{{ sample.get_current_status_display }}</span>
-                        {% endif %}
-                    </td>
-                    <td>
-                        <a href="{% url 'core:sample_detail' pk=sample.sample_id %}" class="btn btn-sm btn-outline">
-                            View
-                        </a>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-</div>
-{% endif %}
-
-<!-- Customer List -->
 <div class="card">
     <div class="card-header d-flex justify-content-between align-items-center">
         <div>
-            <h2 class="card-title">👥 Customers</h2>
+            <h1 class="card-title">👥 Customer Management</h1>
             <p class="card-subtitle">Manage your laboratory customers</p>
         </div>
-        <a href="{% url 'core:customer_add' %}" class="btn btn-primary">Add Customer</a>
+        {% if user.is_frontdesk or user.is_admin %}
+            <a href="{% url 'core:customer_add' %}" class="btn btn-primary">Add Customer</a>
+        {% endif %}
     </div>
 
     {% if customers %}
         <!-- Search Box -->
-        <div class="p-3">
-            <input type="text" class="form-control" placeholder="🔍 Search customers..." data-search="#customer-table">
+        <div class="p-3" style="background-color: #f8f9fa; border-bottom: 1px solid #dee2e6;">
+            <input type="text" class="form-control" placeholder="🔍 Search customers..." data-search="#customer-table" style="max-width: 300px;">
         </div>
         
         <div class="table-container">
@@ -131,6 +27,7 @@
                         <th data-sort="text">Name</th>
                         <th data-sort="text">Email</th>
                         <th data-sort="text">Phone</th>
+                        <th data-sort="text">District</th>
                         <th data-sort="number">Samples</th>
                         <th>Actions</th>
                     </tr>
@@ -150,16 +47,24 @@
                             <a href="tel:{{ customer.phone }}">{{ customer.phone }}</a>
                         </td>
                         <td>
+                            <span class="badge badge-info">{{ customer.get_district_display }}</span>
+                        </td>
+                        <td>
                             <span class="badge badge-primary">{{ customer.samples.count }}</span>
                         </td>
                         <td>
                             <div class="btn-group">
                                 <a href="{% url 'core:customer_detail' pk=customer.customer_id %}" class="btn btn-sm btn-outline" data-tooltip="View Details">
-                                    👁️ View
+                                    👁️
                                 </a>
-                                <a href="{% url 'core:sample_add' %}?customer={{ customer.customer_id }}" class="btn btn-sm btn-success" data-tooltip="Add Sample">
-                                    🧪 Sample
-                                </a>
+                                {% if user.is_frontdesk or user.is_admin %}
+                                    <a href="{% url 'core:customer_edit' pk=customer.customer_id %}" class="btn btn-sm btn-warning" data-tooltip="Edit Customer">
+                                        ✏️
+                                    </a>
+                                    <a href="{% url 'core:sample_add' %}?customer={{ customer.customer_id }}" class="btn btn-sm btn-success" data-tooltip="Add Sample">
+                                        🧪
+                                    </a>
+                                {% endif %}
                             </div>
                         </td>
                     </tr>
@@ -167,12 +72,20 @@
                 </tbody>
             </table>
         </div>
+        
+        <!-- Pagination info -->
+        <div class="p-3 text-center text-muted">
+            <small>Showing {{ customers|length }} customer{{ customers|length|pluralize }}</small>
+        </div>
+        
     {% else %}
         <div class="text-center p-3">
             <div style="font-size: 4rem; color: #dee2e6;">👥</div>
             <h3 class="text-muted">No customers yet</h3>
             <p class="text-muted">Start by adding your first customer to the system.</p>
-            <a href="{% url 'core:customer_add' %}" class="btn btn-primary">Add First Customer</a>
+            {% if user.is_frontdesk or user.is_admin %}
+                <a href="{% url 'core:customer_add' %}" class="btn btn-primary">Add First Customer</a>
+            {% endif %}
         </div>
     {% endif %}
 </div>

@@ -9,7 +9,9 @@
             <h1 class="card-title">🧪 Sample Management</h1>
             <p class="card-subtitle">Track and manage all water samples</p>
         </div>
-        <a href="{% url 'core:sample_add' %}" class="btn btn-primary">Add New Sample</a>
+        {% if user.is_frontdesk or user.is_admin %}
+            <a href="{% url 'core:sample_add' %}" class="btn btn-primary">Add New Sample</a>
+        {% endif %}
     </div>
 
     {% if samples %}
@@ -91,12 +93,16 @@
                                     👁️
                                 </a>
                                 
-                                {% if sample.current_status != 'REPORT_SENT' %}
-                                    <a href="{% url 'core:test_result_entry' sample_id=sample.sample_id %}" class="btn btn-sm btn-success" data-tooltip="Enter Results">
-                                        🧪
-                                    </a>
-                                    
-                                    {% if sample.results.exists %}
+                                {% if user.is_lab_tech or user.is_admin %}
+                                    {% if sample.current_status in 'SENT_TO_LAB,TESTING_IN_PROGRESS,RESULTS_ENTERED' %}
+                                        <a href="{% url 'core:test_result_entry' sample_id=sample.sample_id %}" class="btn btn-sm btn-success" data-tooltip="Enter Results">
+                                            🧪
+                                        </a>
+                                    {% endif %}
+                                {% endif %}
+                                
+                                {% if user.is_consultant or user.is_admin %}
+                                    {% if sample.current_status in 'RESULTS_ENTERED,REVIEW_PENDING' %}
                                         <a href="{% url 'core:consultant_review' sample_id=sample.sample_id %}" class="btn btn-sm btn-primary" data-tooltip="Review">
                                             📋
                                         </a>
@@ -120,7 +126,9 @@
             <div style="font-size: 4rem; color: #dee2e6;">🧪</div>
             <h3 class="text-muted">No samples yet</h3>
             <p class="text-muted">Start by adding your first sample to the system.</p>
-            <a href="{% url 'core:sample_add' %}" class="btn btn-primary">Add First Sample</a>
+            {% if user.is_frontdesk or user.is_admin %}
+                <a href="{% url 'core:sample_add' %}" class="btn btn-primary">Add First Sample</a>
+            {% endif %}
         </div>
     {% endif %}
 </div>
