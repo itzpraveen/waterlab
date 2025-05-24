@@ -40,11 +40,11 @@ The following Django models have been defined in `core/models.py`:
 3.  **Install dependencies:** `pip install -r requirements.txt` (A `requirements.txt` file will need to be created).
 4.  **Configure the database:**
     -   Ensure PostgreSQL is running and configured.
-    -   The `waterlab/settings.py` is configured to connect to a PostgreSQL database named `waterlab` with a user `waterlab` and password `Well_567!` on `localhost:5432`.
+    -   The `waterlab/settings.py` is configured to connect to a PostgreSQL database named `waterlab` with a user `waterlab` and a password (see environment configuration) on `localhost:5432`.
     -   You must ensure:
         1.  Your PostgreSQL server is running.
         2.  A database named `waterlab` exists. (e.g., `CREATE DATABASE waterlab;`)
-        3.  A user named `waterlab` exists with the password `Well_567!`. (e.g., `CREATE USER waterlab WITH PASSWORD 'Well_567!';`)
+        3.  A user named `waterlab` exists with the appropriate password. (e.g., `CREATE USER waterlab WITH PASSWORD 'your_password_here';`)
         4.  The `waterlab` user has all necessary privileges on the `waterlab` database. (e.g., `GRANT ALL PRIVILEGES ON DATABASE waterlab TO waterlab;`)
         5.  If you encounter `FATAL: password authentication failed for user "waterlab"`, double-check the user's password and ensure your PostgreSQL server's `pg_hba.conf` file is configured to allow password authentication (e.g., `md5` or `scram-sha-256`) for the `waterlab` user from `localhost`. You might need to reload PostgreSQL configuration after changing `pg_hba.conf`.
     -   If using different credentials, update the `DATABASES` setting in `waterlab/settings.py` accordingly.
