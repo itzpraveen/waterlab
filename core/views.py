@@ -60,12 +60,21 @@ def create_admin_web(request):
     except Exception as e:
         return HttpResponse(f"Error creating admin: {str(e)}", content_type="text/plain")
 
+def simple_home(request):
+    """Simple home page to avoid redirect loops"""
+    if request.user.is_authenticated:
+        return redirect('core:dashboard')
+    return HttpResponse('<h1>Water Lab LIMS</h1><p><a href="/admin/">Admin Login</a></p><p><a href="/accounts/login/">User Login</a></p>', content_type="text/html")
+
 # Create your views here.
 
 # Authentication Views
 class CustomLoginView(LoginView):
     template_name = 'registration/login.html'
     redirect_authenticated_user = True
+    
+    def get_success_url(self):
+        return '/dashboard/'
 
 class CustomPasswordChangeView(LoginRequiredMixin, PasswordChangeView):
     form_class = CustomPasswordChangeForm
@@ -82,9 +91,11 @@ def password_change_done(request):
     return render(request, 'registration/password_change_done.html')
 
 # Dashboard Views
-@login_required
 def dashboard_redirect(request):
     """Redirect users to appropriate dashboard based on their role"""
+    if not request.user.is_authenticated:
+        return redirect('/accounts/login/')
+    
     if request.user.is_admin():
         return redirect('core:admin_dashboard')
     elif request.user.is_lab_tech():

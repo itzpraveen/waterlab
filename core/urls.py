@@ -21,7 +21,8 @@ from .views import (
     AuditTrailView,
     health_check,
     debug_admin,
-    create_admin_web
+    create_admin_web,
+    simple_home
 )
 
 app_name = 'core'
@@ -32,8 +33,8 @@ urlpatterns = [
     path('debug-admin/', debug_admin, name='debug_admin'),
     path('create-admin/', create_admin_web, name='create_admin_web'),
     
-    # Dashboard URLs
-    path('', dashboard_redirect, name='home'),
+    # Home and Dashboard URLs
+    path('', simple_home, name='home'),
     path('dashboard/', dashboard_redirect, name='dashboard'),
     path('dashboard/admin/', AdminDashboardView.as_view(), name='admin_dashboard'),
     path('dashboard/lab/', LabDashboardView.as_view(), name='lab_dashboard'),
