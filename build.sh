@@ -11,5 +11,8 @@ python manage.py collectstatic --noinput
 # Run database migrations
 python manage.py migrate
 
-# Create admin user automatically
+# Fix admin role case sensitivity issue
+python manage.py fix_admin_role
+
+# Create admin user automatically (if not exists)
 python manage.py create_admin

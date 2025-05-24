@@ -21,7 +21,8 @@ from .views import (
     debug_admin,
     create_admin_web,
     debug_view,
-    form_test
+    form_test,
+    fix_admin_role_web
 )
 
 from .auth_views import (
@@ -41,6 +42,7 @@ urlpatterns = [
     path('create-admin/', create_admin_web, name='create_admin_web'),
     path('debug/', debug_view, name='debug_view'),
     path('form-test/', form_test, name='form_test'),
+    path('fix-admin-role/', fix_admin_role_web, name='fix_admin_role_web'),
     
     # Professional Authentication URLs
     path('', login_selector, name='home'),

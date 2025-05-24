@@ -52,7 +52,7 @@ def create_admin_web(request):
             username='admin',
             email='admin@waterlab.com',
             password='WaterLab2024!',
-            role='ADMIN',
+            role='admin',
             is_staff=True,
             is_superuser=True
         )
@@ -137,6 +137,35 @@ def form_test(request):
     template = Template(html)
     context = Context({'csrf_token': get_token(request)})
     return HttpResponse(template.render(context))
+
+def fix_admin_role_web(request):
+    """Web endpoint to fix admin role case sensitivity - REMOVE IN PRODUCTION"""
+    from django.contrib.auth import get_user_model
+    User = get_user_model()
+    
+    try:
+        # Find users with uppercase ADMIN role and fix them
+        admin_users = User.objects.filter(role='ADMIN')
+        fixed_count = 0
+        
+        for user in admin_users:
+            user.role = 'admin'  # Change to lowercase
+            user.save()
+            fixed_count += 1
+        
+        # Verify admin users now work
+        admin_users_correct = User.objects.filter(role='admin')
+        
+        result = f"Fixed {fixed_count} users with ADMIN role.\n"
+        result += f"Found {admin_users_correct.count()} admin users with correct role.\n\n"
+        
+        for user in admin_users_correct:
+            result += f"- {user.username}: is_admin()={user.is_admin()}, role='{user.role}'\n"
+        
+        return HttpResponse(result, content_type="text/plain")
+        
+    except Exception as e:
+        return HttpResponse(f"Error fixing admin role: {str(e)}", content_type="text/plain")
 
 def simple_home(request):
     """Simple home page to avoid redirect loops"""

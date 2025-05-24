@@ -17,7 +17,7 @@ class Command(BaseCommand):
                 username=admin_username,
                 email=admin_email,
                 password=admin_password,
-                role='ADMIN',
+                role='admin',
                 is_staff=True,
                 is_superuser=True
             )
