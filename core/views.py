@@ -21,6 +21,45 @@ def health_check(request):
     """Health check endpoint for load balancers and monitoring systems"""
     return HttpResponse("healthy", content_type="text/plain")
 
+def debug_admin(request):
+    """Debug endpoint to check admin user - REMOVE IN PRODUCTION"""
+    from django.contrib.auth import get_user_model
+    User = get_user_model()
+    
+    try:
+        admin_users = User.objects.filter(is_superuser=True)
+        user_info = []
+        for user in admin_users:
+            user_info.append(f"Username: {user.username}, Email: {user.email}, Role: {user.role}")
+        
+        if admin_users.exists():
+            return HttpResponse(f"Admin users found: {'; '.join(user_info)}", content_type="text/plain")
+        else:
+            return HttpResponse("No admin users found", content_type="text/plain")
+    except Exception as e:
+        return HttpResponse(f"Error: {str(e)}", content_type="text/plain")
+
+def create_admin_web(request):
+    """Web endpoint to create admin user - REMOVE IN PRODUCTION"""
+    from django.contrib.auth import get_user_model
+    User = get_user_model()
+    
+    try:
+        if User.objects.filter(username='admin').exists():
+            return HttpResponse("Admin user already exists", content_type="text/plain")
+        
+        admin_user = User.objects.create_user(
+            username='admin',
+            email='admin@waterlab.com',
+            password='WaterLab2024!',
+            role='ADMIN',
+            is_staff=True,
+            is_superuser=True
+        )
+        return HttpResponse("Admin user created successfully! Username: admin, Password: WaterLab2024!", content_type="text/plain")
+    except Exception as e:
+        return HttpResponse(f"Error creating admin: {str(e)}", content_type="text/plain")
+
 # Create your views here.
 
 # Authentication Views

@@ -19,7 +19,9 @@ from .views import (
     CustomPasswordChangeView,
     password_change_done,
     AuditTrailView,
-    health_check
+    health_check,
+    debug_admin,
+    create_admin_web
 )
 
 app_name = 'core'
@@ -27,6 +29,8 @@ app_name = 'core'
 urlpatterns = [
     # Health check for deployment monitoring
     path('health/', health_check, name='health_check'),
+    path('debug-admin/', debug_admin, name='debug_admin'),
+    path('create-admin/', create_admin_web, name='create_admin_web'),
     
     # Dashboard URLs
     path('', dashboard_redirect, name='home'),
