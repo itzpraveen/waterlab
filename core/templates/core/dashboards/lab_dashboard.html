@@ -135,6 +135,56 @@
     </div>
 </div>
 
+<!-- Recently Completed Samples -->
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">✅ My Recently Completed Samples</h3>
+    </div>
+    {% if recently_completed_samples %}
+    <div class="p-3">
+        <div class="sample-list">
+            {% for sample in recently_completed_samples %}
+            <div class="sample-item">
+                <div class="sample-info">
+                    <a href="{% url 'core:sample_detail' sample.pk %}" class="sample-id">
+                        {{ sample.sample_id|truncatechars:13 }}
+                    </a>
+                    <div class="sample-meta">
+                        👤 {{ sample.customer.name }}
+                    </div>
+                    <div class="sample-meta">
+                        📅 Completed: {{ sample.updated_at|date:"M d, H:i" }}
+                    </div>
+                    <div class="sample-meta">
+                        🏷️ {{ sample.get_sample_source_display }}
+                    </div>
+                </div>
+                <div class="sample-actions">
+                    {% if sample.current_status == 'RESULTS_ENTERED' %}
+                        <span class="badge badge-success">{{ sample.get_current_status_display }}</span>
+                    {% elif sample.current_status == 'REVIEW_PENDING' %}
+                        <span class="badge badge-warning">{{ sample.get_current_status_display }}</span>
+                    {% elif sample.current_status == 'REPORT_APPROVED' %}
+                        <span class="badge badge-success">{{ sample.get_current_status_display }}</span>
+                    {% else %}
+                        <span class="badge badge-info">{{ sample.get_current_status_display }}</span>
+                    {% endif %}
+                    <a href="{% url 'core:sample_detail' sample.pk %}" class="btn btn-sm btn-outline">
+                        View Details
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% else %}
+    <div class="p-3 text-center text-muted">
+        <p>No completed samples yet</p>
+        <p>Samples you've worked on will appear here after completion.</p>
+    </div>
+    {% endif %}
+</div>
+
 <!-- Laboratory Equipment Status -->
 <div class="card">
     <div class="card-header">
