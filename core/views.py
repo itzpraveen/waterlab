@@ -267,28 +267,64 @@ class AdminDashboardView(AdminRequiredMixin, TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         
-        # Admin gets comprehensive system overview
+        # Initialize context with default values for resilience
         context.update({
-            'total_customers': Customer.objects.count(),
-            'total_samples': Sample.objects.count(),
-            'total_users': CustomUser.objects.count(),
-            'pending_samples': Sample.objects.filter(current_status='RECEIVED_FRONT_DESK').count(),
-            'testing_samples': Sample.objects.filter(current_status__in=['SENT_TO_LAB', 'TESTING_IN_PROGRESS']).count(),
-            'review_pending': Sample.objects.filter(current_status='REVIEW_PENDING').count(),
-            'completed_samples': Sample.objects.filter(current_status='REPORT_APPROVED').count(),
+            'total_customers': 0,
+            'total_samples': 0,
+            'total_users': 0,
+            'pending_samples_count': 0, # Renamed from pending_samples to avoid clash if we list them
+            'testing_samples_count': 0, # Renamed from testing_samples
+            'review_pending_count': 0,  # Renamed from review_pending
+            'completed_samples_count': 0, # Renamed from completed_samples
+            'recent_customers': [],
+            'recent_samples': [],
+            'recent_users': [],
+            'user_stats': [],
+            'today_samples_count': 0, # Renamed from today_samples
+            'week_samples_count': 0,  # Renamed from week_samples
+            'samples_in_lab': [],
+            'samples_awaiting_review': [],
+            'data_load_error': False
+        })
+
+        try:
+            # Admin gets comprehensive system overview
+            context['total_customers'] = Customer.objects.count()
+            context['total_samples'] = Sample.objects.count()
+            context['total_users'] = CustomUser.objects.count()
+            context['pending_samples_count'] = Sample.objects.filter(current_status='RECEIVED_FRONT_DESK').count()
+            context['testing_samples_count'] = Sample.objects.filter(current_status__in=['SENT_TO_LAB', 'TESTING_IN_PROGRESS']).count()
+            context['review_pending_count'] = Sample.objects.filter(current_status='REVIEW_PENDING').count()
+            context['completed_samples_count'] = Sample.objects.filter(current_status='REPORT_APPROVED').count()
             
             # Recent activity
-            'recent_customers': Customer.objects.order_by('-customer_id')[:5],
-            'recent_samples': Sample.objects.select_related('customer').order_by('-collection_datetime')[:10],
-            'recent_users': CustomUser.objects.order_by('-date_joined')[:5],
+            context['recent_customers'] = Customer.objects.order_by('-customer_id')[:5]
+            context['recent_samples'] = Sample.objects.select_related('customer').order_by('-collection_datetime')[:10]
+            context['recent_users'] = CustomUser.objects.order_by('-date_joined')[:5]
             
             # User statistics by role
-            'user_stats': CustomUser.objects.values('role').annotate(count=Count('pk')),
+            context['user_stats'] = CustomUser.objects.values('role').annotate(count=Count('pk'))
             
             # Daily statistics
-            'today_samples': Sample.objects.filter(collection_datetime__date=timezone.now().date()).count(),
-            'week_samples': Sample.objects.filter(collection_datetime__gte=timezone.now() - timedelta(days=7)).count(),
-        })
+            context['today_samples_count'] = Sample.objects.filter(collection_datetime__date=timezone.now().date()).count()
+            context['week_samples_count'] = Sample.objects.filter(collection_datetime__gte=timezone.now() - timedelta(days=7)).count()
+
+            # Lab workflow specific data
+            context['samples_in_lab'] = Sample.objects.filter(
+                current_status__in=['SENT_TO_LAB', 'TESTING_IN_PROGRESS']
+            ).select_related('customer').order_by('collection_datetime')[:5]
+            
+            context['samples_awaiting_review'] = Sample.objects.filter(
+                current_status='RESULTS_ENTERED' # Samples with results entered, but not yet in 'REVIEW_PENDING'
+            ).select_related('customer').order_by('updated_at')[:5]
+
+        except Exception as e:
+            # Log the error (in a real application, use proper logging)
+            print(f"Error loading admin dashboard data: {e}")
+            context['data_load_error'] = True
+            # Optionally, send an alert to admin or log to a file/service
+            # messages.error(self.request, "There was an error loading some dashboard data. Please try again later.")
+
         return context
 
 class LabDashboardView(LabRequiredMixin, TemplateView):
