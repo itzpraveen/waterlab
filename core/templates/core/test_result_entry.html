@@ -1,152 +1,151 @@
 {% extends 'core/base.html' %}
+{% load static %}
 
-{% block title %}Test Result Entry - Water Lab LIMS{% endblock %}
+{% block title %}Test Result Entry - {{ sample.sample_id }}{% endblock %}
+
+{% block breadcrumbs %}
+<div class="col s12 breadcrumb-container">
+    <nav>
+        <div class="nav-wrapper">
+            <a href="{% url 'core:home' %}" class="breadcrumb">Home</a>
+            <a href="{% url 'core:sample_list' %}" class="breadcrumb">Sample Management</a>
+            <a href="{% url 'core:sample_detail' pk=sample.sample_id %}" class="breadcrumb">Sample {{ sample.sample_id|truncatechars:12 }}</a>
+            <span class="breadcrumb active">Test Result Entry</span>
+        </div>
+    </nav>
+</div>
+{% endblock breadcrumbs %}
 
 {% block content %}
-<!-- Sample Information -->
-<div class="card">
-    <div class="card-header">
-        <h1 class="card-title">🧪 Test Result Entry</h1>
-        <p class="card-subtitle">Enter test results for sample parameters</p>
-    </div>
-    
-    <div class="p-3" style="background-color: #f8f9fa; border-bottom: 1px solid #dee2e6;">
-        <div class="row" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
-            <div>
-                <strong>Sample ID:</strong><br>
-                <code>{{ sample.sample_id }}</code>
-            </div>
-            <div>
-                <strong>Customer:</strong><br>
-                <a href="{% url 'core:customer_detail' pk=sample.customer.customer_id %}">{{ sample.customer.name }}</a>
-            </div>
-            <div>
-                <strong>Source:</strong><br>
-                <span class="badge badge-info">{{ sample.get_sample_source_display }}</span>
-            </div>
-            <div>
-                <strong>Collection Date:</strong><br>
-                {{ sample.collection_datetime|date:"M d, Y H:i" }}
+<div class="row">
+    <div class="col s12">
+        <div class="card">
+            <div class="card-content">
+                <span class="card-title" style="font-size: 2rem; display: flex; align-items: center; color: var(--primary-color-dark);">
+                    <i class="material-icons" style="font-size: 2.5rem; margin-right: 10px; color: var(--primary-color);">biotech</i>
+                    Test Result Entry
+                </span>
+                <p class="grey-text text-darken-1" style="margin-top: -5px; margin-bottom: 10px;">Enter test results for sample parameters.</p>
+                
+                <div class="row" style="border-top: 1px solid var(--primary-color-light); border-bottom: 1px solid var(--primary-color-light); padding: 15px 0; margin-bottom: 20px;">
+                    <div class="col s12 m6 l3"><strong>Sample ID:</strong><br><code class="black-text">{{ sample.sample_id }}</code></div>
+                    <div class="col s12 m6 l3"><strong>Customer:</strong><br><a href="{% url 'core:customer_detail' pk=sample.customer.customer_id %}" style="color: var(--primary-color);">{{ sample.customer.name }}</a></div>
+                    <div class="col s12 m6 l3"><strong>Source:</strong><br><span class="chip" style="background-color: var(--primary-color-light); color: var(--primary-color-dark);">{{ sample.get_sample_source_display }}</span></div>
+                    <div class="col s12 m6 l3"><strong>Collection Date:</strong><br>{{ sample.collection_datetime|date:"M d, Y H:i" }}</div>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Test Parameters Form -->
-<form method="post" data-validate>
+<form method="post">
     {% csrf_token %}
-    
-    <div class="card">
-        <div class="card-header">
-            <h2 class="card-title">📊 Test Parameters</h2>
-            <p class="card-subtitle">Enter results for each requested test parameter</p>
-        </div>
-        
-        <!-- Debug Information -->
-        <div class="alert alert-info">
-            <strong>Debug Info:</strong><br>
-            Tests Requested: {{ sample.tests_requested.count }}<br>
-            Existing Results: {{ existing_results|length }}<br>
-            Missing Tests: {{ missing_tests.count }}<br>
-            Can Edit: {{ can_edit }}<br>
-            Sample Status: {{ sample.current_status }}
-        </div>
-        
-        {% if sample.tests_requested.count == 0 %}
-            <div class="alert alert-warning">
-                <strong>⚠️ No Test Parameters Requested</strong><br>
-                This sample has no test parameters assigned. Please edit the sample to add test parameters first.
-                <br><br>
-                <a href="{% url 'core:sample_edit' pk=sample.sample_id %}" class="btn btn-warning">Edit Sample</a>
-            </div>
-        {% endif %}
-        
-        {% for test_param in sample.tests_requested.all %}
-        <div class="card" style="margin: 1rem;">
-            <div class="card-header">
-                <h3 style="margin: 0; color: #0d6efd;">{{ test_param.name }}</h3>
-                <div style="display: flex; gap: 1rem; margin-top: 0.5rem; font-size: 0.9rem; color: #6c757d;">
-                    <span><strong>Unit:</strong> {{ test_param.unit }}</span>
-                    {% if test_param.standard_method %}
-                        <span><strong>Method:</strong> {{ test_param.standard_method }}</span>
+    <div class="row">
+        <div class="col s12">
+            <div class="card">
+                <div class="card-content">
+                    <span class="card-title" style="color: var(--primary-color-dark);"><i class="material-icons left tiny" style="color: var(--primary-color);">science</i>Test Parameters</span>
+                    <p class="grey-text text-darken-1" style="margin-top:-5px; margin-bottom:15px;">Enter results for each requested test parameter.</p>
+
+                    {% if form.non_field_errors %}
+                        {% for error in form.non_field_errors %}
+                        <div class="card-panel alert alert-danger">{{ error }}</div>
+                        {% endfor %}
                     {% endif %}
-                    <!-- Check if result exists for this parameter -->
-                    {% for param_id, result in existing_results.items %}
-                        {% if param_id == test_param.parameter_id %}
-                            <span style="color: #28a745;"><strong>✓ Result Entered:</strong> {{ result.result_value }}</span>
-                        {% endif %}
-                    {% endfor %}
-                </div>
-            </div>
-            
-            {% if test_param.min_permissible_limit or test_param.max_permissible_limit %}
-            <div class="p-3" style="background-color: #e7f3ff; border-bottom: 1px solid #dee2e6;">
-                <strong>📋 Permissible Range:</strong>
-                <span class="badge badge-info">
-                    {% if test_param.min_permissible_limit %}{{ test_param.min_permissible_limit }}{% endif %}
-                    {% if test_param.min_permissible_limit and test_param.max_permissible_limit %} - {% endif %}
-                    {% if test_param.max_permissible_limit %}{{ test_param.max_permissible_limit }}{% endif %}
-                    {{ test_param.unit }}
-                </span>
-            </div>
-            {% endif %}
-            
-            <div class="p-3">
-                <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 1.5rem; align-items: start;">
-                    <div class="form-group">
-                        <label for="result_{{ test_param.parameter_id }}" class="form-label">
-                            Result Value <span style="color: red;">*</span>
-                        </label>
-                        <input type="text" name="result_{{ test_param.parameter_id }}" 
-                               id="result_{{ test_param.parameter_id }}" 
-                               class="form-control" 
-                               placeholder="Enter result ({{ test_param.unit }})"
-                               value="{% for param_id, result in existing_results.items %}{% if param_id == test_param.parameter_id %}{{ result.result_value }}{% endif %}{% endfor %}"
-                               required>
-                        <small class="text-muted">Unit: {{ test_param.unit }}</small>
-                    </div>
+
+                    <ul class="collapsible" data-collapsible="accordion" style="margin-bottom: 20px;">
+                        <li>
+                            <div class="collapsible-header grey lighten-4"><i class="material-icons">bug_report</i>Debug Information</div>
+                            <div class="collapsible-body card-panel blue lighten-5 blue-text text-darken-4" style="padding:15px;">
+                                Tests Requested: {{ sample.tests_requested.count }}<br>
+                                Existing Results: {{ existing_results|length }}<br>
+                                Missing Tests: {{ missing_tests.count }}<br>
+                                Can Edit: {{ can_edit }}<br>
+                                Sample Status: {{ sample.current_status }}
+                            </div>
+                        </li>
+                    </ul>
                     
-                    <div class="form-group">
-                        <label for="observation_{{ test_param.parameter_id }}" class="form-label">
-                            Observation/Notes
-                        </label>
-                        <textarea name="observation_{{ test_param.parameter_id }}" 
-                                  id="observation_{{ test_param.parameter_id }}" 
-                                  class="form-control" 
-                                  rows="3" 
-                                  placeholder="Any observations, comments, or notes about this test...">{% for param_id, result in existing_results.items %}{% if param_id == test_param.parameter_id %}{{ result.observation }}{% endif %}{% endfor %}</textarea>
+                    {% if sample.tests_requested.count == 0 %}
+                        <div class="card-panel alert alert-warning">
+                            <strong>⚠️ No Test Parameters Requested</strong><br>
+                            This sample has no test parameters assigned. Please edit the sample to add test parameters first.
+                            <br><br>
+                            <a href="{% url 'core:sample_edit' pk=sample.sample_id %}" class="btn waves-effect waves-light orange darken-1"><i class="material-icons left">edit</i>Edit Sample</a>
+                        </div>
+                    {% endif %}
+                    
+                    {% for test_param in form_data %} {# Assuming form_data is passed from view with form fields #}
+                    <div class="card" style="margin-bottom: 20px;">
+                        <div class="card-content">
+                            <span class="card-title" style="color: var(--primary-color-dark); font-size:1.5rem;">{{ test_param.parameter.name }}</span>
+                            <div class="grey-text text-darken-2" style="font-size: 0.9rem; margin-bottom:10px;">
+                                <span><strong>Unit:</strong> {{ test_param.parameter.unit }}</span>
+                                {% if test_param.parameter.standard_method %}
+                                    <span style="margin-left:15px;"><strong>Method:</strong> {{ test_param.parameter.standard_method }}</span>
+                                {% endif %}
+                                {% if test_param.existing_result %}
+                                    <span class="green-text text-darken-1" style="margin-left:15px;"><strong>✓ Result Entered:</strong> {{ test_param.existing_result.result_value }}</span>
+                                {% endif %}
+                            </div>
+
+                            {% if test_param.parameter.min_permissible_limit is not None or test_param.parameter.max_permissible_limit is not None %}
+                            <div class="card-panel teal lighten-5" style="padding: 10px; margin-bottom:15px;">
+                                <strong class="teal-text text-darken-3">Permissible Range:</strong>
+                                <span class="chip teal white-text">
+                                    {% if test_param.parameter.min_permissible_limit is not None %}{{ test_param.parameter.min_permissible_limit }}{% endif %}
+                                    {% if test_param.parameter.min_permissible_limit is not None and test_param.parameter.max_permissible_limit is not None %} - {% endif %}
+                                    {% if test_param.parameter.max_permissible_limit is not None %}{{ test_param.parameter.max_permissible_limit }}{% endif %}
+                                    {{ test_param.parameter.unit }}
+                                </span>
+                            </div>
+                            {% endif %}
+                            
+                            <div class="row" style="margin-bottom:0;">
+                                <div class="input-field col s12 m6">
+                                    {{ test_param.form.result_value }}
+                                    <label for="{{ test_param.form.result_value.id_for_label }}">Result Value <span class="red-text">*</span></label>
+                                    {% if test_param.form.result_value.errors %}<span class="helper-text red-text">{{ test_param.form.result_value.errors.0 }}</span>{% endif %}
+                                    <span class="helper-text">Unit: {{ test_param.parameter.unit }}</span>
+                                </div>
+                                <div class="input-field col s12 m6">
+                                    {{ test_param.form.observation }}
+                                    <label for="{{ test_param.form.observation.id_for_label }}">Observation/Notes</label>
+                                    {% if test_param.form.observation.errors %}<span class="helper-text red-text">{{ test_param.form.observation.errors.0 }}</span>{% endif %}
+                                </div>
+                            </div>
+                        </div>
                     </div>
+                    {% endfor %}
+                    
+                    {% if sample.tests_requested.count > 0 %}
+                    <div class="card-action right-align">
+                        <a href="{% url 'core:sample_detail' pk=sample.sample_id %}" class="btn-flat waves-effect">Cancel</a>
+                        <button type="submit" class="btn waves-effect waves-light">
+                            <i class="material-icons left">save</i>Save Test Results
+                        </button>
+                    </div>
+                    {% endif %}
                 </div>
-            </div>
-        </div>
-        {% endfor %}
-        
-        <div class="p-3" style="background-color: #f8f9fa; border-top: 1px solid #dee2e6;">
-            <div class="btn-group">
-                <button type="submit" class="btn btn-success">
-                    💾 Save Test Results
-                </button>
-                <a href="{% url 'core:sample_detail' pk=sample.sample_id %}" class="btn btn-outline">
-                    ❌ Cancel
-                </a>
             </div>
         </div>
     </div>
 </form>
 
-<!-- Instructions -->
-<div class="card">
-    <div class="card-header">
-        <h2 class="card-title">📝 Instructions</h2>
-    </div>
-    <div class="p-3">
-        <ul style="margin: 0; padding-left: 1.5rem;">
-            <li>Enter precise numerical values for quantitative tests</li>
-            <li>For qualitative tests, use standard terms (e.g., "Present", "Absent", "Positive", "Negative")</li>
-            <li>Include relevant observations that might affect interpretation</li>
-            <li>All result values are required before submission</li>
-            <li>Double-check all entries before saving</li>
-        </ul>
+<div class="row">
+    <div class="col s12">
+        <div class="card">
+            <div class="card-content">
+                <span class="card-title" style="color: var(--primary-color-dark);"><i class="material-icons left tiny" style="color: var(--primary-color);">info_outline</i>Instructions</span>
+                <ul class="collection">
+                    <li class="collection-item">Enter precise numerical values for quantitative tests.</li>
+                    <li class="collection-item">For qualitative tests, use standard terms (e.g., "Present", "Absent", "Positive", "Negative").</li>
+                    <li class="collection-item">Include relevant observations that might affect interpretation.</li>
+                    <li class="collection-item">All result values for requested tests are required before submission.</li>
+                    <li class="collection-item">Double-check all entries before saving.</li>
+                </ul>
+            </div>
+        </div>
     </div>
 </div>
 {% endblock %}
@@ -154,76 +153,36 @@
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Auto-validation for numeric inputs
-    const resultInputs = document.querySelectorAll('input[name^="result_"]');
-    resultInputs.forEach(input => {
-        input.addEventListener('input', function() {
-            validateResult(this);
-        });
-        
-        input.addEventListener('blur', function() {
-            validateResult(this);
-        });
-    });
-    
-    function validateResult(input) {
-        const value = input.value.trim();
-        if (!value) return;
-        
-        // Check if it's a valid number or text
-        const isNumeric = !isNaN(value) && !isNaN(parseFloat(value));
-        
-        if (isNumeric) {
-            input.classList.add('is-valid');
-            input.classList.remove('is-invalid');
-            
-            // Check against permissible limits if available
-            const paramCard = input.closest('.card');
-            const rangeInfo = paramCard.querySelector('.badge-info');
-            if (rangeInfo) {
-                checkPermissibleRange(input, parseFloat(value), rangeInfo.textContent);
-            }
-        } else {
-            // For text values, just mark as valid if not empty
-            input.classList.add('is-valid');
-            input.classList.remove('is-invalid');
-        }
-    }
-    
-    function checkPermissibleRange(input, value, rangeText) {
-        // Extract min/max from range text
-        const parts = rangeText.split(' - ');
-        if (parts.length === 2) {
-            const min = parseFloat(parts[0]);
-            const max = parseFloat(parts[1]);
-            
-            if (value < min || value > max) {
-                showAlert(`Value ${value} is outside permissible range (${min} - ${max})`, 'warning');
-            }
-        }
-    }
-    
-    // Form submission
-    const form = document.querySelector('form[data-validate]');
+    // Initialize Materialize Collapsibles
+    var collapsibleElems = document.querySelectorAll('.collapsible');
+    M.Collapsible.init(collapsibleElems);
+
+    // Initialize Materialize Textareas (for auto-resize and character counter if used)
+    var textareas = document.querySelectorAll('textarea');
+    M.textareaAutoResize(textareas); // For auto-resize
+    // M.CharacterCounter.init(textareas); // If you add data-length
+
+    // Re-initialize labels if form fields have values (e.g., on edit or after validation error)
+    M.updateTextFields();
+
+    // Basic client-side validation hint (server-side is primary)
+    const form = document.querySelector('form');
     if (form) {
         form.addEventListener('submit', function(e) {
-            const requiredInputs = form.querySelectorAll('input[required]');
-            let allFilled = true;
-            
+            let allRequiredFilled = true;
+            const requiredInputs = form.querySelectorAll('input[required], textarea[required]');
             requiredInputs.forEach(input => {
                 if (!input.value.trim()) {
-                    allFilled = false;
-                    input.classList.add('is-invalid');
+                    allRequiredFilled = false;
+                    // Materialize adds 'invalid' class via HTML5 validation or custom JS
+                    // For simplicity, we rely on HTML5 'required' and Django server-side validation
                 }
             });
-            
-            if (!allFilled) {
-                e.preventDefault();
-                showAlert('Please fill in all required result values.', 'danger');
-                return;
+
+            if (!allRequiredFilled) {
+                // M.toast({html: 'Please fill all required fields marked with *'}); // Optional toast
+                // e.preventDefault(); // Prevent submission if client-side check fails
             }
-            
-            showAlert('Saving test results...', 'info');
         });
     }
 });

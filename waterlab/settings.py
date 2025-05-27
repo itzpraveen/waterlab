@@ -140,6 +140,8 @@ TIME_ZONE = 'UTC'
 
 USE_I18N = True
 
+USE_L10N = False # Explicitly disable locale-specific formatting for numbers/dates
+
 USE_TZ = True
 
 

@@ -1,120 +1,176 @@
 {% extends 'core/base.html' %}
+{% load static %}
 
-{% block title %}{% if is_edit %}Edit Sample{% else %}Add Sample{% endif %} - Water Lab LIMS{% endblock %}
+{% block title %}{% if form.instance.pk %}Edit Sample{% else %}Add New Sample{% endif %} - Water Lab LIMS{% endblock %}
+
+{% block breadcrumbs %}
+<div class="col s12 breadcrumb-container">
+    <nav>
+        <div class="nav-wrapper">
+            <a href="{% url 'core:home' %}" class="breadcrumb">Home</a>
+            <a href="{% url 'core:sample_list' %}" class="breadcrumb">Sample Management</a>
+            <span class="breadcrumb active">{% if form.instance.pk %}Edit Sample{% else %}Add New Sample{% endif %}</span>
+        </div>
+    </nav>
+</div>
+{% endblock breadcrumbs %}
 
 {% block content %}
-<div class="container">
-    <h1>{% if is_edit %}Edit Sample{% else %}Add New Sample{% endif %}</h1>
-    
-    {% if messages %}
-        {% for message in messages %}
-            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                {{ message }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-        {% endfor %}
-    {% endif %}
+<div class="row">
+    <div class="col s12">
+        <div class="card">
+            <div class="card-content">
+                <span class="card-title" style="font-size: 2rem; display: flex; align-items: center; color: var(--primary-color-dark);">
+                    <i class="material-icons" style="font-size: 2.5rem; margin-right: 10px; color: var(--primary-color);">colorize</i>
+                    {% if form.instance.pk %}Edit Sample ID: {{ form.instance.sample_id }}{% else %}Add New Sample{% endif %}
+                </span>
+                <p class="grey-text text-darken-1" style="margin-top: -5px; margin-bottom: 20px;">
+                    {% if form.instance.pk %}Update sample details and test requests.{% else %}Register a new water sample in the system.{% endif %}
+                </p>
 
-    <form method="post" class="needs-validation" novalidate>
-        {% csrf_token %}
-        
-        <div class="row">
-            <div class="col-md-6 mb-3">
-                <label for="{{ form.customer.id_for_label }}" class="form-label">Customer: <span class="text-danger">*</span></label>
-                {{ form.customer }}
-                {% if form.customer.errors %}
-                    <div class="text-danger">{{ form.customer.errors.0 }}</div>
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="card-panel alert alert-{{ message.tags|lower }}" role="alert">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
                 {% endif %}
-            </div>
-            
-            <div class="col-md-6 mb-3">
-                <label for="{{ form.collection_datetime.id_for_label }}" class="form-label">Collection Date & Time: <span class="text-danger">*</span></label>
-                {{ form.collection_datetime }}
-                {% if form.collection_datetime.errors %}
-                    <div class="text-danger">{{ form.collection_datetime.errors.0 }}</div>
-                {% endif %}
-                <div class="form-text">Cannot be in the future</div>
-            </div>
-        </div>
-        
-        <div class="row">
-            <div class="col-md-6 mb-3">
-                <label for="{{ form.sample_source.id_for_label }}" class="form-label">Sample Source: <span class="text-danger">*</span></label>
-                {{ form.sample_source }}
-                {% if form.sample_source.errors %}
-                    <div class="text-danger">{{ form.sample_source.errors.0 }}</div>
-                {% endif %}
-            </div>
-            
-            <div class="col-md-6 mb-3">
-                <label for="{{ form.collected_by.id_for_label }}" class="form-label">Collected By: <span class="text-danger">*</span></label>
-                {{ form.collected_by }}
-                {% if form.collected_by.errors %}
-                    <div class="text-danger">{{ form.collected_by.errors.0 }}</div>
-                {% endif %}
-            </div>
-        </div>
-        
-        <div class="mb-4">
-            <label class="form-label">Tests Requested: <span class="text-danger">*</span></label>
-            {% if form.tests_requested.help_text %}
-                <div class="alert alert-warning">{{ form.tests_requested.help_text }}</div>
-            {% endif %}
-            
-            <div class="row">
-                {% for choice in form.tests_requested %}
-                    <div class="col-md-4 col-sm-6 mb-2">
-                        <div class="form-check">
-                            {{ choice.tag }}
-                            <label class="form-check-label" for="{{ choice.id_for_label }}">
-                                {{ choice.choice_label }}
-                            </label>
+
+                <form method="post" novalidate>
+                    {% csrf_token %}
+                    
+                    {% if form.non_field_errors %}
+                    <div class="row">
+                        <div class="col s12">
+                            {% for error in form.non_field_errors %}
+                            <div class="card-panel alert alert-danger">{{ error }}</div>
+                            {% endfor %}
                         </div>
                     </div>
-                {% empty %}
-                    <div class="col-12">
-                        <div class="alert alert-danger">
-                            <strong>⚠️ No test parameters available!</strong><br>
-                            Please contact an administrator to set up test parameters before creating samples.
-                            <br><br>
-                            <em>Administrators can run: <code>python manage.py create_test_parameters</code></em>
+                    {% endif %}
+
+                    <div class="row">
+                        <div class="input-field col s12 m6">
+                            {{ form.customer }}
+                            <label for="{{ form.customer.id_for_label }}">Customer <span class="red-text">*</span></label>
+                            {% if form.customer.errors %}<span class="helper-text red-text">{{ form.customer.errors.0 }}</span>{% endif %}
+                        </div>
+                        <div class="input-field col s12 m6">
+                            {# For DateTimeField, Materialize uses separate date and time pickers #}
+                            {# Assuming form.collection_datetime renders as a single input type="text" initially #}
+                            {{ form.collection_datetime }}
+                            <label for="{{ form.collection_datetime.id_for_label }}">Collection Date & Time <span class="red-text">*</span></label>
+                            {% if form.collection_datetime.errors %}
+                                <span class="helper-text red-text">{{ form.collection_datetime.errors.0 }}</span>
+                            {% else %}
+                                <span class="helper-text">Cannot be in the future. Format: YYYY-MM-DD HH:MM:SS</span>
+                            {% endif %}
                         </div>
                     </div>
-                {% endfor %}
+                    
+                    <div class="row">
+                        <div class="input-field col s12 m6">
+                            {{ form.sample_source }}
+                            <label for="{{ form.sample_source.id_for_label }}">Sample Source <span class="red-text">*</span></label>
+                            {% if form.sample_source.errors %}<span class="helper-text red-text">{{ form.sample_source.errors.0 }}</span>{% endif %}
+                        </div>
+                        <div class="input-field col s12 m6">
+                            {{ form.collected_by }}
+                            <label for="{{ form.collected_by.id_for_label }}">Collected By <span class="red-text">*</span></label>
+                            {% if form.collected_by.errors %}<span class="helper-text red-text">{{ form.collected_by.errors.0 }}</span>{% endif %}
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col s12">
+                            <h6 style="font-weight: 500; color: var(--primary-color-dark);">Tests Requested <span class="red-text">*</span></h6>
+                            {% if form.tests_requested.help_text %}
+                                <div class="card-panel alert alert-info" style="padding: 10px; margin-bottom:15px;">{{ form.tests_requested.help_text }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="row" style="margin-bottom: 0;">
+                        {% for choice in form.tests_requested %}
+                            <div class="col s12 m6 l4" style="margin-bottom: 10px;">
+                                <label>
+                                    {{ choice.tag }}
+                                    <span>{{ choice.choice_label }}</span>
+                                </label>
+                            </div>
+                        {% empty %}
+                            <div class="col s12">
+                                <div class="card-panel alert alert-danger">
+                                    <strong>⚠️ No test parameters available!</strong><br>
+                                    Please contact an administrator to set up test parameters before creating samples.
+                                    <br><br>
+                                    <em>Administrators can run: <code>python manage.py create_test_parameters</code></em>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                     {% if form.tests_requested.errors %}
+                        <div class="row">
+                            <div class="col s12">
+                                <span class="helper-text red-text">{{ form.tests_requested.errors.0 }}</span>
+                            </div>
+                        </div>
+                    {% endif %}
+                    
+                    <div class="row" style="margin-top: 2rem;">
+                        <div class="col s12">
+                            <button type="submit" class="btn waves-effect waves-light">
+                                <i class="material-icons left">save</i>
+                                {% if form.instance.pk %}Update Sample{% else %}Save Sample{% endif %}
+                            </button>
+                            <a href="{% url 'core:sample_list' %}" class="btn-flat waves-effect">
+                                Cancel
+                            </a>
+                        </div>
+                    </div>
+                </form>
             </div>
-            
-            {% if form.tests_requested.errors %}
-                <div class="text-danger">{{ form.tests_requested.errors.0 }}</div>
-            {% endif %}
         </div>
-        
-        <div class="d-flex gap-2">
-            <button type="submit" class="btn btn-primary">
-                <i class="fas fa-save"></i> {% if is_edit %}Update Sample{% else %}Save Sample{% endif %}
-            </button>
-            <a href="{% url 'core:sample_list' %}" class="btn btn-outline-secondary">
-                <i class="fas fa-times"></i> Cancel
-            </a>
-        </div>
-    </form>
+    </div>
 </div>
+{% endblock %}
 
+{% block extra_js %}
 <script>
-// Add validation styling
-(function() {
-    'use strict';
-    window.addEventListener('load', function() {
-        var forms = document.getElementsByClassName('needs-validation');
-        var validation = Array.prototype.filter.call(forms, function(form) {
-            form.addEventListener('submit', function(event) {
-                if (form.checkValidity() === false) {
-                    event.preventDefault();
-                    event.stopPropagation();
-                }
-                form.classList.add('was-validated');
-            }, false);
-        });
-    }, false);
-})();
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Materialize Selects (for customer, sample_source)
+    var selectElems = document.querySelectorAll('select');
+    M.FormSelect.init(selectElems);
+
+    // Initialize Materialize Date Picker & Time Picker for collection_datetime
+    // Assuming your Django form widget for collection_datetime renders an input with type="text"
+    // and you might need to split it or use a combined picker if available/customized.
+    // For simplicity, let's assume it's a text input that Materialize can enhance.
+    // If it's a Django DateTimeInput, it might render two separate fields or need custom handling.
+    // This example assumes a single text input field for date & time.
+    const dateTimeField = document.querySelector('#{{ form.collection_datetime.id_for_label }}');
+    if (dateTimeField) {
+        // A common approach is to use one field for date and another for time.
+        // Or use a library that combines them if Materialize doesn't directly.
+        // For now, let's just enable datepicker, timepicker would need separate field or custom widget.
+        // This might need adjustment based on how Django renders DateTimeField.
+        // If Django renders it as type="datetime-local", browser might handle it.
+        // If type="text", then:
+        if (dateTimeField.getAttribute('type') === 'text') {
+             M.Datepicker.init(dateTimeField, {
+                format: 'yyyy-mm-dd', // Match Django's expected date format part
+                autoClose: true,
+                // Additional options for time would be needed here if combined
+            });
+            // M.Timepicker.init(timeField, { autoClose: true }); // If you have a separate time field
+        }
+    }
+    
+    // Initialize Character Counters for any textareas (if you add them later)
+    // var textareas = document.querySelectorAll('textarea');
+    // M.CharacterCounter.init(textareas);
+
+    // Re-initialize labels if form fields have values (e.g., on edit or after validation error)
+    M.updateTextFields();
+});
 </script>
 {% endblock %}

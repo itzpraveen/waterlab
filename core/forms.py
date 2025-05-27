@@ -2,7 +2,7 @@ from django import forms
 from django.contrib.auth.forms import PasswordChangeForm
 from django.core.exceptions import ValidationError
 from django.utils import timezone
-from .models import Customer, Sample
+from .models import Customer, Sample, TestParameter # Added TestParameter
 
 class CustomerForm(forms.ModelForm):
     class Meta:
@@ -105,18 +105,48 @@ class SampleForm(forms.ModelForm):
             self.fields['tests_requested'].help_text = "⚠️ No test parameters available. Please contact admin to set up test parameters first."
             self.fields['tests_requested'].required = False
 
+class TestResultEntryForm(forms.Form):
+    result_value = forms.CharField(
+        required=True,
+        widget=forms.TextInput(attrs={'class': 'form-control'}) # Materialize uses 'validate' not 'form-control'
+    )
+    observation = forms.CharField(
+        required=False,
+        widget=forms.Textarea(attrs={'class': 'materialize-textarea', 'rows': 2}) # Materialize specific class
+    )
+
+class TestParameterForm(forms.ModelForm):
+    class Meta:
+        model = TestParameter
+        fields = ['name', 'unit', 'standard_method', 'min_permissible_limit', 'max_permissible_limit']
+        widgets = {
+            'name': forms.TextInput(attrs={'class': 'validate'}),
+            'unit': forms.TextInput(attrs={'class': 'validate'}),
+            'standard_method': forms.TextInput(attrs={'class': 'validate'}),
+            'min_permissible_limit': forms.NumberInput(attrs={'class': 'validate', 'step': 'any'}),
+            'max_permissible_limit': forms.NumberInput(attrs={'class': 'validate', 'step': 'any'}),
+        }
+        labels = {
+            'min_permissible_limit': 'Min. Permissible Limit',
+            'max_permissible_limit': 'Max. Permissible Limit',
+        }
+        help_texts = {
+            'min_permissible_limit': 'Leave blank if no minimum limit.',
+            'max_permissible_limit': 'Leave blank if no maximum limit.',
+        }
+
 class CustomPasswordChangeForm(PasswordChangeForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['old_password'].widget.attrs.update({
-            'class': 'form-control',
+            'class': 'validate', # Materialize class
             'placeholder': 'Current password'
         })
         self.fields['new_password1'].widget.attrs.update({
-            'class': 'form-control',
+            'class': 'validate', # Materialize class
             'placeholder': 'New password'
         })
         self.fields['new_password2'].widget.attrs.update({
-            'class': 'form-control',
+            'class': 'validate', # Materialize class
             'placeholder': 'Confirm new password'
         })

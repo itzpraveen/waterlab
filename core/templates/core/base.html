@@ -6,98 +6,497 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Water Lab LIMS{% endblock %}</title>
     
-    <!-- Custom CSS -->
-    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <!-- Materialize CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+    <!-- Material Icons -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     
     <!-- Favicon -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧪</text></svg>">
     
+    <style>
+        /* M3-inspired styles */
+        :root {
+            --primary-color: #00796B; /* Biofix Teal */
+            --primary-color-light: #E0F2F1; /* Light Biofix Teal Accent */
+            --primary-color-dark: #004D40; /* Darker Teal */
+            --text-on-primary: #FFFFFF;
+            --text-color-dark: #212121;
+            --text-color-medium: #5F6368;
+            --text-color-light: #757575;
+            --background-color: #f5f5f5; /* Light grey background for body */
+            --surface-color: #FFFFFF; /* Card backgrounds etc. */
+            --error-color: #D32F2F;
+            --warning-color: #FFA000;
+            --info-color: #1976D2; /* Material Blue 700 */
+            --success-color: #388E3C; /* Material Green 700 */
+
+            --m3-border-radius-small: 8px;
+            --m3-border-radius-medium: 12px;
+            --m3-border-radius-large: 16px;
+            --m3-border-radius-extra-large: 28px;
+            --m3-border-radius-button: 24px; /* Pill shape for buttons */
+        }
+
+        body {
+            display: flex;
+            min-height: 100vh;
+            flex-direction: column;
+            background-color: var(--background-color);
+            color: var(--text-color-dark);
+            font-family: 'Roboto', 'Segoe UI', sans-serif; /* M3 like font stack */
+        }
+        main {
+            flex: 1 0 auto;
+            padding-top: 20px; 
+        }
+        .brand-logo {
+            display: flex;
+            align-items: center;
+        }
+        .brand-logo .logo-text {
+            margin-left: 10px;
+            font-weight: 500; /* Slightly bolder logo text */
+        }
+        .nav-wrapper {
+            padding-left: 15px; 
+            padding-right: 15px; 
+            background-color: var(--primary-color) !important;
+            color: var(--text-on-primary);
+        }
+         .nav-wrapper a, .nav-wrapper .material-icons,
+         .sidenav .user-view .name, .sidenav .user-view .email,
+         .brand-logo { /* Ensure brand logo text is also white */
+            color: var(--text-on-primary) !important;
+        }
+        .sidenav-trigger {
+            margin-left: 0; 
+        }
+        .page-footer {
+            padding-top: 20px;
+            background-color: var(--primary-color) !important;
+            color: var(--text-on-primary);
+        }
+        .page-footer .footer-copyright {
+            background-color: rgba(0,0,0,0.2) !important; /* Darken primary for copyright bg */
+            color: var(--text-on-primary);
+        }
+        .page-footer a {
+             color: var(--text-on-primary) !important;
+        }
+
+
+        /* M3-like Buttons */
+        .btn, .btn-large, .btn-small, .btn-floating {
+            border-radius: var(--m3-border-radius-button);
+            background-color: var(--primary-color);
+            color: var(--text-on-primary);
+            text-transform: none; 
+            letter-spacing: 0.01em;
+            font-weight: 500;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06); /* Softer shadow for buttons */
+        }
+        .btn:hover, .btn-large:hover, .btn-small:hover, .btn-floating:hover {
+            background-color: var(--primary-color-dark);
+            box-shadow: 0 3px 6px rgba(0,0,0,0.15), 0 2px 4px rgba(0,0,0,0.12);
+        }
+        .btn-flat {
+            color: var(--primary-color) !important;
+            border-radius: var(--m3-border-radius-button);
+            text-transform: none;
+            font-weight: 500;
+        }
+        .btn-flat:hover {
+            background-color: var(--primary-color-light) !important;
+        }
+        .waves-effect.waves-primary .waves-ripple { /* Custom wave color */
+            background-color: rgba(var(--primary-color-rgb), 0.65);
+        }
+
+
+        /* M3-like Cards */
+        .card, .card-panel {
+            border-radius: var(--m3-border-radius-medium);
+            box-shadow: 0 1px 2px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.07), 0 4px 8px rgba(0,0,0,0.07), 0 8px 16px rgba(0,0,0,0.07); /* M3 Level 1/2 like shadow */
+            background-color: var(--surface-color);
+        }
+        
+        /* M3-like Input Fields */
+        .input-field input[type=text]:not(.browser-default),
+        .input-field input[type=password]:not(.browser-default),
+        .input-field input[type=email]:not(.browser-default),
+        .input-field input[type=url]:not(.browser-default),
+        .input-field input[type=time]:not(.browser-default),
+        .input-field input[type=date]:not(.browser-default),
+        .input-field input[type=datetime]:not(.browser-default),
+        .input-field input[type=datetime-local]:not(.browser-default),
+        .input-field input[type=tel]:not(.browser-default),
+        .input-field input[type=number]:not(.browser-default),
+        .input-field input[type=search]:not(.browser-default),
+        .input-field textarea:not(.browser-default) {
+            border-radius: var(--m3-border-radius-small) var(--m3-border-radius-small) 0 0; /* Top corners rounded */
+            border: none; /* Remove default border */
+            border-bottom: 1px solid var(--text-color-light); /* Bottom border only */
+            background-color: rgba(0,0,0,0.02); /* Slight background tint for field */
+            padding-left: 1rem; padding-right: 1rem; /* Add padding */
+            height: 3rem; /* Consistent height */
+        }
+        .input-field input[type=text]:not(.browser-default):focus:not([readonly]),
+        .input-field input[type=password]:not(.browser-default):focus:not([readonly]),
+        .input-field input[type=email]:not(.browser-default):focus:not([readonly]),
+        .input-field input[type=url]:not(.browser-default):focus:not([readonly]),
+        .input-field input[type=time]:not(.browser-default):focus:not([readonly]),
+        .input-field input[type=date]:not(.browser-default):focus:not([readonly]),
+        .input-field input[type=datetime]:not(.browser-default):focus:not([readonly]),
+        .input-field input[type=datetime-local]:not(.browser-default):focus:not([readonly]),
+        .input-field input[type=tel]:not(.browser-default):focus:not([readonly]),
+        .input-field input[type=number]:not(.browser-default):focus:not([readonly]),
+        .input-field input[type=search]:not(.browser-default):focus:not([readonly]),
+        .input-field textarea:not(.browser-default):focus:not([readonly]) {
+            border-bottom: 2px solid var(--primary-color);
+            box-shadow: none; /* Remove Materialize focus shadow */
+            background-color: rgba(0,0,0,0.03);
+        }
+        .input-field > label:not(.label-icon).active { /* Ensure active label is primary color */
+            color: var(--primary-color);
+        }
+        .input-field .prefix {
+            color: var(--text-color-light);
+        }
+        .input-field .prefix.active {
+            color: var(--primary-color);
+        }
+        /* Select dropdown */
+        .select-wrapper input.select-dropdown {
+             border-bottom: 1px solid var(--text-color-light);
+             border-radius: var(--m3-border-radius-small) var(--m3-border-radius-small) 0 0;
+             background-color: rgba(0,0,0,0.02);
+             padding-left: 1rem;
+             height: 3rem;
+        }
+        .dropdown-content { /* For select and other dropdowns */
+            border-radius: var(--m3-border-radius-medium);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1), 0 2px 4px rgba(0,0,0,0.08);
+        }
+        .dropdown-content li > a, .dropdown-content li > span {
+            color: var(--primary-color-dark); /* Darker text in dropdowns */
+        }
+        .dropdown-content li.active, .dropdown-content li:hover {
+            background-color: var(--primary-color-light);
+        }
+
+
+        /* Alert Messages with new theme */
+        .alert { /* Base alert, now using card-panel for structure */
+            border-radius: var(--m3-border-radius-medium);
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+            color: var(--text-color-dark); /* Default text color for alerts */
+        }
+        .alert.alert-success, .card-panel.green.lighten-4 { /* Ensure specificity */
+            background-color: #E8F5E9 !important; /* Green 50 */
+            color: var(--success-color) !important;
+            border-left: 5px solid var(--success-color);
+        }
+        .alert.alert-danger, .alert.alert-error, .card-panel.red.lighten-4 {
+            background-color: #FFEBEE !important; /* Red 50 */
+            color: var(--error-color) !important;
+            border-left: 5px solid var(--error-color);
+        }
+        .alert.alert-warning, .card-panel.yellow.lighten-4 {
+            background-color: #FFF8E1 !important; /* Yellow 50 */
+            color: var(--warning-color) !important;
+            border-left: 5px solid var(--warning-color);
+        }
+        .alert.alert-info, .card-panel.blue.lighten-4 {
+            background-color: #E3F2FD !important; /* Blue 50 */
+            color: var(--info-color) !important;
+            border-left: 5px solid var(--info-color);
+        }
+        .alert .close-alert { 
+            color: inherit !important; /* Ensure close button inherits themed color */
+            opacity: 0.7;
+        }
+        .alert .close-alert:hover {
+            opacity: 1;
+        }
+
+
+        .role-badge {
+            padding: 0.3em 0.8em;
+            font-size: 0.75em;
+            font-weight: 500;
+            line-height: 1;
+            color: var(--text-on-primary);
+            text-align: center;
+            white-space: nowrap;
+            vertical-align: baseline;
+            border-radius: var(--m3-border-radius-large); 
+            margin-right: 5px;
+        }
+        .role-badge.admin { background-color: var(--error-color); } 
+        .role-badge.lab_technician { background-color: var(--info-color); } 
+        .role-badge.consultant { background-color: var(--success-color); } 
+        .role-badge.front_desk { background-color: var(--warning-color); } 
+        .role-badge.customer { background-color: var(--text-color-medium); } 
+
+        /* Breadcrumbs */
+        .breadcrumb-container nav { /* The nav inside breadcrumb-container */
+            box-shadow: none !important;
+            background-color: transparent !important; 
+        }
+        .breadcrumb-container .nav-wrapper { /* Specifically target nav-wrapper inside breadcrumbs */
+             background-color: transparent !important;
+        }
+        .breadcrumb-container .breadcrumb {
+            color: var(--primary-color) !important; 
+            font-size: 0.9rem;
+        }
+        .breadcrumb-container .breadcrumb:before {
+            color: var(--text-color-light) !important;
+        }
+        .breadcrumb-container .breadcrumb.active {
+            color: var(--text-color-dark) !important; 
+        }
+        .site-content {
+            flex: 1 0 auto;
+        }
+        .page-content {
+            padding-bottom: 20px; 
+        }
+        /* Active nav link styling */
+        nav ul a.active, .sidenav li a.active {
+            background-color: var(--primary-color-dark) !important; /* Darker shade for active link background */
+            color: var(--text-on-primary) !important;
+        }
+        nav ul a.active:hover, .sidenav li a.active:hover {
+             background-color: var(--primary-color-dark) !important;
+        }
+
+
+    </style>
     {% block extra_css %}{% endblock %}
 </head>
 <body>
-    <!-- Header -->
-    <header class="header">
-        <nav class="navbar">
-            <a href="{% url 'core:home' %}" class="logo">
-                🧪 WaterLab LIMS
-            </a>
-            
-            {% if user.is_authenticated %}
-            <ul class="nav-menu">
-                <li><a href="{% url 'core:dashboard' %}" class="{% if 'dashboard' in request.resolver_match.url_name %}active{% endif %}">
-                    🏠 Dashboard
-                </a></li>
-                
-                {% if user.is_frontdesk or user.is_admin %}
-                <li><a href="{% url 'core:customer_list' %}" class="{% if 'customer' in request.resolver_match.url_name %}active{% endif %}">
-                    👥 Customers
-                </a></li>
-                {% endif %}
-                
-                <li><a href="{% url 'core:sample_list' %}" class="{% if 'sample' in request.resolver_match.url_name %}active{% endif %}">
-                    🧪 Samples
-                </a></li>
-                
-                {% if user.is_admin %}
-                <li><a href="{% url 'admin:index' %}" target="_blank">
-                    ⚙️ Admin
-                </a></li>
-                {% endif %}
-            </ul>
-            
-            <div class="nav-user">
-                <div class="user-dropdown">
-                    <span class="user-greeting">
-                        <span class="role-badge {{ user.role }}">{{ user.get_role_display }}</span>
-                        {{ user.first_name|default:user.username }}
-                        <span class="dropdown-arrow">▼</span>
-                    </span>
-                    <div class="user-menu">
-                        <a href="{% url 'core:password_change' %}" class="user-menu-item">
-                            🔒 Change Password
-                        </a>
-                        <a href="{% url 'core:logout' %}" class="user-menu-item logout">
-                            🚪 Logout
-                        </a>
-                    </div>
-                </div>
-            </div>
-            {% else %}
-            <div class="nav-user">
-                <a href="{% url 'core:login_selector' %}" class="btn btn-primary">
-                    🔑 Login
+    <header>
+        <nav> {# Nav wrapper color set by CSS var #}
+            <div class="nav-wrapper">
+                <a href="{% url 'core:home' %}" class="brand-logo">
+                    <i class="material-icons">science</i>
+                    <span class="logo-text">WaterLab LIMS</span>
                 </a>
+                {% if user.is_authenticated %}
+                <a href="#" data-target="mobile-nav" class="sidenav-trigger"><i class="material-icons">menu</i></a>
+                <ul class="right hide-on-med-and-down">
+                    <li><a href="{% url 'core:dashboard' %}" class="waves-effect waves-light {% if 'dashboard' in request.resolver_match.url_name %}active{% endif %}">
+                        <i class="material-icons left">dashboard</i>Dashboard
+                    </a></li>
+                    {% if user.is_frontdesk or user.is_admin %}
+                    <li><a href="{% url 'core:customer_list' %}" class="waves-effect waves-light {% if 'customer' in request.resolver_match.url_name %}active{% endif %}">
+                        <i class="material-icons left">people</i>Customers
+                    </a></li>
+                    {% endif %}
+                    <li><a href="{% url 'core:sample_list' %}" class="waves-effect waves-light {% if 'sample' in request.resolver_match.url_name and 'test_result_entry' not in request.resolver_match.url_name %}active{% endif %}">
+                        <i class="material-icons left">opacity</i>Samples
+                    </a></li>
+                    {% if user.is_lab_technician or user.is_admin %}
+                    <li><a href="{% url 'core:test_result_list' %}" class="waves-effect waves-light {% if 'test_result_list' == request.resolver_match.url_name %}active{% endif %}">
+                        <i class="material-icons left">list_alt</i>Results
+                    </a></li>
+                    {% endif %}
+                    {% if user.is_admin %}
+                    <li><a href="{% url 'admin:index' %}" target="_blank" class="waves-effect waves-light">
+                        <i class="material-icons left">settings</i>Admin Panel
+                    </a></li>
+                    {% endif %}
+                    <li>
+                        <a class="dropdown-trigger waves-effect waves-light" href="#!" data-target="user-dropdown">
+                            <span class="role-badge {{ user.role }}">{{ user.get_role_display }}</span>
+                            {{ user.first_name|default:user.username }}
+                            <i class="material-icons right">arrow_drop_down</i>
+                        </a>
+                    </li>
+                </ul>
+                {% else %}
+                <ul class="right">
+                    <li><a href="{% url 'core:login_selector' %}" class="waves-effect waves-light btn">
+                        <i class="material-icons left">login</i>Login
+                    </a></li>
+                </ul>
+                {% endif %}
             </div>
-            {% endif %}
         </nav>
+
+        {% if user.is_authenticated %}
+        <!-- Sidenav Structure -->
+        <ul id="mobile-nav" class="sidenav">
+            <li>
+                <div class="user-view">
+                    <div class="background" style="background-color: var(--primary-color-dark);">
+                        {# No image, just themed background #}
+                    </div>
+                    <a href="#!user"><span class="white-text name">{{ user.first_name|default:user.username }}</span></a>
+                    <a href="#!email"><span class="white-text email"><span class="role-badge {{ user.role }}">{{ user.get_role_display }}</span></span></a>
+                </div>
+            </li>
+            <li><a href="{% url 'core:dashboard' %}" class="waves-effect {% if 'dashboard' in request.resolver_match.url_name %}active{% endif %}">
+                <i class="material-icons">dashboard</i>Dashboard
+            </a></li>
+            {% if user.is_frontdesk or user.is_admin %}
+            <li><a href="{% url 'core:customer_list' %}" class="waves-effect {% if 'customer' in request.resolver_match.url_name %}active{% endif %}">
+                <i class="material-icons">people</i>Customers
+            </a></li>
+            {% endif %}
+            <li><a href="{% url 'core:sample_list' %}" class="waves-effect {% if 'sample' in request.resolver_match.url_name and 'test_result_entry' not in request.resolver_match.url_name %}active{% endif %}">
+                <i class="material-icons">opacity</i>Samples
+            </a></li>
+            {% if user.is_lab_technician or user.is_admin %}
+            <li><a href="{% url 'core:test_result_list' %}" class="waves-effect {% if 'test_result_list' == request.resolver_match.url_name %}active{% endif %}">
+                <i class="material-icons">list_alt</i>Results
+            </a></li>
+            {% endif %}
+            {% if user.is_admin %}
+            <li><a href="{% url 'admin:index' %}" target="_blank" class="waves-effect">
+                <i class="material-icons">settings</i>Admin Panel
+            </a></li>
+            {% endif %}
+            <li><div class="divider"></div></li>
+            <li><a class="subheader">Account</a></li>
+            <li><a href="{% url 'core:password_change' %}" class="waves-effect">
+                <i class="material-icons">lock_outline</i>Change Password
+            </a></li>
+            <li><a href="{% url 'core:logout' %}" class="waves-effect">
+                <i class="material-icons">exit_to_app</i>Logout
+            </a></li>
+        </ul>
+
+        <!-- User Dropdown Structure -->
+        <ul id="user-dropdown" class="dropdown-content">
+            <li><a href="{% url 'core:password_change' %}"><i class="material-icons left">lock_outline</i>Change Password</a></li>
+            <li class="divider" tabindex="-1"></li>
+            <li><a href="{% url 'core:logout' %}"><i class="material-icons left">exit_to_app</i>Logout</a></li>
+        </ul>
+        {% endif %}
     </header>
 
     <!-- Main Content -->
-    <main class="container">
-        <!-- Alert Messages -->
-        {% if messages %}
-            {% for message in messages %}
-                <div class="alert alert-{{ message.tags }}" data-auto-dismiss="5000">
-                    {{ message }}
-                </div>
-            {% endfor %}
-        {% endif %}
+    <main class="site-content">
+        <div class="container">
+            <!-- Breadcrumbs -->
+            {% block breadcrumbs %}
+            <div class="breadcrumb-container col s12" style="margin-bottom: 20px;">
+                <nav> {# Specific nav for breadcrumbs, background set to transparent in styles #}
+                    <div class="nav-wrapper">
+                        <!-- Breadcrumb items will be populated by child templates -->
+                    </div>
+                </nav>
+            </div>
+            {% endblock breadcrumbs %}
 
-        <!-- Page Content -->
-        <div class="page-content">
-            {% block content %}
-            {% endblock %}
+            <!-- Alert Messages -->
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="card-panel alert alert-{{ message.tags | lower }}" role="alert">
+                        {{ message }}
+                        <a href="#" class="close-alert" style="float: right; font-weight: bold; text-decoration: none;" onclick="this.parentElement.style.display='none';">&times;</a>
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            <!-- Page Content -->
+            <div class="page-content">
+                {% block content %}
+                {% endblock %}
+            </div>
         </div>
     </main>
 
     <!-- Footer -->
-    <footer style="text-align: center; padding: 2rem; color: #6c757d; border-top: 1px solid #dee2e6; margin-top: 3rem;">
-        <p>&copy; 2025 Water Testing Lab LIMS - Kerala, India</p>
-        <p><small>Built with Django • Designed for Excellence</small></p>
+    <footer class="page-footer"> {# Background color set by CSS var #}
+        <div class="container">
+            <div class="row">
+                <div class="col l6 s12">
+                    <h5 class="white-text">WaterLab LIMS by Biofix</h5>
+                    <p class="white-text text-lighten-2">Modern Laboratory Information Management System for water testing facilities.</p>
+                </div>
+                <div class="col l4 offset-l2 s12">
+                    <h5 class="white-text">Quick Links</h5>
+                    <ul>
+                        <li><a class="white-text text-lighten-2" href="{% url 'core:home' %}">Home</a></li>
+                        {% if user.is_authenticated %}
+                        <li><a class="white-text text-lighten-2" href="{% url 'core:dashboard' %}">Dashboard</a></li>
+                        <li><a class="white-text text-lighten-2" href="{% url 'core:logout' %}">Logout</a></li>
+                        {% else %}
+                        <li><a class="white-text text-lighten-2" href="{% url 'core:login_selector' %}">Login</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="footer-copyright">
+            <div class="container"> {# Text color inherited from .page-footer or explicitly set to white #}
+            &copy; {% now "Y" %} Water Testing Lab LIMS by Biofix - Kerala, India.
+            <span class="right">Built with Django & Materialize</span>
+            </div>
+        </div>
     </footer>
 
-    <!-- JavaScript -->
-    <script src="{% static 'js/main.js' %}"></script>
+    <!-- Materialize JavaScript -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize Sidenav
+            var sidenavElems = document.querySelectorAll('.sidenav');
+            M.Sidenav.init(sidenavElems);
+
+            // Initialize Dropdowns
+            var dropdownElems = document.querySelectorAll('.dropdown-trigger');
+            M.Dropdown.init(dropdownElems, {
+                constrainWidth: false, 
+                coverTrigger: false 
+            });
+
+            var collapsibleElems = document.querySelectorAll('.collapsible');
+            M.Collapsible.init(collapsibleElems);
+
+            var modalElems = document.querySelectorAll('.modal');
+            M.Modal.init(modalElems);
+
+            var tabElems = document.querySelectorAll('.tabs');
+            M.Tabs.init(tabElems);
+
+            var selectElems = document.querySelectorAll('select');
+            M.FormSelect.init(selectElems);
+
+            const alerts = document.querySelectorAll('.alert[data-auto-dismiss]');
+            alerts.forEach(alert => {
+                const dismissTime = parseInt(alert.getAttribute('data-auto-dismiss'), 10);
+                if (!isNaN(dismissTime)) {
+                    setTimeout(() => {
+                        alert.style.transition = 'opacity 0.5s ease';
+                        alert.style.opacity = '0';
+                        setTimeout(() => alert.remove(), 500);
+                    }, dismissTime);
+                }
+            });
+
+            const closeAlertButtons = document.querySelectorAll('.close-alert');
+            closeAlertButtons.forEach(button => {
+                button.addEventListener('click', function(event) {
+                    event.preventDefault();
+                    this.parentElement.style.transition = 'opacity 0.5s ease';
+                    this.parentElement.style.opacity = '0';
+                    setTimeout(() => this.parentElement.remove(), 500);
+                });
+            });
+            // Ensure Materialize text inputs and textareas labels are handled correctly on page load if they have values
+            M.updateTextFields();
+        });
+    </script>
     {% block extra_js %}{% endblock %}
+
+    <!-- Floating Action Button Placeholder -->
+    {% block fab %}
+    {% endblock fab %}
 </body>
 </html>

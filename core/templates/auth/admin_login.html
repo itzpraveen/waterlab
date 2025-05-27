@@ -1,165 +1,195 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ page_title }} - Water Lab LIMS</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .login-container {
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
-            padding: 40px;
-            max-width: 400px;
-            width: 90%;
-        }
-        .header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-        .logo {
-            font-size: 2rem;
-            color: #ff6b6b;
-            margin-bottom: 10px;
-        }
-        .title {
-            font-size: 1.5rem;
-            color: #333;
-            font-weight: 600;
-        }
-        .subtitle {
-            color: #666;
-            margin-top: 5px;
-        }
-        .form-group {
-            margin-bottom: 20px;
-        }
-        label {
-            display: block;
-            margin-bottom: 5px;
-            color: #333;
-            font-weight: 500;
-        }
-        input[type="text"], input[type="password"] {
-            width: 100%;
-            padding: 12px;
-            border: 2px solid #ddd;
-            border-radius: 5px;
-            font-size: 1rem;
-            transition: border-color 0.3s;
-        }
-        input[type="text"]:focus, input[type="password"]:focus {
-            outline: none;
-            border-color: #ff6b6b;
-        }
-        .login-btn {
-            width: 100%;
-            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
-            color: white;
-            border: none;
-            padding: 12px;
-            border-radius: 5px;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: transform 0.2s;
-        }
-        .login-btn:hover {
-            transform: translateY(-1px);
-        }
-        .messages {
-            margin-bottom: 20px;
-        }
-        .alert {
-            padding: 10px;
-            border-radius: 5px;
-            margin-bottom: 10px;
-        }
-        .alert-error {
-            background: #ffeaea;
-            color: #d63031;
-            border: 1px solid #fab1a0;
-        }
-        .back-link {
-            text-align: center;
-            margin-top: 20px;
-        }
-        .back-link a {
-            color: #666;
-            text-decoration: none;
-            font-size: 0.9rem;
-        }
-        .back-link a:hover {
-            color: #ff6b6b;
-        }
-        .security-notice {
-            background: #fff3cd;
-            color: #856404;
-            padding: 10px;
-            border-radius: 5px;
-            font-size: 0.9rem;
-            margin-bottom: 20px;
-            border: 1px solid #ffeaa7;
-        }
-    </style>
-</head>
-<body>
-    <div class="login-container">
-        <div class="header">
-            <div class="logo">🔐</div>
-            <div class="title">Administrator Login</div>
-            <div class="subtitle">Water Lab LIMS</div>
-        </div>
-        
-        <div class="security-notice">
-            <strong>⚠️ Admin Access:</strong> This area is restricted to system administrators only.
-        </div>
-        
-        {% if messages %}
-            <div class="messages">
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}{{ page_title|default:"Admin Login" }} - Water Lab LIMS{% endblock %}
+
+{% block extra_css %}
+<style>
+    body {
+        /* Admin login page uses a slightly different gradient */
+        background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+    }
+    /* Override base.html styles for a centered login page */
+    header, .page-footer {
+        display: none !important; /* Hide default header and footer for login page */
+    }
+    main.site-content {
+        padding-top: 0 !important; /* Remove padding from main if header is hidden */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh; /* Ensure it takes full viewport height */
+        width: 100%;
+    }
+    .login-card-container {
+        max-width: 450px; /* Slightly wider for login form */
+        width: 90%;
+    }
+    .login-card .card-content {
+        padding: 30px !important;
+    }
+    .login-header {
+        text-align: center;
+        margin-bottom: 25px;
+    }
+    .login-logo i {
+        font-size: 3rem;
+        color: #ff6b6b; /* Match gradient start */
+    }
+    .login-title {
+        font-size: 1.8rem;
+        color: #333;
+        font-weight: 400; /* Materialize-like font weight */
+        margin-top: 5px;
+    }
+    .login-subtitle {
+        color: #777;
+        font-size: 0.95rem;
+    }
+    .input-field label {
+        color: #555; /* Darker label for better contrast on white */
+    }
+    .btn.login-btn {
+        width: 100%;
+        background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+        height: 45px;
+        line-height: 45px;
+        font-size: 1.1rem;
+        margin-top: 10px; /* Space above button */
+    }
+    .btn.login-btn:hover {
+        background: linear-gradient(135deg, #ee5a24, #ff6b6b); /* Slightly darker on hover */
+    }
+    .back-link-container {
+        text-align: center;
+        margin-top: 25px;
+    }
+    .back-link-container a {
+        color: #666;
+        text-decoration: none;
+        font-size: 0.9rem;
+    }
+    .back-link-container a:hover {
+        color: #ff6b6b;
+        text-decoration: underline;
+    }
+    .security-notice-panel {
+        background-color: #fff3e0; /* Light orange for warning */
+        color: #e65100; /* Dark orange text */
+        padding: 15px;
+        border-radius: 4px;
+        margin-bottom: 20px;
+        border-left: 5px solid #ff9800; /* Orange accent */
+    }
+    .security-notice-panel strong {
+        color: #bf360c; /* Darker red for emphasis */
+    }
+    /* Django form errors styling */
+    .form-errors, .messages-container {
+        margin-bottom: 20px;
+    }
+    .form-errors .card-panel, .messages-container .card-panel {
+        padding: 10px 15px;
+    }
+    /* Ensure form.username and form.password take full width and Materialize styles */
+    input[name="username"], input[name="password"] {
+        margin-bottom: 5px !important; /* Add some space below input before potential error text */
+    }
+    .errorlist { /* Style Django's default error list if it appears */
+        list-style-type: none;
+        padding: 0;
+        margin: 0;
+        color: #D8000C; /* Error red */
+    }
+    .errorlist li {
+        font-size: 0.9em;
+    }
+
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container login-card-container">
+    <div class="card login-card z-depth-3">
+        <div class="card-content">
+            <div class="login-header">
+                <div class="login-logo"><i class="material-icons">security</i></div>
+                <div class="login-title">Administrator Login</div>
+                <div class="login-subtitle">Water Lab LIMS</div>
+            </div>
+
+            <div class="security-notice-panel">
+                <strong>⚠️ Admin Access:</strong> This area is restricted to system administrators only.
+            </div>
+
+            {% if messages %}
+            <div class="messages-container">
                 {% for message in messages %}
-                    <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+                {# Themed alert styles from base.html will apply based on message.tags #}
+                <div class="card-panel alert alert-{{ message.tags|lower }}"> 
+                    {{ message }}
+                </div>
                 {% endfor %}
             </div>
-        {% endif %}
-        
-        {% if form.errors %}
-            <div class="messages">
-                <div class="alert alert-error">
+            {% endif %}
+
+            {% if form.non_field_errors %}
+            <div class="form-errors">
+                {% for error in form.non_field_errors %}
+                <div class="card-panel alert alert-danger">{{ error }}</div> {# Use themed alert style #}
+                {% endfor %}
+            </div>
+            {% endif %}
+            
+            {% if form.errors and not form.non_field_errors %} {# General error if not specific to fields #}
+             <div class="form-errors">
+                <div class="card-panel alert alert-danger"> {# Use themed alert style #}
                     Invalid credentials. Please check your username and password.
                 </div>
             </div>
-        {% endif %}
-        
-        <form method="post">
-            {% csrf_token %}
-            <div class="form-group">
-                <label for="{{ form.username.id_for_label }}">Username</label>
-                {{ form.username }}
+            {% endif %}
+
+            <form method="post" novalidate>
+                {% csrf_token %}
+                <div class="row">
+                    <div class="input-field col s12">
+                        <i class="material-icons prefix">account_circle</i>
+                        {{ form.username }}
+                        <label for="{{ form.username.id_for_label }}">Username</label>
+                        {% if form.username.errors %}
+                            {% for error in form.username.errors %}
+                                <span class="helper-text red-text">{{ error }}</span>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="input-field col s12">
+                        <i class="material-icons prefix">lock_outline</i>
+                        {{ form.password }}
+                        <label for="{{ form.password.id_for_label }}">Password</label>
+                         {% if form.password.errors %}
+                            {% for error in form.password.errors %}
+                                <span class="helper-text red-text">{{ error }}</span>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col s12">
+                        <button type="submit" class="btn waves-effect waves-light login-btn">
+                            <i class="material-icons left">lock_open</i>Admin Login
+                        </button>
+                    </div>
+                </div>
+            </form>
+
+            <div class="back-link-container">
+                <a href="{% url 'core:login_selector' %}"><i class="material-icons tiny left">arrow_back</i> Back to Login Options</a>
             </div>
-            
-            <div class="form-group">
-                <label for="{{ form.password.id_for_label }}">Password</label>
-                {{ form.password }}
-            </div>
-            
-            <button type="submit" class="login-btn">
-                🔓 Admin Login
-            </button>
-        </form>
-        
-        <div class="back-link">
-            <a href="{% url 'core:login_selector' %}">← Back to Login Options</a>
         </div>
     </div>
-</body>
-</html>
+</div>
+{% endblock %}
+
+{% block fab %}{% endblock %} {# Hide FAB on login page #}
