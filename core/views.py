@@ -16,7 +16,11 @@ from .decorators import admin_required, lab_required, frontdesk_required, consul
 from .mixins import AdminRequiredMixin, LabRequiredMixin, FrontDeskRequiredMixin, ConsultantRequiredMixin, RoleRequiredMixin, AuditMixin
 
 # Health check endpoint for deployment monitoring
-from django.http import HttpResponse
+from django.http import HttpResponse, FileResponse
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import letter
+from reportlab.lib.units import inch
+from io import BytesIO
 
 def health_check(request):
     """Health check endpoint for load balancers and monitoring systems"""
@@ -980,10 +984,110 @@ def download_sample_report_view(request, pk):
     # response.write(pdf_content)
     # return response
 
-    # For now, return the HTML as a simple response or a plain text message
-    # return HttpResponse(report_html_content, content_type='text/html')
-    return HttpResponse(
-        f"PDF report generation for Sample ID: {sample.sample_id} is pending implementation.\n"
-        f"Report would include customer: {sample.customer.name}, collected: {sample.collection_datetime}, etc.",
-        content_type='text/plain'
-    )
+    # Create a file-like buffer to receive PDF data.
+    buffer = BytesIO()
+
+    # Create the PDF object, using the buffer as its "file."
+    p = canvas.Canvas(buffer, pagesize=letter)
+
+    # Set up document properties
+    p.setTitle(f"Test Report - {sample.sample_id}")
+
+    # --- Draw things on the PDF ---
+    # Start drawing from the top of the page
+    y_position = 10 * inch  # Start 1 inch from the top
+
+    # Title
+    p.setFont("Helvetica-Bold", 16)
+    p.drawString(1 * inch, y_position, "Water Quality Test Report")
+    y_position -= 0.5 * inch
+
+    # Sample Information
+    p.setFont("Helvetica", 12)
+    p.drawString(1 * inch, y_position, f"Sample ID: {sample.sample_id}")
+    y_position -= 0.3 * inch
+    p.drawString(1 * inch, y_position, f"Customer: {sample.customer.name}")
+    y_position -= 0.3 * inch
+    p.drawString(1 * inch, y_position, f"Collection Date: {sample.collection_datetime.strftime('%Y-%m-%d %H:%M')}")
+    y_position -= 0.3 * inch
+    p.drawString(1 * inch, y_position, f"Sample Source: {sample.get_sample_source_display()}")
+    y_position -= 0.5 * inch
+
+    # Horizontal line
+    p.line(1 * inch, y_position, 7.5 * inch, y_position)
+    y_position -= 0.3 * inch
+
+    # Test Results Header
+    p.setFont("Helvetica-Bold", 14)
+    p.drawString(1 * inch, y_position, "Test Results:")
+    y_position -= 0.4 * inch
+
+    # Table Headers
+    p.setFont("Helvetica-Bold", 10)
+    col_widths = [2.5 * inch, 1.5 * inch, 1.5 * inch, 1 * inch]
+    current_x = 1 * inch
+    headers = ["Parameter", "Result", "Unit", "Limits"]
+    for i, header in enumerate(headers):
+        p.drawString(current_x, y_position, header)
+        current_x += col_widths[i]
+    y_position -= 0.15 * inch
+    p.line(1 * inch, y_position, 7.5 * inch, y_position) # Line under headers
+    y_position -= 0.25 * inch
+    
+    p.setFont("Helvetica", 10)
+    for result in sample.results.all().select_related('parameter'):
+        if y_position < 1 * inch: # Check for page break
+            p.showPage()
+            p.setFont("Helvetica", 10)
+            y_position = 10 * inch # Reset y_position for new page (adjust as needed)
+             # Redraw headers on new page if needed (optional)
+
+        current_x = 1 * inch
+        
+        # Parameter Name
+        p.drawString(current_x, y_position, result.parameter.name)
+        current_x += col_widths[0]
+        
+        # Result Value
+        p.drawString(current_x, y_position, str(result.result_value))
+        current_x += col_widths[1]
+        
+        # Unit
+        p.drawString(current_x, y_position, result.parameter.unit)
+        current_x += col_widths[2]
+        
+        # Limits
+        min_limit = result.parameter.min_permissible_limit
+        max_limit = result.parameter.max_permissible_limit
+        limit_text = f"{min_limit if min_limit is not None else '-'} - {max_limit if max_limit is not None else '-'}"
+        p.drawString(current_x, y_position, limit_text)
+        
+        y_position -= 0.25 * inch
+
+    # Footer
+    y_position = 0.75 * inch # Position for footer
+    p.line(1 * inch, y_position + 0.1 * inch, 7.5 * inch, y_position + 0.1 * inch)
+    p.setFont("Helvetica-Oblique", 9)
+    p.drawString(1 * inch, y_position - 0.1 * inch, f"Report generated on: {timezone.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    p.drawRightString(7.5 * inch, y_position - 0.1 * inch, f"Page {p.getPageNumber()}")
+
+
+    # --- Close the PDF object cleanly ---
+    p.showPage()
+    p.save()
+
+    # FileResponse sets the Content-Disposition header so that browsers
+    # present the option to save the file.
+    buffer.seek(0)
+    response = FileResponse(buffer, as_attachment=True, filename=f'report_{sample.sample_id}.pdf')
+    
+    # Update sample status to REPORT_SENT if it was REPORT_APPROVED
+    if sample.current_status == 'REPORT_APPROVED':
+        try:
+            sample.update_status('REPORT_SENT', request.user)
+            messages.info(request, f"Report for sample {sample.sample_id} downloaded and status updated to 'Report Sent'.")
+        except Exception as e:
+            messages.warning(request, f"Report downloaded, but failed to update sample status: {str(e)}")
+            # Log this error for admin attention
+
+    return response
