@@ -24,7 +24,10 @@ from .views import (
     form_test,
     fix_admin_role_web,
     sample_status_update,
-    setup_test_parameters
+    setup_test_parameters,
+    TestResultListView, 
+    download_sample_report_view,
+    TestParameterUpdateView # Added TestParameterUpdateView
 )
 
 from .auth_views import (
@@ -84,4 +87,11 @@ urlpatterns = [
     
     # Audit Trail
     path('audit/', AuditTrailView.as_view(), name='audit_trail'),
+
+    # Test Results List (New)
+    path('results/', TestResultListView.as_view(), name='test_result_list'),
+    path('samples/<uuid:pk>/download-report/', download_sample_report_view, name='download_sample_report'),
+    
+    # Test Parameter Management (Admin)
+    path('setup-test-parameters/<uuid:pk>/edit/', TestParameterUpdateView.as_view(), name='test_parameter_edit'),
 ]

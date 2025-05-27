@@ -1,42 +1,62 @@
 {% extends 'core/base.html' %}
+{% load static %}
 
 {% block title %}Customers - Water Lab LIMS{% endblock %}
 
+{% block breadcrumbs %}
+<div class="col s12 breadcrumb-container">
+    <nav>
+        <div class="nav-wrapper">
+            <a href="{% url 'core:home' %}" class="breadcrumb">Home</a>
+            <span class="breadcrumb active">Customers</span>
+        </div>
+    </nav>
+</div>
+{% endblock breadcrumbs %}
+
 {% block content %}
 <div class="card">
-    <div class="card-header d-flex justify-content-between align-items-center">
-        <div>
-            <h1 class="card-title">👥 Customer Management</h1>
-            <p class="card-subtitle">Manage your laboratory customers</p>
+    <div class="card-content">
+        <div class="row" style="margin-bottom: 0;">
+            <div class="col s12 m8">
+                <span class="card-title" style="font-size: 2rem; display: flex; align-items: center;">
+                    <i class="material-icons" style="font-size: 2.5rem; margin-right: 10px;">people</i> Customer Management
+                </span>
+                <p class="grey-text text-darken-1" style="margin-top: -5px; margin-bottom: 15px;">Manage your laboratory customers</p>
+            </div>
+            <div class="col s12 m4 right-align">
+                {% if user.is_frontdesk or user.is_admin %}
+                    <a href="{% url 'core:customer_add' %}" class="btn waves-effect waves-light"><i class="material-icons left">person_add</i>Add Customer</a>
+                {% endif %}
+            </div>
         </div>
-        {% if user.is_frontdesk or user.is_admin %}
-            <a href="{% url 'core:customer_add' %}" class="btn btn-primary">Add Customer</a>
-        {% endif %}
-    </div>
 
-    {% if customers %}
-        <!-- Search Box -->
-        <div class="p-3" style="background-color: #f8f9fa; border-bottom: 1px solid #dee2e6;">
-            <input type="text" class="form-control" placeholder="🔍 Search customers..." data-search="#customer-table" style="max-width: 300px;">
-        </div>
-        
-        <div class="table-container">
-            <table class="table" id="customer-table">
+        {% if customers %}
+            <!-- Search Box -->
+            <div class="row">
+                <div class="input-field col s12 m6 l4">
+                    <i class="material-icons prefix">search</i>
+                    <input type="text" id="customer-search" class="form-control" placeholder="Search customers..." data-search="#customer-table">
+                    <label for="customer-search">Search</label>
+                </div>
+            </div>
+            
+            <table class="highlight responsive-table" id="customer-table">
                 <thead>
                     <tr>
                         <th data-sort="text">Name</th>
                         <th data-sort="text">Email</th>
                         <th data-sort="text">Phone</th>
                         <th data-sort="text">District</th>
-                        <th data-sort="number">Samples</th>
-                        <th>Actions</th>
+                        <th data-sort="number" class="center-align">Samples</th>
+                        <th class="center-align">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for customer in customers %}
                     <tr>
                         <td>
-                            <a href="{% url 'core:customer_detail' pk=customer.customer_id %}" class="text-decoration-none">
+                            <a href="{% url 'core:customer_detail' pk=customer.customer_id %}">
                                 <strong>{{ customer.name }}</strong>
                             </a>
                         </td>
@@ -47,55 +67,77 @@
                             <a href="tel:{{ customer.phone }}">{{ customer.phone }}</a>
                         </td>
                         <td>
-                            <span class="badge badge-info">{{ customer.get_district_display }}</span>
+                            <span class="chip" style="background-color: var(--primary-color); color: var(--text-on-primary);">{{ customer.get_district_display }}</span>
                         </td>
-                        <td>
-                            <span class="badge badge-primary">{{ customer.samples.count }}</span>
+                        <td class="center-align">
+                            <span class="new badge" style="background-color: var(--primary-color); color: var(--text-on-primary);" data-badge-caption="sample{{ customer.samples.count|pluralize }}">{{ customer.samples.count }}</span>
                         </td>
-                        <td>
-                            <div class="btn-group">
-                                <a href="{% url 'core:customer_detail' pk=customer.customer_id %}" class="btn btn-sm btn-outline" data-tooltip="View Details">
-                                    👁️
+                        <td class="center-align">
+                            <a href="{% url 'core:customer_detail' pk=customer.customer_id %}" class="btn-floating btn-small waves-effect waves-light tooltipped" style="background-color: var(--primary-color);" data-position="top" data-tooltip="View Details">
+                                <i class="material-icons">visibility</i>
+                            </a>
+                            {% if user.is_frontdesk or user.is_admin %}
+                                <a href="{% url 'core:customer_edit' pk=customer.customer_id %}" class="btn-floating btn-small waves-effect waves-light tooltipped" style="background-color: var(--warning-color);" data-position="top" data-tooltip="Edit Customer">
+                                    <i class="material-icons">edit</i>
                                 </a>
-                                {% if user.is_frontdesk or user.is_admin %}
-                                    <a href="{% url 'core:customer_edit' pk=customer.customer_id %}" class="btn btn-sm btn-warning" data-tooltip="Edit Customer">
-                                        ✏️
-                                    </a>
-                                    <a href="{% url 'core:sample_add' %}?customer={{ customer.customer_id }}" class="btn btn-sm btn-success" data-tooltip="Add Sample">
-                                        🧪
-                                    </a>
-                                {% endif %}
-                            </div>
+                                <a href="{% url 'core:sample_add' %}?customer={{ customer.customer_id }}" class="btn-floating btn-small waves-effect waves-light tooltipped" style="background-color: var(--success-color);" data-position="top" data-tooltip="Add Sample">
+                                    <i class="material-icons">colorize</i>
+                                </a>
+                            {% endif %}
                         </td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
-        </div>
-        
-        <!-- Pagination info -->
-        <div class="p-3 text-center text-muted">
-            <small>Showing {{ customers|length }} customer{{ customers|length|pluralize }}</small>
-        </div>
-        
-    {% else %}
-        <div class="text-center p-3">
-            <div style="font-size: 4rem; color: #dee2e6;">👥</div>
-            <h3 class="text-muted">No customers yet</h3>
-            <p class="text-muted">Start by adding your first customer to the system.</p>
-            {% if user.is_frontdesk or user.is_admin %}
-                <a href="{% url 'core:customer_add' %}" class="btn btn-primary">Add First Customer</a>
-            {% endif %}
-        </div>
-    {% endif %}
+            
+            <!-- Pagination info -->
+            <div class="center-align grey-text" style="margin-top: 20px;">
+                <small>Showing {{ customers|length }} customer{{ customers|length|pluralize }}</small>
+            </div>
+            
+        {% else %}
+            <div class="center-align" style="padding: 40px 0;">
+                <i class="material-icons" style="font-size: 5rem; color: var(--primary-color-light);">people_outline</i>
+                <h5 style="color: var(--text-color-medium);">No customers yet</h5>
+                <p style="color: var(--text-color-light);">Start by adding your first customer to the system.</p>
+                {% if user.is_frontdesk or user.is_admin %}
+                    <a href="{% url 'core:customer_add' %}" class="btn waves-effect waves-light"><i class="material-icons left">person_add</i>Add First Customer</a> {# Button style from base.html #}
+                {% endif %}
+            </div>
+        {% endif %}
+    </div>
 </div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
-// Initialize search functionality
 document.addEventListener('DOMContentLoaded', function() {
-    initializeSearch();
+    // Initialize Materialize tooltips
+    var tooltippedElems = document.querySelectorAll('.tooltipped');
+    M.Tooltip.init(tooltippedElems);
+
+    // Basic search functionality (case-insensitive)
+    const searchInput = document.querySelector('input[data-search]');
+    if (searchInput) {
+        const tableId = searchInput.getAttribute('data-search');
+        const table = document.querySelector(tableId);
+        if (table) {
+            const tableBody = table.querySelector('tbody');
+            const rows = tableBody.querySelectorAll('tr');
+
+            searchInput.addEventListener('keyup', function() {
+                const searchTerm = searchInput.value.toLowerCase();
+                rows.forEach(row => {
+                    const textContent = row.textContent.toLowerCase();
+                    if (textContent.includes(searchTerm)) {
+                        row.style.display = '';
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+            });
+        }
+    }
 });
 </script>
 {% endblock %}

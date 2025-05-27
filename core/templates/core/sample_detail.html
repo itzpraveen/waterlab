@@ -1,323 +1,248 @@
 {% extends 'core/base.html' %}
+{% load static %}
 
-{% block title %}Sample Details - Water Lab LIMS{% endblock %}
+{% block title %}Sample Details - {{ sample.sample_id }}{% endblock %}
+
+{% block breadcrumbs %}
+<div class="col s12 breadcrumb-container">
+    <nav>
+        <div class="nav-wrapper">
+            <a href="{% url 'core:home' %}" class="breadcrumb">Home</a>
+            <a href="{% url 'core:sample_list' %}" class="breadcrumb">Sample Management</a>
+            <span class="breadcrumb active">Sample {{ sample.sample_id|truncatechars:12 }}</span>
+        </div>
+    </nav>
+</div>
+{% endblock breadcrumbs %}
 
 {% block content %}
-<div class="card">
-    <div class="card-header">
-        <h1 class="card-title">🧪 Sample Details</h1>
-        <p class="card-subtitle">{{ sample.sample_id|truncatechars:13 }}</p>
+<div class="row">
+    <div class="col s12">
+        <div class="card">
+            <div class="card-content">
+                <span class="card-title" style="font-size: 2rem; display: flex; align-items: center; color: var(--primary-color-dark);">
+                    <i class="material-icons" style="font-size: 2.5rem; margin-right: 10px; color: var(--primary-color);">science</i>
+                    Sample Details
+                </span>
+                <p class="grey-text text-darken-1" style="margin-top: -5px; margin-bottom: 20px;">ID: {{ sample.sample_id }}</p>
+            </div>
+        </div>
     </div>
-    
-    <div class="grid-2-col">
+</div>
+
+<div class="row">
+    <!-- Left Column for Info & Tests -->
+    <div class="col s12 l7">
         <!-- Sample Information -->
         <div class="card">
-            <div class="card-header">
-                <h3 class="card-title">📋 Sample Information</h3>
-            </div>
-            <div class="p-3">
-                <div class="info-row">
-                    <span class="info-label">Sample ID:</span>
-                    <span class="info-value">{{ sample.sample_id }}</span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">Customer:</span>
-                    <span class="info-value">
-                        <a href="{% url 'core:customer_detail' sample.customer.pk %}" class="link">
-                            {{ sample.customer.name }}
-                        </a>
-                    </span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">Collection Date:</span>
-                    <span class="info-value">{{ sample.collection_datetime|date:"M d, Y H:i" }}</span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">Sample Source:</span>
-                    <span class="info-value">{{ sample.get_sample_source_display }}</span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">Collected By:</span>
-                    <span class="info-value">{{ sample.collected_by }}</span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">Date Received:</span>
-                    <span class="info-value">{{ sample.date_received_at_lab|date:"M d, Y H:i"|default:"Not yet received" }}</span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">Current Status:</span>
-                    <span class="info-value">
-                        <span class="badge badge-{% if sample.current_status == 'REPORT_APPROVED' %}success{% elif sample.current_status == 'TESTING_IN_PROGRESS' %}warning{% else %}info{% endif %}">
-                            {{ sample.get_current_status_display }}
+            <div class="card-content">
+                <span class="card-title" style="color: var(--primary-color-dark);"><i class="material-icons left tiny" style="color: var(--primary-color);">info_outline</i>Sample Information</span>
+                <ul class="collection">
+                    <li class="collection-item"><div>Sample ID:<span class="secondary-content black-text">{{ sample.sample_id }}</span></div></li>
+                    <li class="collection-item"><div>Customer:<span class="secondary-content">
+                        <a href="{% url 'core:customer_detail' sample.customer.pk %}" style="color: var(--primary-color);">{{ sample.customer.name }}</a>
+                    </span></div></li>
+                    <li class="collection-item"><div>Collection Date:<span class="secondary-content black-text">{{ sample.collection_datetime|date:"M d, Y H:i" }}</span></div></li>
+                    <li class="collection-item"><div>Sample Source:<span class="secondary-content black-text">{{ sample.get_sample_source_display }}</span></div></li>
+                    <li class="collection-item"><div>Collected By:<span class="secondary-content black-text">{{ sample.collected_by }}</span></div></li>
+                    <li class="collection-item"><div>Date Received:<span class="secondary-content black-text">{{ sample.date_received_at_lab|date:"M d, Y H:i"|default:"Not yet received" }}</span></div></li>
+                    <li class="collection-item"><div>Current Status:
+                        <span class="secondary-content">
+                            {% if sample.current_status == 'REPORT_APPROVED' or sample.current_status == 'REPORT_SENT' %}
+                                <span class="chip" style="background-color: var(--success-color); color: var(--text-on-primary);">{{ sample.get_current_status_display }}</span>
+                            {% elif sample.current_status == 'RESULTS_ENTERED' or sample.current_status == 'REVIEW_PENDING' %}
+                                <span class="chip" style="background-color: var(--warning-color); color: var(--text-color-dark);">{{ sample.get_current_status_display }}</span>
+                            {% elif sample.current_status == 'TESTING_IN_PROGRESS' %}
+                                <span class="chip" style="background-color: var(--info-color); color: var(--text-on-primary);">{{ sample.get_current_status_display }}</span>
+                            {% else %}
+                                <span class="chip" style="background-color: var(--error-color); color: var(--text-on-primary);">{{ sample.get_current_status_display }}</span>
+                            {% endif %}
                         </span>
-                    </span>
-                </div>
+                    </div></li>
+                </ul>
             </div>
         </div>
 
         <!-- Tests Requested -->
         <div class="card">
-            <div class="card-header">
-                <h3 class="card-title">🧬 Tests Requested</h3>
-            </div>
-            <div class="p-3">
+            <div class="card-content">
+                <span class="card-title" style="color: var(--primary-color-dark);"><i class="material-icons left tiny" style="color: var(--primary-color);">checklist</i>Tests Requested</span>
                 {% if sample.tests_requested.all %}
-                <div class="test-list">
+                <ul class="collection">
                     {% for test in sample.tests_requested.all %}
-                    <div class="test-item">
-                        <div class="test-name">{{ test.name }}</div>
-                        <div class="test-unit">{{ test.unit }}</div>
+                    <li class="collection-item">
+                        <span class="title" style="font-weight: 500;">{{ test.name }}</span>
+                        <p class="grey-text text-darken-1">Unit: {{ test.unit }}
                         {% if test.min_permissible_limit and test.max_permissible_limit %}
-                        <div class="test-range">
-                            Range: {{ test.min_permissible_limit }} - {{ test.max_permissible_limit }} {{ test.unit }}
-                        </div>
+                         | Range: {{ test.min_permissible_limit }} - {{ test.max_permissible_limit }}
                         {% endif %}
-                    </div>
+                        </p>
+                    </li>
                     {% endfor %}
-                </div>
+                </ul>
                 {% else %}
-                <p class="text-muted">No tests requested</p>
+                <p class="grey-text text-darken-1">No tests requested for this sample.</p>
                 {% endif %}
             </div>
         </div>
     </div>
 
-    <!-- Test Results Section -->
-    {% if sample.results.exists %}
-    <div class="card">
-        <div class="card-header">
-            <h3 class="card-title">📊 Test Results</h3>
-        </div>
-        <div class="table-responsive">
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th>Parameter</th>
-                        <th>Result</th>
-                        <th>Unit</th>
-                        <th>Status</th>
-                        <th>Test Date</th>
-                        <th>Technician</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for result in sample.results.all %}
-                    <tr>
-                        <td>{{ result.parameter.name }}</td>
-                        <td class="result-value">{{ result.result_value }}</td>
-                        <td>{{ result.parameter.unit }}</td>
-                        <td>
-                            {% if result.parameter.min_permissible_limit and result.parameter.max_permissible_limit %}
-                                {% with result.result_value|floatformat:3|add:0 as numeric_value %}
-                                {% if numeric_value >= result.parameter.min_permissible_limit and numeric_value <= result.parameter.max_permissible_limit %}
-                                    <span class="badge badge-success">Within Limits</span>
-                                {% else %}
-                                    <span class="badge badge-danger">Out of Range</span>
-                                {% endif %}
-                                {% endwith %}
-                            {% else %}
-                                <span class="badge badge-info">No Limits Set</span>
-                            {% endif %}
-                        </td>
-                        <td>{{ result.test_date|date:"M d, H:i" }}</td>
-                        <td>{{ result.technician.first_name|default:result.technician.username|default:"N/A" }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </div>
-    {% endif %}
+    <!-- Right Column for Actions & Review -->
+    <div class="col s12 l5">
+        <div class="card">
+            <div class="card-content">
+                 <span class="card-title" style="color: var(--primary-color-dark);"><i class="material-icons left tiny" style="color: var(--primary-color);">play_for_work</i>Actions</span>
+                <div class="center-align">
+                     <a href="{% url 'core:sample_list' %}" class="btn-flat waves-effect" style="margin-bottom:10px;"><i class="material-icons left">arrow_back</i>Back to List</a>
+                </div>
 
-    <!-- Consultant Review Section -->
-    {% if sample.review %}
-    <div class="card">
-        <div class="card-header">
-            <h3 class="card-title">👨‍⚕️ Consultant Review</h3>
-        </div>
-        <div class="p-3">
-            <div class="review-info">
-                <div class="info-row">
-                    <span class="info-label">Reviewer:</span>
-                    <span class="info-value">{{ sample.review.reviewer.first_name|default:sample.review.reviewer.username|default:"N/A" }}</span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">Status:</span>
-                    <span class="info-value">
-                        <span class="badge badge-{% if sample.review.status == 'APPROVED' %}success{% elif sample.review.status == 'REJECTED' %}danger{% else %}warning{% endif %}">
-                            {{ sample.review.get_status_display }}
-                        </span>
-                    </span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">Review Date:</span>
-                    <span class="info-value">{{ sample.review.review_date|date:"M d, Y H:i" }}</span>
-                </div>
-                {% if sample.review.comments %}
-                <div class="info-row">
-                    <span class="info-label">Comments:</span>
-                    <span class="info-value">{{ sample.review.comments }}</span>
-                </div>
-                {% endif %}
-                {% if sample.review.recommendations %}
-                <div class="info-row">
-                    <span class="info-label">Recommendations:</span>
-                    <span class="info-value">{{ sample.review.recommendations }}</span>
-                </div>
-                {% endif %}
-            </div>
-        </div>
-    </div>
-    {% endif %}
-
-    <!-- Action Buttons -->
-    <div class="btn-group">
-        <a href="{% url 'core:sample_list' %}" class="btn btn-outline">
-            ← Back to Samples
-        </a>
-        
-        <!-- Front Desk Actions -->
-        {% if user.is_frontdesk or user.is_admin %}
-            <a href="{% url 'core:sample_edit' sample.pk %}" class="btn btn-warning">
-                ✏️ Edit Sample
-            </a>
-            
-            <!-- Send to Lab Button -->
-            {% if sample.current_status == 'RECEIVED_FRONT_DESK' %}
-                <form method="post" action="{% url 'core:sample_status_update' sample.pk %}" style="display: inline;">
-                    {% csrf_token %}
-                    <input type="hidden" name="new_status" value="SENT_TO_LAB">
-                    <button type="submit" class="btn btn-primary" onclick="return confirm('Send this sample to lab for testing?')">
-                        🚀 Send to Lab
-                    </button>
-                </form>
-            {% endif %}
-        {% endif %}
-        
-        <!-- Lab Technician Actions -->
-        {% if user.is_lab_tech or user.is_admin %}
-            {% if sample.current_status in 'SENT_TO_LAB,TESTING_IN_PROGRESS,RESULTS_ENTERED' %}
-                <a href="{% url 'core:test_result_entry' sample.pk %}" class="btn btn-success">
-                    🧪 Enter Results
-                </a>
-            {% endif %}
-        {% endif %}
-        
-        <!-- Consultant Actions -->
-        {% if user.is_consultant or user.is_admin %}
-            {% if sample.current_status in 'RESULTS_ENTERED,REVIEW_PENDING' %}
-                <a href="{% url 'core:consultant_review' sample.pk %}" class="btn btn-primary">
-                    👨‍⚕️ Review Sample
-                </a>
-            {% endif %}
-        {% endif %}
-        
-        <!-- Admin Actions -->
-        {% if user.is_admin %}
-            <a href="{% url 'core:audit_trail' %}?model=Sample&object_id={{ sample.pk }}" class="btn btn-info">
-                📋 View History
-            </a>
-            
-            <!-- Admin Status Override -->
-            <div class="dropdown" style="display: inline-block;">
-                <button class="btn btn-secondary dropdown-toggle" type="button" data-toggle="dropdown">
-                    ⚙️ Admin Actions
-                </button>
-                <div class="dropdown-menu">
-                    {% if sample.current_status != 'CANCELLED' %}
-                        <form method="post" action="{% url 'core:sample_status_update' sample.pk %}" style="margin: 0;">
+                {% if user.is_frontdesk or user.is_admin %}
+                    <a href="{% url 'core:sample_edit' sample.pk %}" class="btn waves-effect waves-light orange darken-1 white-text" style="width:100%; margin-bottom:10px;">
+                        <i class="material-icons left">edit</i>Edit Sample
+                    </a>
+                    {% if sample.current_status == 'RECEIVED_FRONT_DESK' %}
+                        <form method="post" action="{% url 'core:sample_status_update' sample.pk %}" style="display: block;">
                             {% csrf_token %}
-                            <input type="hidden" name="new_status" value="CANCELLED">
-                            <button type="submit" class="dropdown-item text-danger" onclick="return confirm('Cancel this sample?')">
-                                ❌ Cancel Sample
+                            <input type="hidden" name="new_status" value="SENT_TO_LAB">
+                            <button type="submit" class="btn waves-effect waves-light" style="width:100%; margin-bottom:10px;" onclick="return confirm('Send this sample to lab for testing?')">
+                                <i class="material-icons left">send</i>Send to Lab
                             </button>
                         </form>
                     {% endif %}
-                </div>
+                {% endif %}
+                
+                {% if user.is_lab_tech or user.is_admin %}
+                    {% if sample.current_status == 'SENT_TO_LAB' or sample.current_status == 'TESTING_IN_PROGRESS' or sample.current_status == 'RESULTS_ENTERED' or sample.current_status == 'REVIEW_PENDING' and user.is_admin %}
+                        <a href="{% url 'core:test_result_entry' sample.pk %}" class="btn waves-effect waves-light green darken-1 white-text" style="width:100%; margin-bottom:10px;">
+                            <i class="material-icons left">edit_note</i>
+                            {% if sample.current_status == 'REVIEW_PENDING' and user.is_admin %}Correct Results (Admin){% else %}Enter/Edit Results{% endif %}
+                        </a>
+                    {% endif %}
+                {% endif %}
+
+                {% if sample.current_status == 'REPORT_APPROVED' or sample.current_status == 'REPORT_SENT' %}
+                    <a href="{% url 'core:download_sample_report' pk=sample.pk %}" class="btn waves-effect waves-light teal darken-1 white-text" style="width:100%; margin-bottom:10px;" target="_blank">
+                        <i class="material-icons left">download</i>Download Report
+                    </a>
+                {% endif %}
+                
+                {% if user.is_consultant or user.is_admin %}
+                    {% if sample.current_status in 'RESULTS_ENTERED,REVIEW_PENDING' %}
+                        <a href="{% url 'core:consultant_review' sample.pk %}" class="btn waves-effect waves-light blue darken-1 white-text" style="width:100%; margin-bottom:10px;">
+                            <i class="material-icons left">rate_review</i>Review Sample
+                        </a>
+                    {% endif %}
+                {% endif %}
+                
+                {% if user.is_admin %}
+                    <a href="{% url 'core:audit_trail' %}?model=Sample&object_id={{ sample.pk }}" class="btn waves-effect waves-light grey darken-1 white-text" style="width:100%; margin-bottom:10px;">
+                        <i class="material-icons left">history</i>View History
+                    </a>
+                    {% if sample.current_status != 'CANCELLED' %}
+                        <form method="post" action="{% url 'core:sample_status_update' sample.pk %}" style="display: block;">
+                            {% csrf_token %}
+                            <input type="hidden" name="new_status" value="CANCELLED">
+                            <button type="submit" class="btn waves-effect waves-light red darken-2 white-text" style="width:100%;" onclick="return confirm('Are you sure you want to cancel this sample? This action cannot be undone.')">
+                                <i class="material-icons left">cancel</i>Cancel Sample
+                            </button>
+                        </form>
+                    {% endif %}
+                {% endif %}
             </div>
+        </div>
+
+        {% if sample.review %}
+        <div class="card">
+            <div class="card-content">
+                <span class="card-title" style="color: var(--primary-color-dark);"><i class="material-icons left tiny" style="color: var(--primary-color);">assignment_ind</i>Consultant Review</span>
+                <ul class="collection">
+                    <li class="collection-item"><div>Reviewer:<span class="secondary-content black-text">{{ sample.review.reviewer.first_name|default:sample.review.reviewer.username|default:"N/A" }}</span></div></li>
+                    <li class="collection-item"><div>Status:
+                        <span class="secondary-content">
+                        {% if sample.review.status == 'APPROVED' %} <span class="chip" style="background-color: var(--success-color); color: var(--text-on-primary);">{{ sample.review.get_status_display }}</span>
+                        {% elif sample.review.status == 'REJECTED' %} <span class="chip" style="background-color: var(--error-color); color: var(--text-on-primary);">{{ sample.review.get_status_display }}</span>
+                        {% else %} <span class="chip" style="background-color: var(--warning-color); color: var(--text-color-dark);">{{ sample.review.get_status_display }}</span>
+                        {% endif %}
+                        </span>
+                    </div></li>
+                    <li class="collection-item"><div>Review Date:<span class="secondary-content black-text">{{ sample.review.review_date|date:"M d, Y H:i" }}</span></div></li>
+                    {% if sample.review.comments %}
+                    <li class="collection-item"><div>Comments:<p class="grey-text text-darken-2" style="margin-top:5px;">{{ sample.review.comments|linebreaksbr }}</p></div></li>
+                    {% endif %}
+                    {% if sample.review.recommendations %}
+                    <li class="collection-item"><div>Recommendations:<p class="grey-text text-darken-2" style="margin-top:5px;">{{ sample.review.recommendations|linebreaksbr }}</p></div></li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
         {% endif %}
     </div>
 </div>
+
+
+<!-- Test Results Section -->
+{% if sample.results.exists %}
+<div class="row">
+    <div class="col s12">
+        <div class="card">
+            <div class="card-content">
+                <span class="card-title" style="color: var(--primary-color-dark);"><i class="material-icons left tiny" style="color: var(--primary-color);">assessment</i>Test Results</span>
+                <div class="table-responsive">
+                    <table class="highlight responsive-table">
+                        <thead>
+                            <tr>
+                                <th>Parameter</th>
+                                <th class="center-align">Result</th>
+                                <th>Unit</th>
+                                <th class="center-align">Status</th>
+                                <th>Test Date</th>
+                                <th>Technician</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for result in sample.results.all %}
+                            <tr>
+                                <td>{{ result.parameter.name }}</td>
+                                <td class="center-align" style="font-weight: 500;">{{ result.result_value }}</td>
+                                <td>{{ result.parameter.unit }}</td>
+                                <td class="center-align">
+                                    {% if result.parameter.min_permissible_limit is not None and result.parameter.max_permissible_limit is not None %}
+                                        {% with result.result_value|stringformat:"f"|add:0 as numeric_value %} {# Ensure numeric comparison #}
+                                        {% if numeric_value >= result.parameter.min_permissible_limit and numeric_value <= result.parameter.max_permissible_limit %}
+                                            <span class="chip" style="background-color: var(--success-color); color: var(--text-on-primary);">Within Limits</span>
+                                        {% else %}
+                                            <span class="chip" style="background-color: var(--error-color); color: var(--text-on-primary);">Out of Range</span>
+                                        {% endif %}
+                                        {% endwith %}
+                                    {% else %}
+                                        <span class="chip grey lighten-1 black-text">No Limits Set</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ result.test_date|date:"M d, H:i" }}</td>
+                                <td>{{ result.technician.first_name|default:result.technician.username|default:"N/A" }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
 {% endblock %}
 
-{% block extra_css %}
-<style>
-.test-list {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-}
-
-.test-item {
-    padding: 1rem;
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    background: var(--light-color);
-}
-
-.test-name {
-    font-weight: 600;
-    color: var(--primary-color);
-    margin-bottom: 0.25rem;
-}
-
-.test-unit {
-    color: var(--secondary-color);
-    font-size: 0.9rem;
-}
-
-.test-range {
-    color: var(--secondary-color);
-    font-size: 0.85rem;
-    margin-top: 0.25rem;
-}
-
-.result-value {
-    font-weight: 600;
-    color: var(--primary-color);
-}
-
-.review-info .info-row {
-    margin-bottom: 1rem;
-}
-
-.review-info .info-row:last-child {
-    margin-bottom: 0;
-}
-
-.info-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    padding: 0.5rem 0;
-    border-bottom: 1px solid var(--border-color);
-}
-
-.info-row:last-child {
-    border-bottom: none;
-}
-
-.info-label {
-    font-weight: 600;
-    color: var(--secondary-color);
-    flex: 0 0 150px;
-}
-
-.info-value {
-    flex: 1;
-    text-align: right;
-}
-
-@media (max-width: 768px) {
-    .info-row {
-        flex-direction: column;
-        align-items: stretch;
-    }
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Materialize tooltips (if any are added dynamically or for general use)
+    var tooltippedElems = document.querySelectorAll('.tooltipped');
+    M.Tooltip.init(tooltippedElems);
     
-    .info-value {
-        text-align: left;
-        margin-top: 0.25rem;
-    }
-}
-</style>
+    // Initialize Materialize dropdowns (if any, e.g. for Admin Actions if converted)
+    var dropdownElems = document.querySelectorAll('.dropdown-trigger');
+    M.Dropdown.init(dropdownElems);
+});
+</script>
 {% endblock %}

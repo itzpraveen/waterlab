@@ -1,110 +1,129 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ page_title }}</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .container {
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
-            padding: 40px;
-            text-align: center;
-            max-width: 500px;
-            width: 90%;
-        }
-        .logo {
-            font-size: 2.5rem;
-            color: #667eea;
-            margin-bottom: 10px;
-            font-weight: bold;
-        }
-        .subtitle {
-            color: #666;
-            margin-bottom: 40px;
-            font-size: 1.1rem;
-        }
-        .login-options {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-        .login-card {
-            background: #f8f9ff;
-            border: 2px solid #e1e5fe;
-            border-radius: 8px;
-            padding: 20px;
-            text-decoration: none;
-            color: inherit;
-            transition: all 0.3s ease;
-        }
-        .login-card:hover {
-            border-color: #667eea;
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102,126,234,0.2);
-        }
-        .card-title {
-            font-size: 1.3rem;
-            font-weight: 600;
-            color: #333;
-            margin-bottom: 8px;
-        }
-        .card-description {
-            color: #666;
-            font-size: 0.9rem;
-        }
-        .admin-card {
-            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
-            color: white;
-            border-color: #ff6b6b;
-        }
-        .admin-card .card-title,
-        .admin-card .card-description {
-            color: white;
-        }
-        .footer {
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 1px solid #eee;
-            color: #888;
-            font-size: 0.9rem;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="logo">🧪 Water Lab LIMS</div>
-        <div class="subtitle">Kerala Water Testing Laboratory</div>
-        
-        <div class="login-options">
-            <a href="{% url 'core:admin_login' %}" class="login-card admin-card">
-                <div class="card-title">🔐 Administrator Login</div>
-                <div class="card-description">
-                    System administration, user management, and complete access
-                </div>
-            </a>
-            
-            <a href="{% url 'core:user_login' %}" class="login-card">
-                <div class="card-title">👤 Staff Login</div>
-                <div class="card-description">
-                    Lab technicians, front desk staff, and consultants
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}{{ page_title|default:"Login Selector" }} - Water Lab LIMS{% endblock %}
+
+{% block extra_css %}
+<style>
+    body {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    /* Override base.html styles for a centered login page */
+    header, .page-footer {
+        display: none !important; /* Hide default header and footer for login page */
+    }
+    main.site-content {
+        padding-top: 0 !important; /* Remove padding from main if header is hidden */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh; /* Ensure it takes full viewport height */
+        width: 100%;
+    }
+    .login-container {
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+        padding: 40px;
+        text-align: center;
+        max-width: 500px;
+        width: 90%;
+    }
+    .logo-text-login {
+        font-size: 2.2rem;
+        color: #667eea; /* Match gradient start */
+        margin-bottom: 5px;
+        font-weight: bold;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .logo-text-login i {
+        font-size: 2.5rem; /* Make icon slightly larger */
+        margin-right: 8px;
+    }
+    .subtitle-login {
+        color: #555;
+        margin-bottom: 30px;
+        font-size: 1rem;
+    }
+    .login-card {
+        margin-bottom: 20px;
+        transition: all 0.3s ease;
+        border-radius: 8px !important; /* Ensure card radius */
+    }
+    .login-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 20px rgba(0,0,0,0.15) !important;
+    }
+    .login-card .card-content {
+        padding: 24px !important;
+    }
+    .login-card .card-title {
+        font-size: 1.4rem;
+        font-weight: 500;
+        margin-bottom: 10px;
+    }
+    .login-card .card-description {
+        font-size: 0.95rem;
+        color: #666;
+    }
+    .admin-card {
+        background: linear-gradient(135deg, #ff758c 0%, #ff7eb3 100%); /* Softer admin card gradient */
+    }
+    .admin-card .card-title,
+    .admin-card .card-description,
+    .admin-card i {
+        color: white !important;
+    }
+    .footer-login {
+        margin-top: 25px;
+        padding-top: 15px;
+        border-top: 1px solid #eee;
+        color: #777;
+        font-size: 0.9rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container login-container">
+    <div class="logo-text-login">
+        <i class="material-icons">science</i> Water Lab LIMS
+    </div>
+    <div class="subtitle-login">Kerala Water Testing Laboratory</div>
+    
+    <div class="row">
+        <div class="col s12">
+            <a href="{% url 'core:admin_login' %}" class="black-text">
+                <div class="card login-card admin-card hoverable">
+                    <div class="card-content white-text">
+                        <span class="card-title"><i class="material-icons left">security</i>Administrator Login</span>
+                        <p class="card-description">
+                            System administration, user management, and complete access.
+                        </p>
+                    </div>
                 </div>
             </a>
         </div>
-        
-        <div class="footer">
-            Secure access to laboratory information management system
+        <div class="col s12">
+            <a href="{% url 'core:user_login' %}" class="black-text">
+                <div class="card login-card staff-card hoverable">
+                    <div class="card-content">
+                        <span class="card-title"><i class="material-icons left">person_outline</i>Staff Login</span>
+                        <p class="card-description">
+                            Lab technicians, front desk staff, and consultants.
+                        </p>
+                    </div>
+                </div>
+            </a>
         </div>
     </div>
-</body>
-</html>
+    
+    <div class="footer-login">
+        Secure access to laboratory information management system. &copy; Biofix
+    </div>
+</div>
+{% endblock %}
+
+{% block fab %}{% endblock %} {# Hide FAB on login page #}

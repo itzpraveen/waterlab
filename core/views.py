@@ -11,7 +11,7 @@ from django.db import transaction
 from datetime import timedelta
 
 from .models import Customer, Sample, TestParameter, TestResult, ConsultantReview, CustomUser, AuditTrail
-from .forms import CustomerForm, SampleForm, CustomPasswordChangeForm
+from .forms import CustomerForm, SampleForm, CustomPasswordChangeForm, TestResultEntryForm, TestParameterForm # Added TestParameterForm
 from .decorators import admin_required, lab_required, frontdesk_required, consultant_required
 from .mixins import AdminRequiredMixin, LabRequiredMixin, FrontDeskRequiredMixin, ConsultantRequiredMixin, RoleRequiredMixin, AuditMixin
 
@@ -316,7 +316,7 @@ class AdminDashboardView(AdminRequiredMixin, TemplateView):
             
             context['samples_awaiting_review'] = Sample.objects.filter(
                 current_status='RESULTS_ENTERED' # Samples with results entered, but not yet in 'REVIEW_PENDING'
-            ).select_related('customer').order_by('updated_at')[:5]
+            ).select_related('customer').order_by('-collection_datetime')[:5]
 
         except Exception as e:
             # Log the error (in a real application, use proper logging)
@@ -354,7 +354,7 @@ class LabDashboardView(LabRequiredMixin, TemplateView):
             'recently_completed_samples': Sample.objects.filter(
                 results__technician=self.request.user,
                 current_status__in=['RESULTS_ENTERED', 'REVIEW_PENDING', 'REPORT_APPROVED']
-            ).distinct().select_related('customer').order_by('-updated_at')[:10],
+            ).distinct().select_related('customer').order_by('-collection_datetime')[:10],
             
             # Recent test results
             'recent_results': TestResult.objects.filter(
@@ -565,30 +565,39 @@ def test_result_entry(request, sample_id):
     sample = get_object_or_404(Sample, sample_id=sample_id)
     
     # Check if sample is in correct status for testing
-    if sample.current_status not in ['SENT_TO_LAB', 'TESTING_IN_PROGRESS', 'RESULTS_ENTERED']:
-        messages.error(request, f'Sample is not available for testing. Current status: {sample.get_current_status_display()}')
+    allowed_statuses_for_entry = ['SENT_TO_LAB', 'TESTING_IN_PROGRESS', 'RESULTS_ENTERED']
+    if request.user.is_admin and sample.current_status == 'REVIEW_PENDING': # Admins can correct results in REVIEW_PENDING
+        allowed_statuses_for_entry.append('REVIEW_PENDING')
+
+    if sample.current_status not in allowed_statuses_for_entry:
+        messages.error(request, f'Sample is not available for result entry/correction. Current status: {sample.get_current_status_display()}')
         return redirect('core:sample_detail', pk=sample.sample_id)
     
     if request.method == 'POST':
         try:
-            with transaction.atomic():  # Ensure all operations succeed or fail together
-                # Update status to testing in progress if not already
+            with transaction.atomic():
+                original_status_was_review_pending = (sample.current_status == 'REVIEW_PENDING')
+
                 if sample.current_status == 'SENT_TO_LAB':
                     sample.update_status('TESTING_IN_PROGRESS', request.user)
                 
-                results_entered = 0
-                results_updated = 0
-                errors = []
-                
-                for test_param in sample.tests_requested.all():
-                    result_value = request.POST.get(f'result_{test_param.parameter_id}')
-                    observation = request.POST.get(f'observation_{test_param.parameter_id}', '')
-                    
-                    if result_value and result_value.strip():
-                        try:
+                results_entered_count = 0
+                results_updated_count = 0
+                all_forms_valid = True
+                form_errors = {} # Not currently used to re-render, but good for debugging
+
+                for test_param_model in sample.tests_requested.all():
+                    form_prefix = f'param_{test_param_model.parameter_id}'
+                    form = TestResultEntryForm(request.POST, prefix=form_prefix)
+
+                    if form.is_valid():
+                        result_value = form.cleaned_data['result_value']
+                        observation = form.cleaned_data['observation']
+
+                        if result_value and result_value.strip(): # Ensure result_value is not just whitespace
                             test_result, created = TestResult.objects.get_or_create(
                                 sample=sample,
-                                parameter=test_param,
+                                parameter=test_param_model,
                                 defaults={
                                     'result_value': result_value.strip(),
                                     'observation': observation,
@@ -596,75 +605,105 @@ def test_result_entry(request, sample_id):
                                 }
                             )
                             if created:
-                                # Log new result creation for audit trail
-                                AuditTrail.log_change(
-                                    user=request.user,
-                                    action='CREATE',
-                                    instance=test_result,
-                                    request=request
-                                )
-                                test_result.full_clean()  # Validate the result
-                                results_entered += 1
+                                AuditTrail.log_change(user=request.user, action='CREATE', instance=test_result, request=request)
+                                test_result.full_clean()
+                                results_entered_count += 1
                             else:
-                                # Update existing result, preserve original technician
-                                old_values = {
-                                    'result_value': test_result.result_value,
-                                    'observation': test_result.observation
-                                }
+                                old_values = {'result_value': test_result.result_value, 'observation': test_result.observation}
                                 test_result.result_value = result_value.strip()
                                 test_result.observation = observation
-                                # Don't overwrite original technician - keep existing one
-                                test_result.full_clean()  # Validate the result
+                                test_result.full_clean()
                                 test_result.save()
-                                
-                                # Log the update for audit trail
-                                AuditTrail.log_change(
-                                    user=request.user,
-                                    action='UPDATE',
-                                    instance=test_result,
-                                    old_values=old_values,
-                                    new_values={
-                                        'result_value': result_value.strip(),
-                                        'observation': observation
-                                    },
-                                    request=request
-                                )
-                                results_updated += 1
-                                
-                        except Exception as e:
-                            errors.append(f'Error with {test_param.name}: {str(e)}')
-                
-                if errors:
-                    # Transaction will rollback due to exception
-                    raise Exception('; '.join(errors))
-                
-                # Check if all results are now complete
-                if sample.has_all_test_results():
-                    sample.update_status('RESULTS_ENTERED', request.user)
+                                AuditTrail.log_change(user=request.user, action='UPDATE', instance=test_result, old_values=old_values, new_values=form.cleaned_data, request=request)
+                                results_updated_count += 1
+                    else:
+                        all_forms_valid = False
+                        form_errors[test_param_model.parameter_id] = form.errors
+                        # We might want to re-render the form with errors instead of just a message
+                        # For now, just collect errors and show a generic message.
+
+                if not all_forms_valid:
+                    # If any form is invalid, we should probably re-render the page with errors.
+                    # For simplicity now, just show an error message and don't proceed with status updates.
+                    messages.error(request, "There were errors in your submission. Please correct them and try again.")
+                    # To re-render with errors, we'd need to reconstruct form_data as in GET and pass form_errors
+                    # This part needs more robust error handling if we want to show specific field errors.
+                    # For now, we'll let the transaction rollback if an exception occurs or just show a generic message.
+                    # messages.error(request, f"Validation errors for {test_param_model.name}: {form.errors.as_json()}")
+                    raise ValidationError(f"Form validation failed for {test_param_model.name}. Please check your input.")
+
+
+                if original_status_was_review_pending:
+                    # If admin edited while it was review pending, keep it review pending.
+                    # Consultant needs to be aware that results might have changed.
+                    if not sample.has_all_test_results(): # Should not happen if it was REVIEW_PENDING, but check anyway
+                        missing_tests_qs = sample.get_missing_test_results()
+                        missing_names = [test.name for test in missing_tests_qs]
+                        messages.warning(request, f'Results updated, but now missing: {", ".join(missing_names)}. Sample remains in Review Pending.')
+                    else:
+                        messages.info(request, "Results updated by Admin. Sample remains in 'Review Pending' status for re-evaluation by consultant.")
+                elif sample.has_all_test_results():
+                    sample.update_status('RESULTS_ENTERED', request.user) # This will fail if current_status is REVIEW_PENDING due to can_transition_to
                     messages.success(request, 'All test results completed! Sample ready for review.')
                 else:
-                    missing_tests = sample.get_missing_test_results()
-                    missing_names = [test.name for test in missing_tests]
+                    missing_tests_qs = sample.get_missing_test_results()
+                    missing_names = [test.name for test in missing_tests_qs]
                     messages.info(request, f'Results saved. Still missing: {", ".join(missing_names)}')
                 
-                if results_entered > 0:
-                    messages.success(request, f'{results_entered} new test results saved successfully!')
-                if results_updated > 0:
-                    messages.success(request, f'{results_updated} test results updated successfully!')
-                    
+                if results_entered_count > 0:
+                    messages.success(request, f'{results_entered_count} new test results saved successfully!')
+                if results_updated_count > 0:
+                    messages.success(request, f'{results_updated_count} test results updated successfully!')
+            
+        except ValidationError as ve: # Catch specific validation errors from forms or manual raises
+             messages.error(request, f'Validation Error: {ve.messages[0] if ve.messages else str(ve)}')
+             # To show errors on the form, we'd need to fall through to the GET rendering logic
+             # with the invalid forms. This is a simplification for now.
         except Exception as e:
             messages.error(request, f'Error saving results: {str(e)}')
         
+        # Always redirect to sample detail after POST, success or error (unless re-rendering form with errors)
         return redirect('core:sample_detail', pk=sample.sample_id)
+
+    # GET request handling
+    existing_results_dict = {r.parameter.parameter_id: r for r in sample.results.all()} # Renamed
+    form_data = []
+    for test_param_model in sample.tests_requested.all(): # Renamed
+        initial_data = {}
+        existing_result = existing_results_dict.get(test_param_model.parameter_id)
+        if existing_result:
+            initial_data['result_value'] = existing_result.result_value
+            initial_data['observation'] = existing_result.observation
+        
+        # Use 'validate' class for Materialize CSS compatibility
+        form_instance = TestResultEntryForm(
+            prefix=f'param_{test_param_model.parameter_id}', 
+            initial=initial_data
+        )
+        # Update widget attributes for Materialize if not done in form class globally
+        form_instance.fields['result_value'].widget.attrs.update({'class': 'validate'})
+        form_instance.fields['observation'].widget.attrs.update({'class': 'materialize-textarea validate'})
+
+
+        form_data.append({
+            'parameter': test_param_model,
+            'form': form_instance,
+            'existing_result': existing_result 
+        })
     
-    existing_results = {r.parameter.parameter_id: r for r in sample.results.all()}
-    missing_tests = sample.get_missing_test_results()
+    missing_tests_qs = sample.get_missing_test_results() # Renamed
+
     
+    can_edit_results = sample.current_status in ['TESTING_IN_PROGRESS', 'RESULTS_ENTERED']
+    if sample.current_status == 'REVIEW_PENDING' and request.user.is_admin:
+        can_edit_results = True
+
     return render(request, 'core/test_result_entry.html', {
         'sample': sample,
-        'existing_results': existing_results,
-        'missing_tests': missing_tests,
-        'can_edit': sample.current_status in ['TESTING_IN_PROGRESS', 'RESULTS_ENTERED'],
+        'form_data': form_data, 
+        'existing_results': existing_results_dict, 
+        'missing_tests': missing_tests_qs, 
+        'can_edit': can_edit_results, # Updated can_edit logic
     })
 
 @consultant_required
@@ -858,3 +897,93 @@ def setup_test_parameters(request):
     return render(request, 'core/setup_test_parameters.html', {
         'existing_params': existing_params,
     })
+
+class TestResultListView(LoginRequiredMixin, ListView):
+    model = Sample # Changed model to Sample
+    template_name = 'core/test_result_list.html' 
+    context_object_name = 'samples_with_results' # Changed context object name
+    paginate_by = 15 # Adjusted pagination if needed
+
+    def get_queryset(self):
+        # Fetch samples that have at least one test result
+        # Order by the most recent test result date (descending), then by sample collection date
+        # This requires annotating the latest test date onto the sample queryset.
+        from django.db.models import Max
+        queryset = Sample.objects.annotate(
+            latest_test_date=Max('results__test_date')
+        ).filter(results__isnull=False).distinct().select_related('customer').order_by('-latest_test_date', '-collection_datetime')
+        return queryset
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['page_title'] = "Samples with Test Results" # Updated page title
+        # Add any other context needed for the template
+        return context
+
+class TestParameterUpdateView(AdminRequiredMixin, UpdateView):
+    model = TestParameter
+    form_class = TestParameterForm
+    template_name = 'core/test_parameter_form.html' # Will be created
+    success_url = reverse_lazy('core:setup_test_parameters')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['is_edit'] = True
+        context['page_title'] = f"Edit Test Parameter: {self.object.name}"
+        return context
+
+    def form_valid(self, form):
+        messages.success(self.request, f'Test Parameter "{form.instance.name}" updated successfully.')
+        return super().form_valid(form)
+
+@login_required
+def download_sample_report_view(request, pk):
+    sample = get_object_or_404(Sample, pk=pk)
+
+    if sample.current_status not in ['REPORT_APPROVED', 'REPORT_SENT']:
+        messages.error(request, "Report is not yet approved or available for download.")
+        return redirect('core:sample_detail', pk=sample.pk)
+
+    # Placeholder for PDF generation logic
+    # For a real implementation, you'd use a library like ReportLab, WeasyPrint, or xhtml2pdf
+    # to generate a PDF file and return it in the HttpResponse.
+    
+    # Example: Basic HTML content for the report (to be rendered to PDF later)
+    report_html_content = f"""
+    <html>
+        <head><title>Test Report - {sample.sample_id}</title></head>
+        <body>
+            <h1>Test Report</h1>
+            <p><strong>Sample ID:</strong> {sample.sample_id}</p>
+            <p><strong>Customer:</strong> {sample.customer.name}</p>
+            <p><strong>Collection Date:</strong> {sample.collection_datetime}</p>
+            <p><strong>Sample Source:</strong> {sample.get_sample_source_display()}</p>
+            <hr>
+            <h2>Results:</h2>
+            <ul>
+    """
+    for result in sample.results.all():
+        report_html_content += f"<li>{result.parameter.name}: {result.result_value} {result.parameter.unit}</li>"
+    
+    report_html_content += """
+            </ul>
+            <hr>
+            <p><em>Report generated on: {timezone.now()}</em></p>
+            <p style='color: red; font-weight: bold;'>NOTE: This is a placeholder. PDF generation is pending implementation.</p>
+        </body>
+    </html>
+    """
+    # In a real scenario, you would render this HTML to a PDF
+    # response = HttpResponse(content_type='application/pdf')
+    # response['Content-Disposition'] = f'attachment; filename="report_{sample.sample_id}.pdf"'
+    # ... PDF generation logic using the html_content ...
+    # response.write(pdf_content)
+    # return response
+
+    # For now, return the HTML as a simple response or a plain text message
+    # return HttpResponse(report_html_content, content_type='text/html')
+    return HttpResponse(
+        f"PDF report generation for Sample ID: {sample.sample_id} is pending implementation.\n"
+        f"Report would include customer: {sample.customer.name}, collected: {sample.collection_datetime}, etc.",
+        content_type='text/plain'
+    )

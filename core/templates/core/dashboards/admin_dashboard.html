@@ -1,249 +1,263 @@
 {% extends 'core/base.html' %}
+{% load static %}
 
 {% block title %}Admin Dashboard - Water Lab LIMS{% endblock %}
 
+{% block breadcrumbs %}
+<div class="col s12 breadcrumb-container">
+    <nav>
+        <div class="nav-wrapper">
+            <a href="{% url 'core:home' %}" class="breadcrumb">Home</a>
+            <span class="breadcrumb active">Admin Dashboard</span>
+        </div>
+    </nav>
+</div>
+{% endblock breadcrumbs %}
+
 {% block content %}
-<div class="dashboard-header">
-    <h1 class="page-title">👨‍💼 Administrator Dashboard</h1>
-    <div class="user-info">
-        <span class="role-badge admin">{{ user.get_role_display }}</span>
-        <span>Welcome, {{ user.first_name|default:user.username }}!</span>
+<div class="row section">
+    <div class="col s12 m8">
+        <h4 class="header">👨‍💼 Administrator Dashboard</h4>
+    </div>
+    <div class="col s12 m4 right-align">
+        <p>
+            <span class="role-badge {{ user.role }}">{{ user.get_role_display }}</span>
+            Welcome, {{ user.first_name|default:user.username }}!
+        </p>
     </div>
 </div>
 
 <!-- System Overview Stats -->
-<div class="dashboard-stats">
-    <a href="{% url 'core:customer_list' %}" class="stat-card-link">
-        <div class="stat-card">
-            <div class="stat-value">{{ total_customers }}</div>
-            <div class="stat-label">Total Customers</div>
-        </div>
-    </a>
-    <a href="{% url 'core:sample_list' %}" class="stat-card-link">
-        <div class="stat-card info">
-            <div class="stat-value">{{ total_samples }}</div>
-            <div class="stat-label">Total Samples</div>
-        </div>
-    </a>
-    <a href="{% url 'core:sample_list' %}" class="stat-card-link">
-        <div class="stat-card warning">
-            <div class="stat-value">{{ pending_samples_count }}</div>
-            <div class="stat-label">Pending Samples</div>
-        </div>
-    </a>
-    <a href="{% url 'core:sample_list' %}" class="stat-card-link">
-        <div class="stat-card success">
-            <div class="stat-value">{{ completed_samples_count }}</div>
-            <div class="stat-label">Completed</div>
-        </div>
-    </a>
-    <a href="{% url 'core:sample_list' %}" class="stat-card-link">
-        <div class="stat-card danger">
-            <div class="stat-value">{{ review_pending_count }}</div>
-            <div class="stat-label">Review Pending</div>
-        </div>
-    </a>
-    <a href="/admin/auth/user/" class="stat-card-link">
-        <div class="stat-card">
-            <div class="stat-value">{{ total_users }}</div>
-            <div class="stat-label">System Users</div>
-        </div>
-    </a>
+<div class="row section">
+    <div class="col s12 m6 l3">
+        <a href="{% url 'core:customer_list' %}" class="black-text">
+            <div class="card-panel hoverable center-align">
+                <i class="material-icons large blue-text text-darken-2">people</i>
+                <h5>{{ total_customers }}</h5>
+                <p class="grey-text">Total Customers</p>
+            </div>
+        </a>
+    </div>
+    <div class="col s12 m6 l3">
+        <a href="{% url 'core:sample_list' %}" class="black-text">
+            <div class="card-panel hoverable center-align">
+                <i class="material-icons large teal-text text-darken-2">science</i>
+                <h5>{{ total_samples }}</h5>
+                <p class="grey-text">Total Samples</p>
+            </div>
+        </a>
+    </div>
+    <div class="col s12 m6 l3">
+        <a href="{% url 'core:sample_list' %}" class="black-text">
+            <div class="card-panel hoverable center-align">
+                <i class="material-icons large orange-text text-darken-2">hourglass_empty</i>
+                <h5>{{ pending_samples_count }}</h5>
+                <p class="grey-text">Pending Samples</p>
+            </div>
+        </a>
+    </div>
+    <div class="col s12 m6 l3">
+        <a href="{% url 'core:sample_list' %}" class="black-text">
+            <div class="card-panel hoverable center-align">
+                <i class="material-icons large green-text text-darken-2">check_circle</i>
+                <h5>{{ completed_samples_count }}</h5>
+                <p class="grey-text">Completed</p>
+            </div>
+        </a>
+    </div>
+    <div class="col s12 m6 l3">
+        <a href="{% url 'core:sample_list' %}" class="black-text">
+            <div class="card-panel hoverable center-align">
+                <i class="material-icons large red-text text-darken-2">rate_review</i>
+                <h5>{{ review_pending_count }}</h5>
+                <p class="grey-text">Review Pending</p>
+            </div>
+        </a>
+    </div>
+    <div class="col s12 m6 l3">
+        <a href="/admin/auth/user/" class="black-text">
+            <div class="card-panel hoverable center-align">
+                <i class="material-icons large purple-text text-darken-2">supervisor_account</i>
+                <h5>{{ total_users }}</h5>
+                <p class="grey-text">System Users</p>
+            </div>
+        </a>
+    </div>
 </div>
 
 <!-- Quick Actions -->
-<div class="dashboard-section">
-    <div class="section-header">
-        <h2 class="section-title">⚡ Quick Actions</h2>
-    </div>
-    <div class="quick-actions">
-        <a href="{% url 'core:customer_add' %}" class="btn btn-primary">👤 Add Customer</a>
-        <a href="{% url 'core:sample_add' %}" class="btn btn-primary">🧪 Register Sample</a>
-        <a href="{% url 'core:customer_list' %}" class="btn btn-outline">📋 View Customers</a>
-        <a href="{% url 'core:sample_list' %}" class="btn btn-outline">🔬 View Samples</a>
-        <a href="{% url 'core:setup_test_parameters' %}" class="btn btn-outline">⚗️ Setup Test Parameters</a>
-        <a href="{% url 'core:audit_trail' %}" class="btn btn-outline">📋 Audit Trail</a>
-        <a href="/admin/" class="btn btn-outline">⚙️ Admin Panel</a>
+<div class="row section">
+    <div class="col s12">
+        <h5 class="header">⚡ Quick Actions</h5>
+        <a href="{% url 'core:customer_add' %}" class="btn waves-effect waves-light"><i class="material-icons left">person_add</i>Add Customer</a>
+        <a href="{% url 'core:sample_add' %}" class="btn waves-effect waves-light"><i class="material-icons left">colorize</i>Register Sample</a>
+        <a href="{% url 'core:customer_list' %}" class="btn-flat waves-effect waves-teal"><i class="material-icons left">list_alt</i>View Customers</a>
+        <a href="{% url 'core:sample_list' %}" class="btn-flat waves-effect waves-teal"><i class="material-icons left">view_list</i>View Samples</a>
+        <a href="{% url 'core:setup_test_parameters' %}" class="btn-flat waves-effect waves-teal"><i class="material-icons left">settings_applications</i>Test Parameters</a>
+        <a href="{% url 'core:audit_trail' %}" class="btn-flat waves-effect waves-teal"><i class="material-icons left">history</i>Audit Trail</a>
+        <a href="/admin/" class="btn-flat waves-effect waves-teal"><i class="material-icons left">security</i>Admin Panel</a>
     </div>
 </div>
 
-<div class="grid-2-col">
+<div class="row section">
     <!-- Recent Activity -->
-    <div class="card">
-        <div class="card-header">
-            <h3 class="card-title">📊 Recent Activity</h3>
-        </div>
-        <div class="p-3">
-            <h4>Latest Samples</h4>
-            {% if recent_samples %}
-                <div class="activity-list">
+    <div class="col s12 m6">
+        <div class="card">
+            <div class="card-content">
+                <span class="card-title"><i class="material-icons left">timeline</i>Recent Activity</span>
+                <h6>Latest Samples</h6>
+                {% if recent_samples %}
+                <ul class="collection">
                     {% for sample in recent_samples %}
-                    <div class="activity-item">
-                        <div class="activity-content">
-                            <a href="{% url 'core:sample_detail' sample.pk %}" class="link">
-                                Sample {{ sample.sample_id|truncatechars:8 }}
-                            </a>
-                            <span class="activity-meta">
-                                by {{ sample.customer.name }} - {{ sample.collection_datetime|timesince }} ago
-                            </span>
-                        </div>
-                        <span class="badge badge-info">{{ sample.get_current_status_display }}</span>
-                    </div>
+                    <li class="collection-item avatar">
+                        <i class="material-icons circle blue">science</i>
+                        <span class="title"><a href="{% url 'core:sample_detail' sample.pk %}">Sample {{ sample.sample_id|truncatechars:8 }}</a></span>
+                        <p>By: {{ sample.customer.name }} <br>
+                           {{ sample.collection_datetime|timesince }} ago
+                        </p>
+                        <span class="secondary-content chip">{{ sample.get_current_status_display }}</span>
+                    </li>
                     {% endfor %}
-                </div>
-            {% else %}
-                <p class="text-muted">No recent samples</p>
-            {% endif %}
+                </ul>
+                {% else %}
+                <p class="grey-text">No recent samples</p>
+                {% endif %}
+            </div>
         </div>
     </div>
 
     <!-- System Status -->
-    <div class="card">
-        <div class="card-header">
-            <h3 class="card-title">🔧 System Status</h3>
-        </div>
-        <div class="p-3">
-            <div class="status-item">
-                <span class="status-label">Daily Samples:</span>
-                <span class="status-value">{{ today_samples_count }}</span>
+    <div class="col s12 m6">
+        <div class="card">
+            <div class="card-content">
+                <span class="card-title"><i class="material-icons left">settings_system_daydream</i>System Status</span>
+                <ul class="collection">
+                    <li class="collection-item">Daily Samples: <span class="right">{{ today_samples_count }}</span></li>
+                    <li class="collection-item">Weekly Samples: <span class="right">{{ week_samples_count }}</span></li>
+                    <li class="collection-item">Testing in Progress: <span class="right">{{ testing_samples_count }}</span></li>
+                </ul>
+                <h6 class="mt-3">User Distribution</h6>
+                <ul class="collection">
+                {% for stat in user_stats %}
+                    <li class="collection-item">{{ stat.role|capfirst }}: <span class="right">{{ stat.count }}</span></li>
+                {% endfor %}
+                </ul>
             </div>
-            <div class="status-item">
-                <span class="status-label">Weekly Samples:</span>
-                <span class="status-value">{{ week_samples_count }}</span>
-            </div>
-            <div class="status-item">
-                <span class="status-label">Testing in Progress:</span>
-                <span class="status-value">{{ testing_samples_count }}</span>
-            </div>
-            
-            <h4 class="mt-3">User Distribution</h4>
-            {% for stat in user_stats %}
-            <div class="status-item">
-                <span class="status-label">{{ stat.role|capfirst }}:</span>
-                <span class="status-value">{{ stat.count }}</span>
-            </div>
-            {% endfor %}
         </div>
     </div>
 </div>
 
 <!-- Recent Users -->
-<div class="card">
-    <div class="card-header">
-        <h3 class="card-title">👥 Recent Users</h3>
-    </div>
-    {% if recent_users %}
-    <div class="table-responsive">
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th>Username</th>
-                    <th>Name</th>
-                    <th>Role</th>
-                    <th>Department</th>
-                    <th>Joined</th>
-                    <th>Status</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for user in recent_users %}
-                <tr>
-                    <td>{{ user.username }}</td>
-                    <td>{{ user.first_name }} {{ user.last_name }}</td>
-                    <td>
-                        <span class="role-badge {{ user.role }}">{{ user.get_role_display }}</span>
-                    </td>
-                    <td>{{ user.department|default:"—" }}</td>
-                    <td>{{ user.date_joined|date:"M d, Y" }}</td>
-                    <td>
-                        <span class="badge badge-{% if user.is_active %}success{% else %}danger{% endif %}">
-                            {% if user.is_active %}Active{% else %}Inactive{% endif %}
-                        </span>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-    {% else %}
-    <div class="p-3 text-center text-muted">
-        <p>No users registered yet</p>
-    </div>
-    {% endif %}
-</div>
-
-<!-- Lab Workflow Overview -->
-<div class="dashboard-section">
-    <div class="section-header">
-        <h2 class="section-title">🔬 Lab Workflow Overview</h2>
-    </div>
-    {% if data_load_error %}
-    <div class="alert alert-danger" role="alert">
-        <h4 class="alert-heading">Data Loading Error!</h4>
-        <p>There was an issue loading some of the dashboard data. Some information might be missing or incomplete. Please try refreshing the page or contact support if the problem persists.</p>
-    </div>
-    {% endif %}
-    <div class="grid-2-col">
+<div class="row section">
+    <div class="col s12">
         <div class="card">
-            <div class="card-header">
-                <h3 class="card-title">🧪 Samples Currently in Lab ({{ samples_in_lab.count }})</h3>
-            </div>
-            <div class="p-3">
-                {% if samples_in_lab %}
-                    <div class="activity-list">
-                        {% for sample in samples_in_lab %}
-                        <div class="activity-item">
-                            <div class="activity-content">
-                                <a href="{% url 'core:sample_detail' sample.pk %}" class="link">
-                                    Sample {{ sample.sample_id|truncatechars:8 }}
-                                </a>
-                                <span class="activity-meta">
-                                    {{ sample.customer.name }} - {{ sample.get_current_status_display }}
+            <div class="card-content">
+                <span class="card-title"><i class="material-icons left">group</i>Recent Users</span>
+                {% if recent_users %}
+                <table class="highlight responsive-table">
+                    <thead>
+                        <tr>
+                            <th>Username</th>
+                            <th>Name</th>
+                            <th>Role</th>
+                            <th>Department</th>
+                            <th>Joined</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user_obj in recent_users %} {# Renamed user to user_obj to avoid conflict with request.user #}
+                        <tr>
+                            <td>{{ user_obj.username }}</td>
+                            <td>{{ user_obj.first_name }} {{ user_obj.last_name }}</td>
+                            <td>
+                                <span class="role-badge {{ user_obj.role }}">{{ user_obj.get_role_display }}</span>
+                            </td>
+                            <td>{{ user_obj.department|default:"—" }}</td>
+                            <td>{{ user_obj.date_joined|date:"M d, Y" }}</td>
+                            <td>
+                                <span class="new badge {% if user_obj.is_active %}green{% else %}red{% endif %}" data-badge-caption="">
+                                    {% if user_obj.is_active %}Active{% else %}Inactive{% endif %}
                                 </span>
-                            </div>
-                            <span class="badge badge-warning">{{ sample.collection_datetime|timesince }} ago</span>
-                        </div>
+                            </td>
+                        </tr>
                         {% endfor %}
-                    </div>
-                    {% if samples_in_lab.count >= 5 %}
-                    <div class="text-right mt-2">
-                        <a href="{% url 'core:sample_list' %}?status=SENT_TO_LAB&status=TESTING_IN_PROGRESS" class="link">View all...</a>
-                    </div>
-                    {% endif %}
+                    </tbody>
+                </table>
                 {% else %}
-                    <p class="text-muted">No samples currently in the lab.</p>
+                <p class="grey-text center-align">No users registered yet</p>
                 {% endif %}
             </div>
         </div>
+    </div>
+</div>
 
+<!-- Lab Workflow Overview -->
+<div class="row section">
+    <div class="col s12">
+        <h5 class="header"><i class="material-icons left">device_hub</i>Lab Workflow Overview</h5>
+    </div>
+    {% if data_load_error %}
+    <div class="col s12">
+        <div class="card-panel red lighten-2 white-text">
+            <span class="card-title">Data Loading Error!</span>
+            <p>There was an issue loading some of the dashboard data. Some information might be missing or incomplete. Please try refreshing the page or contact support if the problem persists.</p>
+        </div>
+    </div>
+    {% endif %}
+    <div class="col s12 m6">
         <div class="card">
-            <div class="card-header">
-                <h3 class="card-title">🧐 Samples Awaiting Review ({{ samples_awaiting_review.count }})</h3>
-            </div>
-            <div class="p-3">
-                {% if samples_awaiting_review %}
-                    <div class="activity-list">
-                        {% for sample in samples_awaiting_review %}
-                        <div class="activity-item">
-                            <div class="activity-content">
-                                <a href="{% url 'core:sample_detail' sample.pk %}" class="link">
-                                    Sample {{ sample.sample_id|truncatechars:8 }}
-                                </a>
-                                <span class="activity-meta">
-                                    {{ sample.customer.name }} - Results Entered
-                                </span>
-                            </div>
-                            <span class="badge badge-info">{{ sample.updated_at|timesince }} ago</span>
-                        </div>
-                        {% endfor %}
-                    </div>
-                     {% if samples_awaiting_review.count >= 5 %}
-                    <div class="text-right mt-2">
-                        <a href="{% url 'core:sample_list' %}?status=RESULTS_ENTERED" class="link">View all...</a>
-                    </div>
-                    {% endif %}
+            <div class="card-content">
+                <span class="card-title"><i class="material-icons left">local_lab</i>Samples Currently in Lab ({{ samples_in_lab.count }})</span>
+                {% if samples_in_lab %}
+                <ul class="collection">
+                    {% for sample in samples_in_lab %}
+                    <li class="collection-item avatar">
+                        <i class="material-icons circle amber">opacity</i>
+                        <span class="title"><a href="{% url 'core:sample_detail' sample.pk %}">Sample {{ sample.sample_id|truncatechars:8 }}</a></span>
+                        <p>{{ sample.customer.name }} <br>
+                           {{ sample.get_current_status_display }}
+                        </p>
+                        <span class="secondary-content chip">{{ sample.collection_datetime|timesince }} ago</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% if samples_in_lab.count >= 5 %}
+                <div class="card-action right-align">
+                    <a href="{% url 'core:sample_list' %}?status=SENT_TO_LAB&status=TESTING_IN_PROGRESS">View all...</a>
+                </div>
+                {% endif %}
                 {% else %}
-                    <p class="text-muted">No samples currently awaiting review.</p>
+                <p class="grey-text">No samples currently in the lab.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col s12 m6">
+        <div class="card">
+            <div class="card-content">
+                <span class="card-title"><i class="material-icons left">playlist_add_check</i>Samples Awaiting Review ({{ samples_awaiting_review.count }})</span>
+                {% if samples_awaiting_review %}
+                <ul class="collection">
+                    {% for sample in samples_awaiting_review %}
+                    <li class="collection-item avatar">
+                        <i class="material-icons circle light-blue">assignment_turned_in</i>
+                        <span class="title"><a href="{% url 'core:sample_detail' sample.pk %}">Sample {{ sample.sample_id|truncatechars:8 }}</a></span>
+                        <p>{{ sample.customer.name }} <br>
+                           Results Entered
+                        </p>
+                        <span class="secondary-content chip">{{ sample.collection_datetime|timesince }} ago</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% if samples_awaiting_review.count >= 5 %}
+                <div class="card-action right-align">
+                    <a href="{% url 'core:sample_list' %}?status=RESULTS_ENTERED">View all...</a>
+                </div>
+                {% endif %}
+                {% else %}
+                <p class="grey-text">No samples currently awaiting review.</p>
                 {% endif %}
             </div>
         </div>
@@ -253,76 +267,78 @@
 
 {% block extra_css %}
 <style>
-.stat-card-link {
-    text-decoration: none;
-    color: inherit; /* Ensure text color inside card is not changed by link */
-}
+    .section {
+        margin-bottom: 2rem;
+    }
+    .header { /* For h4, h5 used as section titles */
+        font-weight: 400; /* Adjusted for M3 feel */
+        margin-top: 1rem;
+        margin-bottom: 1.5rem;
+        color: var(--text-color-dark);
+    }
+    .card-panel.hoverable { /* Ensure card panels in stats section use surface color */
+        background-color: var(--surface-color);
+    }
+    .card-panel h5 {
+        margin-top: 0.5rem;
+        margin-bottom: 0.5rem;
+        font-size: 1.8rem;
+        font-weight: 500; /* Slightly bolder for stat numbers */
+        color: var(--text-color-dark);
+    }
+    .card-panel p {
+        font-size: 0.9rem;
+        color: var(--text-color-medium);
+    }
+    .mt-3 { /* For User Distribution title */
+        margin-top: 1.5rem !important;
+    }
+    /* Button margins are handled by Materialize grid or custom spacing if needed */
+    /* .btn, .btn-flat {
+        margin-right: 5px;
+        margin-bottom: 5px; 
+    } */
+    .collection .collection-item.avatar .secondary-content.chip {
+        top: 25px; /* Adjust chip position in avatar collection items */
+        font-weight: 500;
+    }
+    .collection .collection-header {
+        background-color: var(--primary-color-light);
+        color: var(--primary-color-dark);
+        font-weight: 500;
+        padding-top: 0.5rem;
+        padding-bottom: 0.5rem;
+    }
+    .collection .collection-item {
+        border-bottom-color: var(--primary-color-light);
+    }
+    .collection a.collection-item { /* Ensure links in collections are styled correctly */
+        color: var(--text-color-dark);
+    }
+    .collection a.collection-item:hover {
+        background-color: var(--primary-color-light);
+        color: var(--primary-color-dark);
+    }
+    .card .card-action a:not(.btn):not(.btn-large):not(.btn-small):not(.btn-large):not(.btn-floating) {
+        color: var(--primary-color) !important; /* Ensure card action links use primary color */
+    }
+    .card .card-action a:not(.btn):not(.btn-large):not(.btn-small):not(.btn-large):not(.btn-floating):hover {
+        color: var(--primary-color-dark) !important;
+    }
 
-.stat-card-link .stat-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 6px 12px rgba(0,0,0,0.1);
-}
-
-.dashboard-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 2rem;
-}
-
-.user-info {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-}
-
-.activity-list {
-    max-height: 400px;
-    overflow-y: auto;
-}
-
-.activity-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0.75rem 0;
-    border-bottom: 1px solid var(--border-color);
-}
-
-.activity-item:last-child {
-    border-bottom: none;
-}
-
-.activity-content {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-}
-
-.activity-meta {
-    font-size: 0.85rem;
-    color: var(--secondary-color);
-}
-
-.status-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0.5rem 0;
-    border-bottom: 1px solid var(--border-color);
-}
-
-.status-item:last-child {
-    border-bottom: none;
-}
-
-.status-label {
-    font-weight: 500;
-}
-
-.status-value {
-    font-weight: 600;
-    color: var(--primary-color);
-}
 </style>
 {% endblock %}
+
+{% block fab %}
+{% if user.is_authenticated and user.is_admin %}
+<div class="fixed-action-btn">
+    <a class="btn-floating btn-large tooltipped" data-position="left" data-tooltip="Quick Actions" style="background-color: var(--primary-color);">
+        <i class="large material-icons">add</i>
+    </a>
+    <ul>
+        <li><a href="{% url 'core:sample_add' %}" class="btn-floating tooltipped" data-position="left" data-tooltip="Register New Sample" style="background-color: var(--info-color);"><i class="material-icons">colorize</i></a></li>
+        <li><a href="{% url 'core:customer_add' %}" class="btn-floating tooltipped" data-position="left" data-tooltip="Add New Customer" style="background-color: var(--success-color);"><i class="material-icons">person_add</i></a></li>
+    </ul>
+</div>
+{% endif %}
+{% endblock fab %}

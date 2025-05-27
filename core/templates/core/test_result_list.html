@@ -1,0 +1,133 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}{{ page_title|default:"Test Results" }} - Water Lab LIMS{% endblock %}
+
+{% block breadcrumbs %}
+<div class="col s12 breadcrumb-container">
+    <nav>
+        <div class="nav-wrapper">
+            <a href="{% url 'core:home' %}" class="breadcrumb">Home</a>
+            <span class="breadcrumb active">{{ page_title|default:"Test Results" }}</span>
+        </div>
+    </nav>
+</div>
+{% endblock breadcrumbs %}
+
+{% block content %}
+<div class="row">
+    <div class="col s12">
+        <div class="card">
+            <div class="card-content">
+                <span class="card-title" style="font-size: 2rem; display: flex; align-items: center; color: var(--primary-color-dark);">
+                    <i class="material-icons" style="font-size: 2.5rem; margin-right: 10px; color: var(--primary-color);">science</i>
+                    {{ page_title|default:"Samples with Test Results" }}
+                </span>
+                <p class="grey-text text-darken-1" style="margin-top: -5px; margin-bottom: 20px;">Browse samples and click to view their detailed test results.</p>
+
+                {% if samples_with_results %}
+                <div class="table-container">
+                    <table class="responsive-table highlight striped">
+                        <thead>
+                            <tr>
+                                <th>Sample ID</th>
+                                <th>Customer</th>
+                                <th>Collection Date</th>
+                                <th>Status</th>
+                                <th>Tests (Results/Requested)</th>
+                                <th>Last Result Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for sample_item in samples_with_results %} {# Changed loop variable #}
+                            <tr>
+                                <td>
+                                    <a href="{% url 'core:sample_detail' pk=sample_item.pk %}" style="color: var(--primary-color); font-weight: bold;">
+                                        {{ sample_item.sample_id|truncatechars:12 }}
+                                    </a>
+                                </td>
+                                <td>
+                                    {% if sample_item.customer %}
+                                    <a href="{% url 'core:customer_detail' pk=sample_item.customer.pk %}" style="color: var(--primary-color);">
+                                        {{ sample_item.customer.name|truncatechars:20 }}
+                                    </a>
+                                    {% else %}
+                                    N/A
+                                    {% endif %}
+                                </td>
+                                <td>{{ sample_item.collection_datetime|date:"M d, Y H:i" }}</td>
+                                <td>
+                                    {% if sample_item.current_status == 'REPORT_APPROVED' or sample_item.current_status == 'REPORT_SENT' %}
+                                        <span class="chip" style="background-color: var(--success-color); color: var(--text-on-primary);">{{ sample_item.get_current_status_display }}</span>
+                                    {% elif sample_item.current_status == 'RESULTS_ENTERED' or sample_item.current_status == 'REVIEW_PENDING' %}
+                                        <span class="chip" style="background-color: var(--warning-color); color: var(--text-color-dark);">{{ sample_item.get_current_status_display }}</span>
+                                    {% elif sample_item.current_status == 'TESTING_IN_PROGRESS' %}
+                                        <span class="chip" style="background-color: var(--info-color); color: var(--text-on-primary);">{{ sample_item.get_current_status_display }}</span>
+                                    {% else %}
+                                        <span class="chip" style="background-color: var(--text-color-light); color: var(--text-on-primary);">{{ sample_item.get_current_status_display }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ sample_item.results.count }}/{{ sample_item.tests_requested.count }}</td>
+                                <td>{{ sample_item.latest_test_date|date:"M d, Y H:i"|default:"N/A" }}</td>
+                                <td>
+                                    <a href="{% url 'core:sample_detail' pk=sample_item.pk %}" class="btn-small waves-effect waves-light" style="background-color: var(--primary-color);">
+                                        <i class="material-icons tiny">visibility</i> View Results
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                {% if is_paginated %}
+                <div class="pagination center-align" style="margin-top: 30px;">
+                    <ul class="pagination">
+                        {% if page_obj.has_previous %}
+                        <li class="waves-effect"><a href="?page={{ page_obj.previous_page_number }}"><i class="material-icons">chevron_left</i></a></li>
+                        {% else %}
+                        <li class="disabled"><a href="#!"><i class="material-icons">chevron_left</i></a></li>
+                        {% endif %}
+
+                        {% for num in page_obj.paginator.page_range %}
+                        {% if page_obj.number == num %}
+                        <li class="active" style="background-color: var(--primary-color);"><a href="?page={{ num }}">{{ num }}</a></li>
+                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                        <li class="waves-effect"><a href="?page={{ num }}">{{ num }}</a></li>
+                        {% elif num == 1 or num == page_obj.paginator.num_pages %}
+                        <li class="waves-effect"><a href="?page={{ num }}">{{ num }}</a></li>
+                        {% elif num == page_obj.number|add:'-3' or num == page_obj.number|add:'3' %}
+                        <li class="disabled"><a href="#!">...</a></li>
+                        {% endif %}
+                        {% endfor %}
+
+                        {% if page_obj.has_next %}
+                        <li class="waves-effect"><a href="?page={{ page_obj.next_page_number }}"><i class="material-icons">chevron_right</i></a></li>
+                        {% else %}
+                        <li class="disabled"><a href="#!"><i class="material-icons">chevron_right</i></a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+                {% endif %}
+
+                {% else %}
+                <div class="card-panel alert alert-info" style="margin-top: 20px;">
+                    <i class="material-icons left">info_outline</i> No test results found.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize any Materialize components if needed, e.g., tooltips for observations
+    var tooltippedElems = document.querySelectorAll('.tooltipped'); // If you add 'tooltipped' class
+    M.Tooltip.init(tooltippedElems);
+});
+</script>
+{% endblock %}

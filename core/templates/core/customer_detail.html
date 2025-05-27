@@ -1,154 +1,166 @@
 {% extends "core/base.html" %}
+{% load static %}
 
-{% block title %}{{ customer.name }} - Details{% endblock %}
+{% block title %}{{ customer.name }} - Customer Details{% endblock %}
+
+{% block breadcrumbs %}
+<div class="col s12 breadcrumb-container">
+    <nav>
+        <div class="nav-wrapper">
+            <a href="{% url 'core:home' %}" class="breadcrumb">Home</a>
+            <a href="{% url 'core:customer_list' %}" class="breadcrumb">Customers</a>
+            <span class="breadcrumb active">{{ customer.name|truncatechars:20 }}</span>
+        </div>
+    </nav>
+</div>
+{% endblock breadcrumbs %}
 
 {% block content %}
-<div class="card">
-    <div class="card-header">
-        <h1 class="card-title">👤 {{ customer.name }}</h1>
-        <p class="card-subtitle">Customer Details & Information</p>
-    </div>
-    
-    <div class="grid-2-col">
-        <!-- Personal Information -->
+<div class="row">
+    <div class="col s12">
         <div class="card">
-            <div class="card-header">
-                <h2 class="card-title">📱 Contact Information</h2>
-            </div>
-            <div class="p-3">
-                <div class="info-row">
-                    <span class="info-label">Full Name:</span>
-                    <span class="info-value">{{ customer.name }}</span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">Email:</span>
-                    <span class="info-value">
-                        <a href="mailto:{{ customer.email }}">{{ customer.email }}</a>
-                    </span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">Phone:</span>
-                    <span class="info-value">
-                        <a href="tel:{{ customer.phone }}">{{ customer.phone }}</a>
-                    </span>
-                </div>
+            <div class="card-content">
+                <span class="card-title" style="font-size: 2rem; display: flex; align-items: center; color: var(--primary-color-dark);">
+                    <i class="material-icons" style="font-size: 2.5rem; margin-right: 10px; color: var(--primary-color);">person</i>
+                    {{ customer.name }}
+                </span>
+                <p class="grey-text text-darken-1" style="margin-top: -5px; margin-bottom: 10px;">Customer ID: {{ customer.customer_id }}</p>
             </div>
         </div>
-
-        <!-- Address Information -->
-        <div class="card">
-            <div class="card-header">
-                <h2 class="card-title">📍 Address Details</h2>
-            </div>
-            <div class="p-3">
-                {% if customer.house_name_door_no %}
-                <div class="info-row">
-                    <span class="info-label">House/Door No:</span>
-                    <span class="info-value">{{ customer.house_name_door_no }}</span>
-                </div>
-                {% endif %}
-                <div class="info-row">
-                    <span class="info-label">Street/Locality:</span>
-                    <span class="info-value">{{ customer.street_locality_landmark }}</span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">Village/Town:</span>
-                    <span class="info-value">{{ customer.village_town_city }}</span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">Panchayat/Municipality:</span>
-                    <span class="info-value">{{ customer.panchayat_municipality }}</span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">Taluk:</span>
-                    <span class="info-value">{{ customer.taluk }}</span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">District:</span>
-                    <span class="info-value">{{ customer.get_district_display }}</span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">PIN Code:</span>
-                    <span class="info-value">{{ customer.pincode }}</span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">Complete Address:</span>
-                    <span class="info-value">{{ customer.address }}</span>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Samples Section -->
-    <div class="card">
-        <div class="card-header">
-            <h2 class="card-title">🧪 Sample History</h2>
-            <p class="card-subtitle">Samples collected from this customer</p>
-        </div>
-        
-        {% if customer.samples.all %}
-        <div class="table-responsive">
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th>Sample ID</th>
-                        <th>Collection Date</th>
-                        <th>Source</th>
-                        <th>Status</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for sample in customer.samples.all %}
-                    <tr>
-                        <td>
-                            <a href="{% url 'core:sample_detail' sample.pk %}" class="link">
-                                {{ sample.sample_id|truncatechars:13 }}
-                            </a>
-                        </td>
-                        <td>{{ sample.collection_datetime|date:"d M Y H:i" }}</td>
-                        <td>{{ sample.get_sample_source_display }}</td>
-                        <td>
-                            <span class="badge badge-{% if sample.current_status == 'REPORT_APPROVED' %}success{% elif sample.current_status == 'TESTING_IN_PROGRESS' %}warning{% else %}info{% endif %}">
-                                {{ sample.get_current_status_display }}
-                            </span>
-                        </td>
-                        <td>
-                            <a href="{% url 'core:sample_detail' sample.pk %}" class="btn btn-sm btn-outline">
-                                View Details
-                            </a>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-        {% else %}
-        <div class="p-3 text-center text-muted">
-            <p>No samples found for this customer.</p>
-            <a href="{% url 'core:sample_list' %}" class="btn btn-primary">Register New Sample</a>
-        </div>
-        {% endif %}
-    </div>
-
-    <!-- Action Buttons -->
-    <div class="btn-group">
-        <a href="{% url 'core:customer_list' %}" class="btn btn-outline">
-            ← Back to Customers
-        </a>
-        {% if user.is_frontdesk or user.is_admin %}
-        <a href="{% url 'core:customer_edit' customer.pk %}" class="btn btn-warning">
-            ✏️ Edit Customer
-        </a>
-        {% endif %}
-        <a href="{% url 'core:sample_add' %}" class="btn btn-primary">
-            🧪 New Sample
-        </a>
-        {% if user.is_admin %}
-        <a href="{% url 'core:audit_trail' %}?model=Customer&object_id={{ customer.pk }}" class="btn btn-info">
-            📋 View History
-        </a>
-        {% endif %}
     </div>
 </div>
+
+<div class="row">
+    <!-- Left Column: Contact, Address -->
+    <div class="col s12 l7">
+        <div class="card">
+            <div class="card-content">
+                <span class="card-title" style="color: var(--primary-color-dark);"><i class="material-icons left tiny" style="color: var(--primary-color);">contact_phone</i>Contact Information</span>
+                <ul class="collection">
+                    <li class="collection-item"><div>Full Name:<span class="secondary-content black-text">{{ customer.name }}</span></div></li>
+                    <li class="collection-item"><div>Email:<span class="secondary-content">
+                        <a href="mailto:{{ customer.email }}" style="color: var(--primary-color);">{{ customer.email }}</a>
+                    </span></div></li>
+                    <li class="collection-item"><div>Phone:<span class="secondary-content">
+                        <a href="tel:{{ customer.phone }}" style="color: var(--primary-color);">{{ customer.phone }}</a>
+                    </span></div></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-content">
+                <span class="card-title" style="color: var(--primary-color-dark);"><i class="material-icons left tiny" style="color: var(--primary-color);">location_on</i>Address Details</span>
+                <ul class="collection">
+                    {% if customer.house_name_door_no %}<li class="collection-item"><div>House/Door No:<span class="secondary-content black-text">{{ customer.house_name_door_no }}</span></div></li>{% endif %}
+                    {% if customer.street_locality_landmark %}<li class="collection-item"><div>Street/Locality:<span class="secondary-content black-text">{{ customer.street_locality_landmark }}</span></div></li>{% endif %}
+                    {% if customer.village_town_city %}<li class="collection-item"><div>Village/Town:<span class="secondary-content black-text">{{ customer.village_town_city }}</span></div></li>{% endif %}
+                    {% if customer.panchayat_municipality %}<li class="collection-item"><div>Panchayat/Municipality:<span class="secondary-content black-text">{{ customer.panchayat_municipality }}</span></div></li>{% endif %}
+                    {% if customer.taluk %}<li class="collection-item"><div>Taluk:<span class="secondary-content black-text">{{ customer.taluk }}</span></div></li>{% endif %}
+                    <li class="collection-item"><div>District:<span class="secondary-content black-text">{{ customer.get_district_display }}</span></div></li>
+                    {% if customer.pincode %}<li class="collection-item"><div>PIN Code:<span class="secondary-content black-text">{{ customer.pincode }}</span></div></li>{% endif %}
+                    <li class="collection-item"><div>Full Address:<p class="grey-text text-darken-2" style="margin-top:5px;">{{ customer.address|linebreaksbr }}</p></div></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Column: Actions -->
+    <div class="col s12 l5">
+        <div class="card">
+            <div class="card-content">
+                <span class="card-title" style="color: var(--primary-color-dark);"><i class="material-icons left tiny" style="color: var(--primary-color);">play_for_work</i>Actions</span>
+                <div class="center-align" style="margin-bottom: 15px;">
+                     <a href="{% url 'core:customer_list' %}" class="btn-flat waves-effect"><i class="material-icons left">arrow_back</i>Back to Customers</a>
+                </div>
+                {% if user.is_frontdesk or user.is_admin %}
+                <a href="{% url 'core:customer_edit' customer.pk %}" class="btn waves-effect waves-light orange darken-1 white-text" style="width:100%; margin-bottom:10px;">
+                    <i class="material-icons left">edit</i>Edit Customer
+                </a>
+                {% endif %}
+                <a href="{% url 'core:sample_add' %}?customer_id={{ customer.pk }}" class="btn waves-effect waves-light" style="width:100%; margin-bottom:10px; background-color: var(--primary-color);">
+                    <i class="material-icons left">note_add</i>New Sample for Customer
+                </a>
+                {% if user.is_admin %}
+                <a href="{% url 'core:audit_trail' %}?model=Customer&object_id={{ customer.pk }}" class="btn waves-effect waves-light grey darken-1 white-text" style="width:100%; margin-bottom:10px;">
+                    <i class="material-icons left">history</i>View History
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Sample History Section -->
+<div class="row">
+    <div class="col s12">
+        <div class="card">
+            <div class="card-content">
+                <span class="card-title" style="color: var(--primary-color-dark);"><i class="material-icons left tiny" style="color: var(--primary-color);">history_edu</i>Sample History</span>
+                <p class="grey-text text-darken-1" style="margin-top: -5px; margin-bottom: 20px;">Samples collected from this customer.</p>
+                
+                {% if customer.samples.all %}
+                <div class="table-container">
+                    <table class="responsive-table highlight striped">
+                        <thead>
+                            <tr>
+                                <th>Sample ID</th>
+                                <th>Collection Date</th>
+                                <th>Source</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for sample_item in customer.samples.all %} {# Changed variable name for clarity #}
+                            <tr>
+                                <td>
+                                    <a href="{% url 'core:sample_detail' sample_item.pk %}" style="color: var(--primary-color); font-weight: 500;">
+                                        {{ sample_item.sample_id|truncatechars:12 }}
+                                    </a>
+                                </td>
+                                <td>{{ sample_item.collection_datetime|date:"M d, Y H:i" }}</td>
+                                <td>{{ sample_item.get_sample_source_display }}</td>
+                                <td>
+                                    {% if sample_item.current_status == 'REPORT_APPROVED' or sample_item.current_status == 'REPORT_SENT' %}
+                                        <span class="chip" style="background-color: var(--success-color); color: var(--text-on-primary);">{{ sample_item.get_current_status_display }}</span>
+                                    {% elif sample_item.current_status == 'RESULTS_ENTERED' or sample_item.current_status == 'REVIEW_PENDING' %}
+                                        <span class="chip" style="background-color: var(--warning-color); color: var(--text-color-dark);">{{ sample_item.get_current_status_display }}</span>
+                                    {% elif sample_item.current_status == 'TESTING_IN_PROGRESS' %}
+                                        <span class="chip" style="background-color: var(--info-color); color: var(--text-on-primary);">{{ sample_item.get_current_status_display }}</span>
+                                    {% else %}
+                                        <span class="chip" style="background-color: var(--text-color-light); color: var(--text-on-primary);">{{ sample_item.get_current_status_display }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <a href="{% url 'core:sample_detail' sample_item.pk %}" class="btn-small waves-effect waves-light" style="background-color: var(--primary-color);">
+                                        <i class="material-icons tiny">visibility</i> View
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="card-panel alert alert-info" style="margin-top: 20px;">
+                    <i class="material-icons left">info_outline</i> No samples found for this customer.
+                    <br><br>
+                    <a href="{% url 'core:sample_add' %}?customer_id={{ customer.pk }}" class="btn waves-effect waves-light" style="background-color: var(--primary-color);">
+                        <i class="material-icons left">note_add</i>Register New Sample
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Any specific JS for this page can go here
+});
+</script>
 {% endblock %}

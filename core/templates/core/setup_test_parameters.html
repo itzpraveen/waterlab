@@ -1,92 +1,113 @@
 {% extends 'core/base.html' %}
+{% load static %}
 
 {% block title %}Setup Test Parameters - Water Lab LIMS{% endblock %}
 
+{% block breadcrumbs %}
+<div class="col s12 breadcrumb-container">
+    <nav>
+        <div class="nav-wrapper">
+            <a href="{% url 'core:home' %}" class="breadcrumb">Home</a>
+            {% if request.user.is_admin %}
+            <a href="{% url 'core:admin_dashboard' %}" class="breadcrumb">Admin Dashboard</a>
+            {% endif %}
+            <span class="breadcrumb active">Setup Test Parameters</span>
+        </div>
+    </nav>
+</div>
+{% endblock breadcrumbs %}
+
 {% block content %}
-<div class="container">
-    <h1>🧪 Test Parameters Setup</h1>
-    
-    {% if messages %}
-        {% for message in messages %}
-            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                {{ message }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-        {% endfor %}
-    {% endif %}
-    
-    {% if existing_params %}
-        <div class="alert alert-info">
-            <strong>ℹ️ Current Test Parameters ({{ existing_params.count }})</strong>
-            <div class="mt-2">
-                {% for param in existing_params %}
-                    <span class="badge bg-secondary me-1">{{ param.name }} ({{ param.unit }})</span>
-                {% endfor %}
-            </div>
-        </div>
-        
-        <div class="mb-4">
-            <h3>Add More Parameters</h3>
-            <p>Click below to add additional standard water testing parameters if needed.</p>
-        </div>
-    {% else %}
-        <div class="alert alert-warning">
-            <strong>⚠️ No Test Parameters Found</strong>
-            <p class="mb-0">You need to set up test parameters before users can create samples. Click the button below to create standard water testing parameters.</p>
-        </div>
-    {% endif %}
-    
-    <form method="post">
-        {% csrf_token %}
+<div class="row">
+    <div class="col s12">
         <div class="card">
-            <div class="card-header">
-                <h5>Standard Water Testing Parameters</h5>
-            </div>
-            <div class="card-body">
-                <p>This will create the following standard test parameters:</p>
-                <div class="row">
-                    <div class="col-md-6">
-                        <ul class="list-unstyled">
-                            <li>✓ pH (6.5-8.5)</li>
-                            <li>✓ Total Dissolved Solids (0-500 mg/L)</li>
-                            <li>✓ Turbidity (0-1 NTU)</li>
-                            <li>✓ Total Hardness (0-200 mg/L)</li>
-                            <li>✓ Chlorides (0-250 mg/L)</li>
-                            <li>✓ Total Alkalinity (0-200 mg/L)</li>
-                        </ul>
-                    </div>
-                    <div class="col-md-6">
-                        <ul class="list-unstyled">
-                            <li>✓ Iron (0-0.3 mg/L)</li>
-                            <li>✓ Fluoride (0-1.0 mg/L)</li>
-                            <li>✓ Nitrate (0-45 mg/L)</li>
-                            <li>✓ Residual Chlorine (0.2-1.0 mg/L)</li>
-                            <li>✓ Total Coliform (0 CFU/100mL)</li>
-                            <li>✓ E. Coli (0 CFU/100mL)</li>
-                        </ul>
-                    </div>
-                </div>
-                
-                <div class="mt-3">
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-plus"></i> Create Standard Test Parameters
-                    </button>
-                    <a href="{% url 'core:sample_add' %}" class="btn btn-outline-secondary ms-2">
-                        <i class="fas fa-arrow-left"></i> Back to Add Sample
-                    </a>
-                </div>
+            <div class="card-content">
+                <span class="card-title" style="font-size: 2rem; display: flex; align-items: center; color: var(--primary-color-dark);">
+                    <i class="material-icons" style="font-size: 2.5rem; margin-right: 10px; color: var(--primary-color);">biotech</i>
+                    Test Parameters Setup
+                </span>
+                <p class="grey-text text-darken-1" style="margin-top: -5px; margin-bottom: 10px;">Manage and create standard test parameters for water analysis.</p>
             </div>
         </div>
-    </form>
-    
-    {% if existing_params %}
-        <div class="card mt-4">
-            <div class="card-header">
-                <h5>Existing Test Parameters</h5>
+    </div>
+</div>
+
+{% if existing_params %}
+<div class="row">
+    <div class="col s12">
+        <div class="card-panel teal lighten-5" style="border-left: 5px solid var(--primary-color); padding: 15px;">
+            <span class="card-title" style="font-size: 1.2rem; color: var(--primary-color-dark); display: block; margin-bottom: 10px;">
+                <i class="material-icons tiny left">info_outline</i>Current Test Parameters ({{ existing_params.count }})
+            </span>
+            {% for param in existing_params %}
+                <div class="chip" style="background-color: var(--primary-color); color: var(--text-on-primary);">{{ param.name }} ({{ param.unit }})</div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<div class="row">
+    <div class="col s12">
+        <div class="card">
+            <div class="card-content">
+                <span class="card-title" style="color: var(--primary-color-dark);">
+                    <i class="material-icons left tiny" style="color: var(--primary-color);">playlist_add</i>
+                    {% if existing_params %}Add More Standard Parameters{% else %}Create Standard Test Parameters{% endif %}
+                </span>
+                {% if not existing_params %}
+                <p class="grey-text text-darken-1" style="margin-bottom:15px;">No test parameters are currently set up. Click the button below to create a standard set of water testing parameters. This is required before samples can be registered with test requests.</p>
+                {% else %}
+                <p class="grey-text text-darken-1" style="margin-bottom:15px;">Click below to add a predefined set of standard water testing parameters if they are not already present.</p>
+                {% endif %}
+                
+                <p>This action will attempt to create the following standard test parameters (it will skip any that already exist by name):</p>
+                <div class="row">
+                    <div class="col s12 m6">
+                        <ul class="collection">
+                            <li class="collection-item"><i class="material-icons tiny left green-text text-darken-1">check_circle</i>pH (6.5-8.5 pH units)</li>
+                            <li class="collection-item"><i class="material-icons tiny left green-text text-darken-1">check_circle</i>Total Dissolved Solids (0-500 mg/L)</li>
+                            <li class="collection-item"><i class="material-icons tiny left green-text text-darken-1">check_circle</i>Turbidity (0-1 NTU)</li>
+                            <li class="collection-item"><i class="material-icons tiny left green-text text-darken-1">check_circle</i>Total Hardness (0-200 mg/L as CaCO3)</li>
+                            <li class="collection-item"><i class="material-icons tiny left green-text text-darken-1">check_circle</i>Chlorides (0-250 mg/L)</li>
+                            <li class="collection-item"><i class="material-icons tiny left green-text text-darken-1">check_circle</i>Total Alkalinity (0-200 mg/L as CaCO3)</li>
+                        </ul>
+                    </div>
+                    <div class="col s12 m6">
+                        <ul class="collection">
+                            <li class="collection-item"><i class="material-icons tiny left green-text text-darken-1">check_circle</i>Iron (0-0.3 mg/L)</li>
+                            <li class="collection-item"><i class="material-icons tiny left green-text text-darken-1">check_circle</i>Fluoride (0-1.0 mg/L)</li>
+                            <li class="collection-item"><i class="material-icons tiny left green-text text-darken-1">check_circle</i>Nitrate (0-45 mg/L)</li>
+                            <li class="collection-item"><i class="material-icons tiny left green-text text-darken-1">check_circle</i>Residual Chlorine (0.2-1.0 mg/L)</li>
+                            <li class="collection-item"><i class="material-icons tiny left green-text text-darken-1">check_circle</i>Total Coliform (0 CFU/100mL)</li>
+                            <li class="collection-item"><i class="material-icons tiny left green-text text-darken-1">check_circle</i>E. Coli (0 CFU/100mL)</li>
+                        </ul>
+                    </div>
+                </div>
             </div>
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table table-sm">
+            <div class="card-action right-align">
+                <a href="{% url 'core:sample_add' %}" class="btn-flat waves-effect">
+                    <i class="material-icons left">arrow_back</i>Back to Add Sample
+                </a>
+                <form method="post" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn waves-effect waves-light" style="background-color: var(--primary-color);">
+                        <i class="material-icons left">playlist_add_check</i>Create Standard Parameters
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if existing_params %}
+<div class="row">
+    <div class="col s12">
+        <div class="card">
+            <div class="card-content">
+                <span class="card-title" style="color: var(--primary-color-dark);"><i class="material-icons left tiny" style="color: var(--primary-color);">format_list_bulleted</i>Existing Test Parameters</span>
+                <div class="table-container">
+                    <table class="responsive-table highlight striped">
                         <thead>
                             <tr>
                                 <th>Parameter Name</th>
@@ -94,16 +115,22 @@
                                 <th>Min Limit</th>
                                 <th>Max Limit</th>
                                 <th>Standard Method</th>
+                                <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for param in existing_params %}
                                 <tr>
-                                    <td><strong>{{ param.name }}</strong></td>
+                                    <td style="font-weight: 500;">{{ param.name }}</td>
                                     <td>{{ param.unit }}</td>
                                     <td>{{ param.min_permissible_limit|default:"-" }}</td>
                                     <td>{{ param.max_permissible_limit|default:"-" }}</td>
-                                    <td><small>{{ param.standard_method|default:"-" }}</small></td>
+                                    <td>{{ param.standard_method|default:"-" }}</td>
+                                    <td>
+                                        <a href="{% url 'core:test_parameter_edit' pk=param.pk %}" class="btn-small waves-effect waves-light orange darken-1 tooltipped" data-position="top" data-tooltip="Edit {{ param.name }}">
+                                            <i class="material-icons tiny">edit</i>
+                                        </a>
+                                    </td>
                                 </tr>
                             {% endfor %}
                         </tbody>
@@ -111,6 +138,18 @@
                 </div>
             </div>
         </div>
-    {% endif %}
+    </div>
 </div>
+{% endif %}
+
 {% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Materialize tooltips
+    var tooltippedElems = document.querySelectorAll('.tooltipped');
+    M.Tooltip.init(tooltippedElems);
+});
+</script>
+{% endblock extra_js %}

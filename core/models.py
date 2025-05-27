@@ -221,7 +221,7 @@ class Sample(models.Model):
     
     def can_be_reviewed(self):
         """Check if sample is ready for consultant review"""
-        return (self.current_status == 'RESULTS_ENTERED' and 
+        return ((self.current_status == 'RESULTS_ENTERED' or self.current_status == 'REVIEW_PENDING') and 
                 self.has_all_test_results())
     
     @property

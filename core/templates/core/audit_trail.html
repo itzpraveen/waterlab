@@ -1,311 +1,237 @@
 {% extends 'core/base.html' %}
+{% load static %}
 
 {% block title %}Audit Trail - Water Lab LIMS{% endblock %}
 
+{% block breadcrumbs %}
+<div class="col s12 breadcrumb-container">
+    <nav>
+        <div class="nav-wrapper">
+            <a href="{% url 'core:home' %}" class="breadcrumb">Home</a>
+            {% if request.user.is_admin %}
+            <a href="{% url 'core:admin_dashboard' %}" class="breadcrumb">Admin Dashboard</a>
+            {% endif %}
+            <span class="breadcrumb active">Audit Trail</span>
+        </div>
+    </nav>
+</div>
+{% endblock breadcrumbs %}
+
 {% block content %}
-<div class="card">
-    <div class="card-header">
-        <h1 class="card-title">📋 Audit Trail</h1>
-        <p class="card-subtitle">Track all system changes and user activities</p>
-    </div>
-
-    <!-- Filters -->
-    <div class="card">
-        <div class="card-header">
-            <h3 class="card-title">🔍 Filters</h3>
+<div class="row">
+    <div class="col s12">
+        <div class="card">
+            <div class="card-content">
+                <span class="card-title" style="font-size: 2rem; display: flex; align-items: center; color: var(--primary-color-dark);">
+                    <i class="material-icons" style="font-size: 2.5rem; margin-right: 10px; color: var(--primary-color);">manage_history</i>
+                    Audit Trail
+                </span>
+                <p class="grey-text text-darken-1" style="margin-top: -5px; margin-bottom: 20px;">Track all system changes and user activities.</p>
+            </div>
         </div>
-        <div class="p-3">
-            <form method="get" class="filter-form">
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="model" class="form-label">Model Type:</label>
-                        <select name="model" id="model" class="form-control">
-                            <option value="">All Models</option>
-                            {% for model in model_choices %}
-                                <option value="{{ model }}" {% if filters.model == model %}selected{% endif %}>
-                                    {{ model }}
-                                </option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="action" class="form-label">Action:</label>
-                        <select name="action" id="action" class="form-control">
-                            <option value="">All Actions</option>
-                            {% for action in action_choices %}
-                                <option value="{{ action }}" {% if filters.action == action %}selected{% endif %}>
-                                    {{ action|capfirst }}
-                                </option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="user" class="form-label">User:</label>
-                        <select name="user" id="user" class="form-control">
-                            <option value="">All Users</option>
-                            {% for user in users %}
-                                <option value="{{ user.pk }}" {% if filters.user == user.pk|stringformat:"s" %}selected{% endif %}>
-                                    {{ user.first_name|default:user.username }} ({{ user.get_role_display }})
-                                </option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="object_id" class="form-label">Object ID:</label>
-                        <input type="text" name="object_id" id="object_id" class="form-control" 
-                               value="{{ filters.object_id }}" placeholder="Enter specific object ID">
-                    </div>
-                </div>
-                
-                <div class="btn-group">
-                    <button type="submit" class="btn btn-primary">🔍 Apply Filters</button>
-                    <a href="{% url 'core:audit_trail' %}" class="btn btn-outline">🔄 Clear Filters</a>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Audit Logs -->
-    {% if audit_logs %}
-    <div class="table-responsive">
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th>Timestamp</th>
-                    <th>User</th>
-                    <th>Action</th>
-                    <th>Model</th>
-                    <th>Object</th>
-                    <th>Changes</th>
-                    <th>IP Address</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for log in audit_logs %}
-                <tr>
-                    <td>{{ log.timestamp|date:"M d, Y H:i:s" }}</td>
-                    <td>
-                        {% if log.user %}
-                            <div class="user-info">
-                                <span class="user-name">{{ log.user.first_name|default:log.user.username }}</span>
-                                <span class="role-badge {{ log.user.role }}">{{ log.user.get_role_display }}</span>
-                            </div>
-                        {% else %}
-                            <span class="text-muted">System</span>
-                        {% endif %}
-                    </td>
-                    <td>
-                        <span class="badge badge-{% if log.action == 'CREATE' %}success{% elif log.action == 'UPDATE' %}warning{% elif log.action == 'DELETE' %}danger{% else %}info{% endif %}">
-                            {{ log.get_action_display }}
-                        </span>
-                    </td>
-                    <td>{{ log.model_name }}</td>
-                    <td>
-                        <div class="object-info">
-                            <div class="object-id">{{ log.object_id|truncatechars:13 }}</div>
-                            <div class="object-repr">{{ log.object_repr|truncatechars:30 }}</div>
-                        </div>
-                    </td>
-                    <td>
-                        {% if log.changes %}
-                            <button class="btn btn-sm btn-outline changes-btn" onclick="toggleChanges('{{ log.audit_id }}')">
-                                📝 View Changes ({{ log.changes|length }})
-                            </button>
-                            <div id="changes-{{ log.audit_id }}" class="changes-detail" style="display: none;">
-                                {% for field, change in log.changes.items %}
-                                    <div class="change-item">
-                                        <strong>{{ field|capfirst }}:</strong>
-                                        <div class="change-values">
-                                            <span class="old-value">{{ change.old|default:"(empty)" }}</span>
-                                            <span class="change-arrow">→</span>
-                                            <span class="new-value">{{ change.new|default:"(empty)" }}</span>
-                                        </div>
-                                    </div>
-                                {% endfor %}
-                            </div>
-                        {% else %}
-                            <span class="text-muted">No changes recorded</span>
-                        {% endif %}
-                    </td>
-                    <td>{{ log.ip_address|default:"N/A" }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-
-    <!-- Pagination -->
-    {% if is_paginated %}
-    <div class="pagination-container">
-        <div class="pagination">
-            {% if page_obj.has_previous %}
-                <a href="?page=1{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" class="page-link">« First</a>
-                <a href="?page={{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" class="page-link">‹ Previous</a>
-            {% endif %}
-            
-            <span class="page-info">
-                Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
-                ({{ page_obj.start_index }}-{{ page_obj.end_index }} of {{ page_obj.paginator.count }} entries)
-            </span>
-            
-            {% if page_obj.has_next %}
-                <a href="?page={{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" class="page-link">Next ›</a>
-                <a href="?page={{ page_obj.paginator.num_pages }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" class="page-link">Last »</a>
-            {% endif %}
-        </div>
-    </div>
-    {% endif %}
-
-    {% else %}
-    <div class="p-3 text-center text-muted">
-        <p>No audit logs found.</p>
-        <p>Audit logs will appear here as users make changes to the system.</p>
-    </div>
-    {% endif %}
-
-    <!-- Back Button -->
-    <div class="btn-group mt-3">
-        <a href="{% url 'core:admin_dashboard' %}" class="btn btn-outline">
-            ← Back to Dashboard
-        </a>
     </div>
 </div>
-{% endblock %}
 
-{% block extra_css %}
-<style>
-.filter-form .form-row {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 1rem;
-    margin-bottom: 1rem;
-}
+<!-- Filters -->
+<div class="row">
+    <div class="col s12">
+        <div class="card">
+            <div class="card-content">
+                <span class="card-title" style="color: var(--primary-color-dark);"><i class="material-icons left tiny" style="color: var(--primary-color);">filter_list</i>Filters</span>
+                <form method="get" class="filter-form">
+                    <div class="row" style="margin-bottom: 0;">
+                        <div class="input-field col s12 m6 l3">
+                            <select name="model" id="model">
+                                <option value="" {% if not filters.model %}selected{% endif %}>All Models</option>
+                                {% for model_name_opt in model_choices %} {# Renamed variable to avoid conflict #}
+                                    <option value="{{ model_name_opt }}" {% if filters.model == model_name_opt %}selected{% endif %}>
+                                        {{ model_name_opt }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                            <label for="model">Model Type</label>
+                        </div>
+                        
+                        <div class="input-field col s12 m6 l3">
+                            <select name="action" id="action">
+                                <option value="" {% if not filters.action %}selected{% endif %}>All Actions</option>
+                                {% for action_opt in action_choices %} {# Renamed variable #}
+                                    <option value="{{ action_opt }}" {% if filters.action == action_opt %}selected{% endif %}>
+                                        {{ action_opt|capfirst }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                            <label for="action">Action</label>
+                        </div>
+                        
+                        <div class="input-field col s12 m6 l3">
+                            <select name="user" id="user_filter"> {# Changed id to avoid conflict with user variable #}
+                                <option value="" {% if not filters.user %}selected{% endif %}>All Users</option>
+                                {% for user_opt in users %} {# Renamed variable #}
+                                    <option value="{{ user_opt.pk }}" {% if filters.user == user_opt.pk|stringformat:"s" %}selected{% endif %}>
+                                        {{ user_opt.first_name|default:user_opt.username }} ({{ user_opt.get_role_display }})
+                                    </option>
+                                {% endfor %}
+                            </select>
+                            <label for="user_filter">User</label>
+                        </div>
+                        
+                        <div class="input-field col s12 m6 l3">
+                            <input type="text" name="object_id" id="object_id" value="{{ filters.object_id }}" class="validate">
+                            <label for="object_id">Object ID</label>
+                        </div>
+                    </div>
+                    
+                    <div class="card-action right-align" style="border-top: none; padding-top:0;">
+                        <a href="{% url 'core:audit_trail' %}" class="btn-flat waves-effect">
+                            <i class="material-icons left">clear_all</i>Clear Filters
+                        </a>
+                        <button type="submit" class="btn waves-effect waves-light" style="background-color: var(--primary-color);">
+                            <i class="material-icons left">search</i>Apply Filters
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
 
-.user-info {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-}
+<!-- Audit Logs Table -->
+<div class="row">
+    <div class="col s12">
+        <div class="card">
+            <div class="card-content">
+                {% if audit_logs %}
+                <div class="table-container">
+                    <table class="responsive-table highlight striped">
+                        <thead>
+                            <tr>
+                                <th>Timestamp</th>
+                                <th>User</th>
+                                <th>Action</th>
+                                <th>Model</th>
+                                <th>Object (ID / Repr)</th>
+                                <th>Changes</th>
+                                <th>IP Address</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for log in audit_logs %}
+                            <tr>
+                                <td>{{ log.timestamp|date:"M d, Y H:i:s" }}</td>
+                                <td>
+                                    {% if log.user %}
+                                        {{ log.user.first_name|default:log.user.username }}
+                                        <span class="chip role-badge {{ log.user.role }}">{{ log.user.get_role_display }}</span>
+                                    {% else %}
+                                        <span class="grey-text">System</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if log.action == 'CREATE' %} <span class="chip" style="background-color: var(--success-color); color: var(--text-on-primary);">{{ log.get_action_display }}</span>
+                                    {% elif log.action == 'UPDATE' %} <span class="chip" style="background-color: var(--warning-color); color: var(--text-color-dark);">{{ log.get_action_display }}</span>
+                                    {% elif log.action == 'DELETE' %} <span class="chip" style="background-color: var(--error-color); color: var(--text-on-primary);">{{ log.get_action_display }}</span>
+                                    {% else %} <span class="chip" style="background-color: var(--info-color); color: var(--text-on-primary);">{{ log.get_action_display }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ log.model_name }}</td>
+                                <td>
+                                    <div style="font-family: monospace; font-size: 0.9em;">{{ log.object_id|truncatechars:15 }}</div>
+                                    <div>{{ log.object_repr|truncatechars:35 }}</div>
+                                </td>
+                                <td>
+                                    {% if log.changes %}
+                                        <button class="btn-small waves-effect waves-light blue lighten-1" onclick="toggleChanges('{{ log.audit_id }}')">
+                                            <i class="material-icons tiny left">visibility</i>({{ log.changes|length }})
+                                        </button>
+                                        <div id="changes-{{ log.audit_id }}" class="changes-detail card-panel teal lighten-5" style="display: none; margin-top: 10px; padding: 10px; border-radius: var(--m3-border-radius-small);">
+                                            <pre style="white-space: pre-wrap; word-break: break-all; font-size: 0.85rem;">{% for field, change in log.changes.items %}<strong>{{ field|capfirst }}:</strong> {{ change.old|default:"(empty)" }} → {{ change.new|default:"(empty)" }}<br>{% endfor %}</pre>
+                                        </div>
+                                    {% else %}
+                                        <span class="grey-text text-lighten-1">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ log.ip_address|default:"N/A" }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
 
-.user-name {
-    font-weight: 500;
-}
+                {% if is_paginated %}
+                <div class="pagination center-align" style="margin-top: 30px;">
+                    <ul class="pagination">
+                        {% if page_obj.has_previous %}
+                            <li class="waves-effect"><a href="?page=1{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}"><i class="material-icons">first_page</i></a></li>
+                            <li class="waves-effect"><a href="?page={{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}"><i class="material-icons">chevron_left</i></a></li>
+                        {% else %}
+                            <li class="disabled"><a href="#!"><i class="material-icons">first_page</i></a></li>
+                            <li class="disabled"><a href="#!"><i class="material-icons">chevron_left</i></a></li>
+                        {% endif %}
 
-.object-info {
-    display: flex;
-    flex-direction: column;
-}
+                        {% for num in page_obj.paginator.page_range %}
+                            {% if page_obj.number == num %}
+                                <li class="active" style="background-color: var(--primary-color);"><a href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ num }}</a></li>
+                            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                <li class="waves-effect"><a href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ num }}</a></li>
+                            {% elif num == 1 or num == page_obj.paginator.num_pages %}
+                                {% if page_obj.number|add:'-3' == num or page_obj.number|add:'3' == num %} {# Avoid double '...' #}
+                                {% else %}
+                                <li class="disabled"><a href="#!">...</a></li>
+                                {% endif %}
+                                <li class="waves-effect"><a href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ num }}</a></li>
+                            {% endif %}
+                        {% endfor %}
 
-.object-id {
-    font-family: monospace;
-    font-size: 0.85rem;
-    color: var(--secondary-color);
-}
+                        {% if page_obj.has_next %}
+                            <li class="waves-effect"><a href="?page={{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}"><i class="material-icons">chevron_right</i></a></li>
+                            <li class="waves-effect"><a href="?page={{ page_obj.paginator.num_pages }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}"><i class="material-icons">last_page</i></a></li>
+                        {% else %}
+                            <li class="disabled"><a href="#!"><i class="material-icons">chevron_right</i></a></li>
+                            <li class="disabled"><a href="#!"><i class="material-icons">last_page</i></a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+                {% endif %}
 
-.object-repr {
-    font-weight: 500;
-}
+                {% else %}
+                <div class="card-panel alert alert-info" style="margin-top: 20px;">
+                    <i class="material-icons left">info_outline</i> No audit logs found matching your criteria.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
 
-.changes-detail {
-    margin-top: 0.5rem;
-    padding: 0.75rem;
-    background: var(--light-color);
-    border-radius: 6px;
-    border: 1px solid var(--border-color);
-}
-
-.change-item {
-    margin-bottom: 0.5rem;
-}
-
-.change-item:last-child {
-    margin-bottom: 0;
-}
-
-.change-values {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin-top: 0.25rem;
-}
-
-.old-value {
-    background: #fee;
-    color: #c53030;
-    padding: 0.125rem 0.25rem;
-    border-radius: 3px;
-    font-size: 0.85rem;
-}
-
-.new-value {
-    background: #f0fff4;
-    color: #38a169;
-    padding: 0.125rem 0.25rem;
-    border-radius: 3px;
-    font-size: 0.85rem;
-}
-
-.change-arrow {
-    color: var(--secondary-color);
-    font-weight: bold;
-}
-
-.pagination-container {
-    padding: 1rem;
-    border-top: 1px solid var(--border-color);
-}
-
-.pagination {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 1rem;
-}
-
-.page-link {
-    padding: 0.5rem 1rem;
-    color: var(--primary-color);
-    text-decoration: none;
-    border: 1px solid var(--border-color);
-    border-radius: 6px;
-    transition: all 0.3s ease;
-}
-
-.page-link:hover {
-    background: var(--primary-color);
-    color: white;
-}
-
-.page-info {
-    font-weight: 500;
-    color: var(--secondary-color);
-}
-</style>
+<div class="row">
+    <div class="col s12 center-align">
+         <a href="{% url 'core:admin_dashboard' %}" class="btn-flat waves-effect"><i class="material-icons left">arrow_back</i>Back to Admin Dashboard</a>
+    </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
 function toggleChanges(auditId) {
     const element = document.getElementById('changes-' + auditId);
+    const button = element.previousElementSibling; // Get the button
     if (element.style.display === 'none') {
         element.style.display = 'block';
+        button.innerHTML = '<i class="material-icons tiny left">visibility_off</i>(' + element.querySelectorAll('strong').length + ')';
     } else {
         element.style.display = 'none';
+        button.innerHTML = '<i class="material-icons tiny left">visibility</i>(' + element.querySelectorAll('strong').length + ')';
     }
 }
 
-// Auto-submit form when filter changes
 document.addEventListener('DOMContentLoaded', function() {
-    const filterSelects = document.querySelectorAll('.filter-form select');
-    filterSelects.forEach(select => {
-        select.addEventListener('change', function() {
-            // Optional: Auto-submit form on change
-            // this.closest('form').submit();
-        });
-    });
+    var selectElems = document.querySelectorAll('select');
+    M.FormSelect.init(selectElems);
+
+    // Initialize collapsible for changes if any are initially visible (though they start hidden)
+    var collapsibleElems = document.querySelectorAll('.collapsible');
+    M.Collapsible.init(collapsibleElems);
 });
 </script>
 {% endblock %}
