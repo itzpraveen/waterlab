@@ -13,8 +13,8 @@ def role_required(roles):
         @wraps(view_func)
         @login_required
         def _wrapped_view(request, *args, **kwargs):
-            if request.user.role not in roles:
-                messages.error(request, f'Access denied. Required roles: {", ".join(roles)}')
+            if not request.user.is_superuser and request.user.role not in roles:
+                messages.error(request, f'Access denied. Required roles: {", ".join(roles)} or Superuser status.')
                 return redirect('core:dashboard')
             return view_func(request, *args, **kwargs)
         return _wrapped_view

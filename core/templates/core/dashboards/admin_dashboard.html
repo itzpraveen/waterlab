@@ -13,30 +13,42 @@
 
 <!-- System Overview Stats -->
 <div class="dashboard-stats">
-    <div class="stat-card">
-        <div class="stat-value">{{ total_customers }}</div>
-        <div class="stat-label">Total Customers</div>
-    </div>
-    <div class="stat-card info">
-        <div class="stat-value">{{ total_samples }}</div>
-        <div class="stat-label">Total Samples</div>
-    </div>
-    <div class="stat-card warning">
-        <div class="stat-value">{{ pending_samples }}</div>
-        <div class="stat-label">Pending Samples</div>
-    </div>
-    <div class="stat-card success">
-        <div class="stat-value">{{ completed_samples }}</div>
-        <div class="stat-label">Completed</div>
-    </div>
-    <div class="stat-card danger">
-        <div class="stat-value">{{ review_pending }}</div>
-        <div class="stat-label">Review Pending</div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-value">{{ total_users }}</div>
-        <div class="stat-label">System Users</div>
-    </div>
+    <a href="{% url 'core:customer_list' %}" class="stat-card-link">
+        <div class="stat-card">
+            <div class="stat-value">{{ total_customers }}</div>
+            <div class="stat-label">Total Customers</div>
+        </div>
+    </a>
+    <a href="{% url 'core:sample_list' %}" class="stat-card-link">
+        <div class="stat-card info">
+            <div class="stat-value">{{ total_samples }}</div>
+            <div class="stat-label">Total Samples</div>
+        </div>
+    </a>
+    <a href="{% url 'core:sample_list' %}" class="stat-card-link">
+        <div class="stat-card warning">
+            <div class="stat-value">{{ pending_samples_count }}</div>
+            <div class="stat-label">Pending Samples</div>
+        </div>
+    </a>
+    <a href="{% url 'core:sample_list' %}" class="stat-card-link">
+        <div class="stat-card success">
+            <div class="stat-value">{{ completed_samples_count }}</div>
+            <div class="stat-label">Completed</div>
+        </div>
+    </a>
+    <a href="{% url 'core:sample_list' %}" class="stat-card-link">
+        <div class="stat-card danger">
+            <div class="stat-value">{{ review_pending_count }}</div>
+            <div class="stat-label">Review Pending</div>
+        </div>
+    </a>
+    <a href="/admin/auth/user/" class="stat-card-link">
+        <div class="stat-card">
+            <div class="stat-value">{{ total_users }}</div>
+            <div class="stat-label">System Users</div>
+        </div>
+    </a>
 </div>
 
 <!-- Quick Actions -->
@@ -93,15 +105,15 @@
         <div class="p-3">
             <div class="status-item">
                 <span class="status-label">Daily Samples:</span>
-                <span class="status-value">{{ today_samples }}</span>
+                <span class="status-value">{{ today_samples_count }}</span>
             </div>
             <div class="status-item">
                 <span class="status-label">Weekly Samples:</span>
-                <span class="status-value">{{ week_samples }}</span>
+                <span class="status-value">{{ week_samples_count }}</span>
             </div>
             <div class="status-item">
                 <span class="status-label">Testing in Progress:</span>
-                <span class="status-value">{{ testing_samples }}</span>
+                <span class="status-value">{{ testing_samples_count }}</span>
             </div>
             
             <h4 class="mt-3">User Distribution</h4>
@@ -159,10 +171,98 @@
     </div>
     {% endif %}
 </div>
+
+<!-- Lab Workflow Overview -->
+<div class="dashboard-section">
+    <div class="section-header">
+        <h2 class="section-title">🔬 Lab Workflow Overview</h2>
+    </div>
+    {% if data_load_error %}
+    <div class="alert alert-danger" role="alert">
+        <h4 class="alert-heading">Data Loading Error!</h4>
+        <p>There was an issue loading some of the dashboard data. Some information might be missing or incomplete. Please try refreshing the page or contact support if the problem persists.</p>
+    </div>
+    {% endif %}
+    <div class="grid-2-col">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">🧪 Samples Currently in Lab ({{ samples_in_lab.count }})</h3>
+            </div>
+            <div class="p-3">
+                {% if samples_in_lab %}
+                    <div class="activity-list">
+                        {% for sample in samples_in_lab %}
+                        <div class="activity-item">
+                            <div class="activity-content">
+                                <a href="{% url 'core:sample_detail' sample.pk %}" class="link">
+                                    Sample {{ sample.sample_id|truncatechars:8 }}
+                                </a>
+                                <span class="activity-meta">
+                                    {{ sample.customer.name }} - {{ sample.get_current_status_display }}
+                                </span>
+                            </div>
+                            <span class="badge badge-warning">{{ sample.collection_datetime|timesince }} ago</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% if samples_in_lab.count >= 5 %}
+                    <div class="text-right mt-2">
+                        <a href="{% url 'core:sample_list' %}?status=SENT_TO_LAB&status=TESTING_IN_PROGRESS" class="link">View all...</a>
+                    </div>
+                    {% endif %}
+                {% else %}
+                    <p class="text-muted">No samples currently in the lab.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">🧐 Samples Awaiting Review ({{ samples_awaiting_review.count }})</h3>
+            </div>
+            <div class="p-3">
+                {% if samples_awaiting_review %}
+                    <div class="activity-list">
+                        {% for sample in samples_awaiting_review %}
+                        <div class="activity-item">
+                            <div class="activity-content">
+                                <a href="{% url 'core:sample_detail' sample.pk %}" class="link">
+                                    Sample {{ sample.sample_id|truncatechars:8 }}
+                                </a>
+                                <span class="activity-meta">
+                                    {{ sample.customer.name }} - Results Entered
+                                </span>
+                            </div>
+                            <span class="badge badge-info">{{ sample.updated_at|timesince }} ago</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                     {% if samples_awaiting_review.count >= 5 %}
+                    <div class="text-right mt-2">
+                        <a href="{% url 'core:sample_list' %}?status=RESULTS_ENTERED" class="link">View all...</a>
+                    </div>
+                    {% endif %}
+                {% else %}
+                    <p class="text-muted">No samples currently awaiting review.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block extra_css %}
 <style>
+.stat-card-link {
+    text-decoration: none;
+    color: inherit; /* Ensure text color inside card is not changed by link */
+}
+
+.stat-card-link .stat-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+}
+
 .dashboard-header {
     display: flex;
     justify-content: space-between;

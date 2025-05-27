@@ -8,23 +8,42 @@
 
 :root {
     --primary-color: #0d6efd;
+    --primary-color-rgb: 13, 110, 253; /* Added for rgba usage */
     --secondary-color: #6c757d;
     --success-color: #198754;
+    --success-color-rgb: 25, 135, 84; /* Added for rgba usage */
     --warning-color: #ffc107;
     --danger-color: #dc3545;
+    --danger-color-rgb: 220, 53, 69; /* Added for rgba usage */
     --info-color: #0dcaf0;
     --light-color: #f8f9fa;
     --dark-color: #212529;
     --border-color: #dee2e6;
-    --shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    --shadow-lg: 0 4px 12px rgba(0, 0, 0, 0.15);
+    --shadow: 0 2px 8px rgba(0, 0, 0, 0.08); /* Softer shadow */
+    --shadow-lg: 0 6px 16px rgba(0, 0, 0, 0.1); /* Softer large shadow */
 }
 
 body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol"; /* Modern font stack */
     background-color: #f5f7fa;
     color: var(--dark-color);
     line-height: 1.6;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+/* General link styling */
+a {
+    color: var(--primary-color);
+    text-decoration: none;
+    transition: color 0.2s ease, text-decoration 0.2s ease;
+}
+
+a:hover {
+    color: #0b5ed7; /* Darker shade of primary */
+    text-decoration: underline;
 }
 
 /* Header and Navigation */
@@ -181,18 +200,19 @@ body {
     padding: 1.5rem;
     margin-bottom: 1.5rem;
     border: 1px solid var(--border-color);
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease; /* Added border-color transition */
 }
 
 .card:hover {
     transform: translateY(-2px);
     box-shadow: var(--shadow-lg);
+    border-color: var(--primary-color); /* Highlight border on hover */
 }
 
 .card-header {
-    border-bottom: 2px solid var(--light-color);
+    border-bottom: 1px solid var(--border-color); /* Thinner, standard border */
     padding-bottom: 1rem;
-    margin-bottom: 1.5rem;
+    margin-bottom: 1rem; /* Adjusted margin */
 }
 
 .card-title {
@@ -219,6 +239,8 @@ body {
     cursor: pointer;
     transition: all 0.3s ease;
     text-align: center;
+    letter-spacing: 0.5px; /* Added letter spacing */
+    line-height: 1.5; /* Ensure consistent line height for buttons */
 }
 
 .btn-primary {
@@ -354,10 +376,12 @@ body {
 
 .form-control.is-invalid {
     border-color: var(--danger-color);
+    box-shadow: 0 0 0 .2rem rgba(var(--danger-color-rgb), 0.25);
 }
 
 .form-control.is-valid {
     border-color: var(--success-color);
+    box-shadow: 0 0 0 .2rem rgba(var(--success-color-rgb), 0.25);
 }
 
 textarea.form-control {
@@ -405,6 +429,10 @@ select.form-control {
 
 .table tbody tr:last-child td {
     border-bottom: none;
+}
+
+.table tbody tr:nth-child(even) {
+    background-color: rgba(0, 0, 0, 0.025); /* Subtle zebra striping */
 }
 
 /* Status badges */
@@ -524,37 +552,116 @@ select.form-control {
 
 /* Responsive Design */
 @media (max-width: 768px) {
+    html {
+        font-size: 90%; /* Scale down root font size slightly for mobile */
+    }
+
     .navbar {
         flex-direction: column;
+        align-items: flex-start; /* Align logo to left */
         gap: 1rem;
-        padding: 1rem;
+        padding: 1rem 1.5rem; /* Adjusted padding */
+    }
+
+    .nav-user {
+        width: 100%; /* Make nav-user take full width */
+        flex-direction: column; /* Stack user items */
+        align-items: flex-start; /* Align to left */
+    }
+    .user-greeting {
+        width: 100%;
+        justify-content: flex-start; /* Align text to left */
+        padding-left: 1rem; /* Match nav-menu item padding */
+    }
+    .user-dropdown .user-menu {
+        /* Adjust dropdown position if needed for stacked layout */
+        left: 0; 
+        right: auto;
+        min-width: 100%; /* Make dropdown full width */
     }
     
     .nav-menu {
         flex-direction: column;
-        gap: 0.5rem;
+        gap: 0.25rem; /* Reduced gap for tighter spacing */
         width: 100%;
     }
     
     .nav-menu a {
         width: 100%;
-        text-align: center;
+        text-align: left; /* Align text to left for a cleaner look */
+        padding: 0.75rem 1rem; /* Slightly more padding */
+        border-bottom: 1px solid rgba(255,255,255,0.1); /* Separator */
+    }
+    .nav-menu a:last-child {
+        border-bottom: none;
     }
     
     .container {
-        padding: 1rem;
+        padding: 1rem; /* Reduced padding for mobile */
+    }
+
+    img { /* Ensure images are responsive */
+        max-width: 100%;
+        height: auto;
+        display: block; /* Remove extra space below images */
+    }
+
+    .card-title {
+        font-size: 1.3rem; /* Adjust card title size for mobile */
+    }
+
+    .form-label {
+        font-size: 0.9rem; /* Adjust form label size */
+    }
+
+    .form-row {
+        flex-direction: column;
+        gap: 0; /* Original gap was 0, ensure form-groups have margin */
+    }
+    .form-row .form-group {
+        margin-bottom: 1rem; /* Ensure spacing between stacked form groups */
+        width: 100%;
     }
     
     .btn-group {
         flex-direction: column;
+        gap: 0.75rem; /* Add some gap for stacked buttons */
     }
     
     .table-container {
         overflow-x: auto;
     }
+    .table th, .table td {
+        padding: 0.75rem; /* Reduce padding for table cells on mobile */
+        font-size: 0.9rem; /* Adjust table font size */
+    }
     
     .stats-grid {
+        grid-template-columns: 1fr; /* Already 1fr, ensure stat-cards are styled well */
+        gap: 1rem; /* Reduce gap */
+    }
+    .stat-card {
+        padding: 1rem; /* Adjust padding */
+    }
+    .stat-number {
+        font-size: 1.8rem; /* Adjust stat number size */
+    }
+    .stat-label {
+        font-size: 0.8rem; /* Adjust stat label size */
+    }
+
+    .login-container { /* From original file, ensure it's included if not already in a separate block */
         grid-template-columns: 1fr;
+    }
+    
+    .login-info { /* From original file */
+        order: -1;
+        width: 100%; /* Ensure full width */
+        box-sizing: border-box; /* Include padding in width calculation */
+    }
+    .login-card {
+        width: 100%; /* Ensure full width */
+        box-sizing: border-box; /* Include padding in width calculation */
     }
 }
 
@@ -590,11 +697,32 @@ select.form-control {
 
 /* Focus states for accessibility */
 .btn:focus,
-.form-control:focus,
+.form-control:focus, /* Retained for form-control, though its specific style below takes precedence */
 .nav-menu a:focus {
     outline: 2px solid var(--primary-color);
     outline-offset: 2px;
 }
+
+/* Enhanced focus for buttons */
+.btn:focus {
+    /* The outline from above applies, plus a box-shadow for better visibility */
+    box-shadow: 0 0 0 .2rem rgba(var(--primary-color-rgb), 0.5);
+}
+
+/* Enhanced focus for nav links (adjust color for contrast if nav background is dark) */
+.nav-menu a:focus {
+    /* The outline from above applies, plus a box-shadow */
+    /* Assuming nav background is dark and links are light, use a light shadow */
+    box-shadow: 0 0 0 .2rem rgba(255, 255, 255, 0.25);
+}
+
+/* Note: .form-control:focus already has a specific style (lines 300-304)
+   which includes:
+   outline: none;
+   border-color: var(--primary-color);
+   box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.1);
+   This specific style will override the general .form-control:focus part of the rule above.
+*/
 
 /* Animation for page transitions */
 .page-content {
@@ -862,4 +990,3 @@ select.form-control {
         flex-direction: column;
     }
 }
-EOF < /dev/null

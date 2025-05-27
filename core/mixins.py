@@ -17,9 +17,11 @@ class RoleRequiredMixin(LoginRequiredMixin):
         if not request.user.is_authenticated:
             return self.handle_no_permission()
         
-        if self.allowed_roles and request.user.role not in self.allowed_roles:
-            messages.error(request, f'Access denied. Required roles: {", ".join(self.allowed_roles)}')
-            return redirect('core:dashboard')
+        # Allow superuser to bypass role check
+        if not request.user.is_superuser:
+            if self.allowed_roles and request.user.role not in self.allowed_roles:
+                messages.error(request, f'Access denied. Required roles: {", ".join(self.allowed_roles)} or Superuser status.')
+                return redirect('core:dashboard')
         
         return super().dispatch(request, *args, **kwargs)
 
