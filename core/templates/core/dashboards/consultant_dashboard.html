@@ -44,12 +44,10 @@
 
 <div class="grid-2-col">
     <!-- Samples for Review -->
-    <div class="card">
-        <div class="card-header">
-            <h3 class="card-title">📋 Samples Awaiting Review</h3>
-        </div>
-        {% if samples_for_review %}
-        <div class="p-3">
+    <div class="card dashboard-card">
+        <div class="card-content">
+            <span class="card-title">📋 Samples Awaiting Review</span>
+            {% if samples_for_review %}
             <div class="sample-list">
                 {% for sample in samples_for_review %}
                 <div class="sample-item">
@@ -79,22 +77,20 @@
                 </div>
                 {% endfor %}
             </div>
+            {% else %}
+            <div class="text-center text-muted" style="padding-top: 1rem; padding-bottom: 1rem;">
+                <p>No samples pending review</p>
+                <p>All caught up! 🎉</p>
+            </div>
+            {% endif %}
         </div>
-        {% else %}
-        <div class="p-3 text-center text-muted">
-            <p>No samples pending review</p>
-            <p>All caught up! 🎉</p>
-        </div>
-        {% endif %}
     </div>
 
     <!-- My Recent Reviews -->
-    <div class="card">
-        <div class="card-header">
-            <h3 class="card-title">📊 My Recent Reviews</h3>
-        </div>
-        {% if recent_reviews %}
-        <div class="p-3">
+    <div class="card dashboard-card">
+        <div class="card-content">
+            <span class="card-title">📊 My Recent Reviews</span>
+            {% if recent_reviews %}
             <div class="reviews-list">
                 {% for review in recent_reviews %}
                 <div class="review-item">
@@ -122,21 +118,19 @@
                 </div>
                 {% endfor %}
             </div>
+            {% else %}
+            <div class="text-center text-muted" style="padding-top: 1rem; padding-bottom: 1rem;">
+                <p>No reviews completed yet</p>
+            </div>
+            {% endif %}
         </div>
-        {% else %}
-        <div class="p-3 text-center text-muted">
-            <p>No reviews completed yet</p>
-        </div>
-        {% endif %}
     </div>
 </div>
 
 <!-- Review Statistics -->
-<div class="card">
-    <div class="card-header">
-        <h3 class="card-title">📈 Review Statistics</h3>
-    </div>
-    <div class="p-3">
+<div class="card dashboard-card">
+    <div class="card-content">
+        <span class="card-title">📈 Review Statistics</span>
         <div class="stats-grid">
             {% if review_stats %}
                 {% for stat in review_stats %}
@@ -160,11 +154,9 @@
 </div>
 
 <!-- Quality Indicators -->
-<div class="card">
-    <div class="card-header">
-        <h3 class="card-title">🎯 Quality Indicators</h3>
-    </div>
-    <div class="p-3">
+<div class="card dashboard-card">
+    <div class="card-content">
+        <span class="card-title">🎯 Quality Indicators</span>
         <div class="quality-grid">
             <div class="quality-item">
                 <div class="quality-icon">⏱️</div>
@@ -203,11 +195,9 @@
 </div>
 
 <!-- Clinical Guidelines -->
-<div class="card">
-    <div class="card-header">
-        <h3 class="card-title">📚 Clinical Guidelines</h3>
-    </div>
-    <div class="p-3">
+<div class="card dashboard-card">
+    <div class="card-content">
+        <span class="card-title">📚 Clinical Guidelines</span>
         <div class="guidelines-list">
             <div class="guideline-item">
                 <div class="guideline-title">WHO Drinking Water Guidelines</div>
