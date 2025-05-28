@@ -44,9 +44,9 @@ INSTALLED_APPS = [
 AUTH_USER_MODEL = 'core.CustomUser'
 
 # Login/Logout URLs
-LOGIN_URL = '/accounts/login/'
-LOGIN_REDIRECT_URL = '/dashboard/'
-LOGOUT_REDIRECT_URL = '/accounts/login/'
+LOGIN_URL = 'core:login_selector' # Changed to use the named URL for login selector
+LOGIN_REDIRECT_URL = 'core:dashboard' # Changed to use named URL for consistency
+LOGOUT_REDIRECT_URL = 'core:login_selector' # Changed to redirect to login selector after logout
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',

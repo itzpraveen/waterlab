@@ -177,9 +177,14 @@
         .dropdown-content { /* For select and other dropdowns */
             border-radius: var(--m3-border-radius-medium);
             box-shadow: 0 4px 8px rgba(0,0,0,0.1), 0 2px 4px rgba(0,0,0,0.08);
+            background-color: var(--surface-color); /* Changed to white for better contrast with dark text */
+            border: 1px solid #bdbdbd; /* Slightly darker border for better definition */
         }
         .dropdown-content li > a, .dropdown-content li > span {
-            color: var(--primary-color-dark); /* Darker text in dropdowns */
+            color: var(--primary-color-dark) !important; /* Darker text in dropdowns, ensure it overrides */
+        }
+        .dropdown-content li > a > i.material-icons { /* Target icons within dropdown links */
+            color: var(--primary-color-dark) !important; /* Ensure icons also use dark text color */
         }
         .dropdown-content li.active, .dropdown-content li:hover {
             background-color: var(--primary-color-light);
@@ -365,16 +370,28 @@
             <li><a href="{% url 'core:password_change' %}" class="waves-effect">
                 <i class="material-icons">lock_outline</i>Change Password
             </a></li>
-            <li><a href="{% url 'core:logout' %}" class="waves-effect">
-                <i class="material-icons">exit_to_app</i>Logout
-            </a></li>
+            <li>
+                <form id="logout-form-sidenav" method="post" action="{% url 'core:logout' %}" style="display: none;">
+                    {% csrf_token %}
+                </form>
+                <a href="#" class="waves-effect" onclick="document.getElementById('logout-form-sidenav').submit(); return false;">
+                    <i class="material-icons">exit_to_app</i>Logout
+                </a>
+            </li>
         </ul>
 
         <!-- User Dropdown Structure -->
         <ul id="user-dropdown" class="dropdown-content">
             <li><a href="{% url 'core:password_change' %}"><i class="material-icons left">lock_outline</i>Change Password</a></li>
             <li class="divider" tabindex="-1"></li>
-            <li><a href="{% url 'core:logout' %}"><i class="material-icons left">exit_to_app</i>Logout</a></li>
+            <li>
+                <form id="logout-form-dropdown" method="post" action="{% url 'core:logout' %}" style="display: none;">
+                    {% csrf_token %}
+                </form>
+                <a href="#" onclick="document.getElementById('logout-form-dropdown').submit(); return false;" style="display: flex; align-items: center;">
+                    <i class="material-icons left">exit_to_app</i>Logout
+                </a>
+            </li>
         </ul>
         {% endif %}
     </header>
