@@ -28,7 +28,7 @@
 </div>
 
 <!-- System Overview Stats -->
-<div class="row section">
+<div class="row section stats-card"> {# Added stats-card class for specific styling #}
     <div class="col s12 m6 l3">
         <a href="{% url 'core:customer_list' %}" class="black-text">
             <div class="card-panel hoverable center-align">
@@ -102,7 +102,7 @@
 <div class="row section">
     <!-- Recent Activity -->
     <div class="col s12 m6">
-        <div class="card">
+        <div class="card dashboard-card"> {# Added dashboard-card class #}
             <div class="card-content">
                 <span class="card-title"><i class="material-icons left">timeline</i>Recent Activity</span>
                 <h6>Latest Samples</h6>
@@ -128,7 +128,7 @@
 
     <!-- System Status -->
     <div class="col s12 m6">
-        <div class="card">
+        <div class="card dashboard-card"> {# Added dashboard-card class #}
             <div class="card-content">
                 <span class="card-title"><i class="material-icons left">settings_system_daydream</i>System Status</span>
                 <ul class="collection">
@@ -150,7 +150,7 @@
 <!-- Recent Users -->
 <div class="row section">
     <div class="col s12">
-        <div class="card">
+        <div class="card dashboard-card"> {# Added dashboard-card class #}
             <div class="card-content">
                 <span class="card-title"><i class="material-icons left">group</i>Recent Users</span>
                 {% if recent_users %}
@@ -206,7 +206,7 @@
     </div>
     {% endif %}
     <div class="col s12 m6">
-        <div class="card">
+        <div class="card dashboard-card"> {# Added dashboard-card class #}
             <div class="card-content">
                 <span class="card-title"><i class="material-icons left">local_lab</i>Samples Currently in Lab ({{ samples_in_lab.count }})</span>
                 {% if samples_in_lab %}
@@ -235,7 +235,7 @@
     </div>
 
     <div class="col s12 m6">
-        <div class="card">
+        <div class="card dashboard-card"> {# Added dashboard-card class #}
             <div class="card-content">
                 <span class="card-title"><i class="material-icons left">playlist_add_check</i>Samples Awaiting Review ({{ samples_awaiting_review.count }})</span>
                 {% if samples_awaiting_review %}
@@ -290,6 +290,63 @@
         font-size: 0.9rem;
         color: var(--text-color-medium);
     }
+
+    /* Styles for compact stat cards */
+    .stats-card .card-panel {
+        padding: 15px !important; /* Slightly adjusted padding */
+        border-radius: var(--m3-border-radius-medium) !important; /* Ensure M3 radius */
+        border-left: 5px solid var(--primary-color); /* Default left border */
+        transition: box-shadow 0.3s ease-in-out, transform 0.2s ease-in-out;
+    }
+    .stats-card .card-panel:hover {
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15), 0 2px 8px rgba(0,0,0,0.1) !important;
+        transform: translateY(-2px);
+    }
+    /* Custom border colors per card - this requires adding classes to HTML if we want to be specific */
+    /* For now, we'll rely on icon colors for differentiation and use a default border */
+
+    .stats-card .card-panel .material-icons.large {
+        font-size: 2.5rem !important; /* Reduced icon size */
+        margin-bottom: 0; /* Remove extra space below icon */
+    }
+    .stats-card .card-panel h5 {
+        font-size: 1.5rem !important; /* Reduced number size */
+        margin-top: 0.25rem;
+        margin-bottom: 0.25rem;
+    }
+    .stats-card .card-panel p {
+        font-size: 0.8rem !important; /* Reduced label size */
+        margin-bottom: 0; /* Remove extra space below label */
+    }
+
+    /* Improved Status Card Design */
+    .dashboard-card.card { /* Targeting general cards on the dashboard */
+        border: 1px solid #e0e0e0; /* Subtle border for definition */
+        /* box-shadow: 0 1px 3px rgba(0,0,0,0.08); /* Slightly softer shadow if needed, but M3 default is good */
+    }
+    .dashboard-card.card .card-content {
+        padding: 20px; /* Standardized padding, slightly less than Materialize default if desired */
+    }
+    .dashboard-card.card .card-title {
+        font-size: 1.3rem; /* Slightly smaller but still prominent */
+        font-weight: 500;
+        color: var(--primary-color-dark);
+        margin-bottom: 1rem; /* Space below title */
+    }
+    .dashboard-card.card .card-title i.material-icons {
+        font-size: 1.5rem; /* Adjust icon size in title */
+        margin-right: 8px;
+        position: relative;
+        top: 2px;
+    }
+    .dashboard-card.card h6 { /* Sub-headers within cards */
+        font-size: 1rem;
+        font-weight: 500;
+        color: var(--text-color-dark);
+        margin-top: 1rem;
+        margin-bottom: 0.75rem;
+    }
+
     .mt-3 { /* For User Distribution title */
         margin-top: 1.5rem !important;
     }
