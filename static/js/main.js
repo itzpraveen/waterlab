@@ -23,8 +23,12 @@ const WaterLab = {
         this.initAccessibilityImprovements();
         this.initAlerts();
         this.initServiceWorker(); // PWA feature
-        this.initAddressDropdowns(); // Added for address cascading dropdowns
-        this.log("WaterLab JS Initialized.");
+        
+        // Defer address dropdown initialization slightly to ensure Materialize components are fully ready
+        setTimeout(() => {
+            this.initAddressDropdowns();
+        }, 0);
+        this.log("WaterLab JS Initialized (core init complete, address dropdowns deferred).");
     },
 
     // --- Start: Kerala Address Dropdown Logic ---
@@ -49,32 +53,49 @@ const WaterLab = {
         }
     },
 
-    populateDropdown: function(selectElement, optionsArray, defaultOptionText = '---------') {
+    populateDropdown: function(selectElement, optionsArray, defaultOptionText = '---------', isLoading = false) {
         if (!selectElement) return;
-        
-        // Preserve selected value if it exists in new options
-        const previouslySelectedValue = selectElement.value;
 
-        // Destroy existing Materialize select instance before repopulating
+        const previouslySelectedValue = selectElement.value;
         const existingInstance = M.FormSelect.getInstance(selectElement);
         if (existingInstance) {
             existingInstance.destroy();
         }
 
-        selectElement.innerHTML = `<option value="">${defaultOptionText}</option>`; // Clear existing options and add default
-        optionsArray.forEach(option => {
-            const optionElement = document.createElement('option');
-            optionElement.value = option;
-            optionElement.textContent = option;
-            selectElement.appendChild(optionElement);
-        });
-        
-        // Try to reselect the previous value if it's still valid
-        if (optionsArray.includes(previouslySelectedValue)) {
-            selectElement.value = previouslySelectedValue;
-        }
+        selectElement.innerHTML = ''; // Clear existing options
 
-        // Re-initialize Materialize select
+        if (isLoading) {
+            const loadingOption = document.createElement('option');
+            loadingOption.value = "";
+            loadingOption.textContent = "Loading...";
+            selectElement.appendChild(loadingOption);
+            selectElement.disabled = true;
+        } else {
+            const defaultOption = document.createElement('option');
+            defaultOption.value = "";
+            defaultOption.textContent = defaultOptionText;
+            selectElement.appendChild(defaultOption);
+
+            if (optionsArray && optionsArray.length > 0) {
+                optionsArray.forEach(option => {
+                    const optionElement = document.createElement('option');
+                    optionElement.value = option;
+                    optionElement.textContent = option;
+                    selectElement.appendChild(optionElement);
+                });
+                selectElement.disabled = false;
+                // Try to reselect the previous value if it's still valid
+                if (optionsArray.includes(previouslySelectedValue)) {
+                    selectElement.value = previouslySelectedValue;
+                } else {
+                    selectElement.value = ""; // Reset to default if previous value is no longer valid
+                }
+            } else {
+                // No options, keep disabled unless it's the primary dropdown (district)
+                selectElement.disabled = selectElement.id !== 'id_district';
+                 selectElement.value = ""; // Reset to default
+            }
+        }
         M.FormSelect.init(selectElement);
     },
 
@@ -83,68 +104,130 @@ const WaterLab = {
         const talukSelect = document.getElementById(talukSelectId);
         const panchayatSelect = document.getElementById(panchayatSelectId);
 
-        if (!districtSelect || !talukSelect) return;
+        if (!districtSelect || !talukSelect || !panchayatSelect) return;
 
         const selectedDistrict = districtSelect.value;
-        const data = await this.loadAddressData();
+        this.log(`updateTalukDropdown: Called. Selected district value: "${selectedDistrict}"`);
 
-        if (data && selectedDistrict && data[selectedDistrict]) {
-            const taluks = Object.keys(data[selectedDistrict]);
-            this.populateDropdown(talukSelect, taluks, 'Select Taluk');
-        } else {
-            this.populateDropdown(talukSelect, [], 'Select Taluk'); // Clear if no district or data
+        this.populateDropdown(talukSelect, [], 'Select Taluk', true); 
+        this.populateDropdown(panchayatSelect, [], 'Select Panchayat/Municipality', false);
+        panchayatSelect.disabled = true;
+        M.FormSelect.init(panchayatSelect);
+
+        const data = await this.loadAddressData();
+        if (!data) {
+            this.log("updateTalukDropdown: Failed to load address data.");
+            this.populateDropdown(talukSelect, [], 'Error loading data');
+            return;
         }
-        // Also clear and update panchayat dropdown as taluk changed
-        this.populateDropdown(panchayatSelect, [], 'Select Panchayat/Municipality');
+        this.log("updateTalukDropdown: Address data object:", data);
+
+
+        if (selectedDistrict && data.hasOwnProperty(selectedDistrict)) {
+            this.log(`updateTalukDropdown: District "${selectedDistrict}" found in data.`);
+            const taluksObject = data[selectedDistrict];
+            this.log(`updateTalukDropdown: Taluks object for "${selectedDistrict}":`, JSON.stringify(taluksObject)); // Added detailed log
+            if (typeof taluksObject !== 'object' || taluksObject === null) {
+                this.log(`updateTalukDropdown: ERROR - taluksObject is not a valid object for district "${selectedDistrict}".`);
+                this.populateDropdown(talukSelect, [], 'Error: Invalid taluk data');
+                return;
+            }
+            const taluks = Object.keys(taluksObject);
+            this.log(`updateTalukDropdown: Taluks for "${selectedDistrict}":`, taluks);
+            this.populateDropdown(talukSelect, taluks, 'Select Taluk');
+            
+            if (talukSelect.value) { // If a taluk is now selected (either pre-filled or first in list)
+                this.log(`updateTalukDropdown: Taluk "${talukSelect.value}" is selected, updating panchayats.`);
+                await this.updatePanchayatDropdown(districtSelectId, talukSelectId, panchayatSelectId, true);
+            } else {
+                 this.log(`updateTalukDropdown: No taluk selected for "${selectedDistrict}", clearing panchayats.`);
+                 this.populateDropdown(panchayatSelect, [], 'Select Panchayat/Municipality');
+                 panchayatSelect.disabled = true;
+                 M.FormSelect.init(panchayatSelect);
+            }
+        } else {
+            this.log(`updateTalukDropdown: District "${selectedDistrict}" not found in data or data is null. Clearing taluks.`);
+            this.populateDropdown(talukSelect, [], 'Select Taluk');
+        }
     },
 
-    updatePanchayatDropdown: async function(districtSelectId = 'id_district', talukSelectId = 'id_taluk', panchayatSelectId = 'id_panchayat_municipality') {
+    updatePanchayatDropdown: async function(districtSelectId = 'id_district', talukSelectId = 'id_taluk', panchayatSelectId = 'id_panchayat_municipality', isChainedCall = false) {
         const districtSelect = document.getElementById(districtSelectId);
         const talukSelect = document.getElementById(talukSelectId);
         const panchayatSelect = document.getElementById(panchayatSelectId);
 
-        if (!districtSelect || !talukSelect || !panchayatSelect) return;
+        if (!districtSelect || !talukSelect || !panchayatSelect) {
+            this.log("updatePanchayatDropdown: One or more select elements not found.");
+            return;
+        }
 
         const selectedDistrict = districtSelect.value;
         const selectedTaluk = talukSelect.value;
-        const data = await this.loadAddressData();
+        this.log(`updatePanchayatDropdown: Called. District: "${selectedDistrict}", Taluk: "${selectedTaluk}"`);
 
-        if (data && selectedDistrict && selectedTaluk && data[selectedDistrict] && data[selectedDistrict][selectedTaluk]) {
+        if (!isChainedCall) {
+            this.populateDropdown(panchayatSelect, [], 'Select Panchayat/Municipality', true);
+        }
+
+        const data = await this.loadAddressData();
+        if (!data) {
+            this.log("updatePanchayatDropdown: Failed to load address data.");
+            this.populateDropdown(panchayatSelect, [], 'Error loading data');
+            return;
+        }
+        this.log("updatePanchayatDropdown: Address data object:", data);
+
+        if (selectedDistrict && selectedTaluk && data.hasOwnProperty(selectedDistrict) && data[selectedDistrict].hasOwnProperty(selectedTaluk)) {
+            this.log(`updatePanchayatDropdown: District "${selectedDistrict}" and Taluk "${selectedTaluk}" found.`);
             const panchayats = data[selectedDistrict][selectedTaluk];
+            this.log(`updatePanchayatDropdown: Panchayats for "${selectedTaluk}":`, panchayats);
             this.populateDropdown(panchayatSelect, panchayats, 'Select Panchayat/Municipality');
         } else {
-            this.populateDropdown(panchayatSelect, [], 'Select Panchayat/Municipality'); // Clear if no taluk or data
+            this.log(`updatePanchayatDropdown: District "${selectedDistrict}" or Taluk "${selectedTaluk}" not found, or no panchayats. Clearing panchayats.`);
+            this.populateDropdown(panchayatSelect, [], 'Select Panchayat/Municipality');
         }
     },
 
     initAddressDropdowns: async function() {
         this.log("Initializing address dropdowns...");
-        await this.loadAddressData(); // Pre-load data
-
         const districtSelect = document.getElementById('id_district');
         const talukSelect = document.getElementById('id_taluk');
-        // const panchayatSelect = document.getElementById('id_panchayat_municipality'); // Not directly needed for init listeners
+        const panchayatSelect = document.getElementById('id_panchayat_municipality');
 
-        if (districtSelect) {
-            // Initial population for Taluk if a district is already selected (e.g. on form edit)
-            if (districtSelect.value) {
-                this.updateTalukDropdown(); // This will also trigger panchayat update
-            }
-            districtSelect.addEventListener('change', () => {
-                this.updateTalukDropdown();
-            });
+        if (!districtSelect || !talukSelect || !panchayatSelect) {
+            this.log("Address dropdowns not found, skipping initialization.");
+            return;
         }
+        
+        await this.loadAddressData(); // Pre-load data
 
-        if (talukSelect) {
-             // Initial population for Panchayat if a taluk is already selected
-            if (talukSelect.value && districtSelect && districtSelect.value) {
-                 this.updatePanchayatDropdown();
-            }
-            talukSelect.addEventListener('change', () => {
-                this.updatePanchayatDropdown();
-            });
+        // Initial state: taluk and panchayat should be disabled if no district is selected
+        const initialDistrict = districtSelect.value;
+        const initialTaluk = talukSelect.value; // Uncommented: Keep track of pre-filled value for edit forms
+
+        if (initialDistrict) {
+            this.log("Initial district found on page load:", initialDistrict);
+            await this.updateTalukDropdown(); // This will populate taluks and potentially panchayats if taluk is also pre-filled
+            // If taluk was pre-filled and is valid for the district, updatePanchayatDropdown would have been called by updateTalukDropdown
+        } else {
+            this.populateDropdown(talukSelect, [], 'Select Taluk');
+            talukSelect.disabled = true;
+            M.FormSelect.init(talukSelect);
+            this.populateDropdown(panchayatSelect, [], 'Select Panchayat/Municipality');
+            panchayatSelect.disabled = true;
+            M.FormSelect.init(panchayatSelect);
         }
-        this.log("Address dropdowns initialized.");
+        
+        districtSelect.addEventListener('change', async () => {
+            this.log("District dropdown 'change' event triggered. New value:", districtSelect.value);
+            await this.updateTalukDropdown();
+        });
+
+        talukSelect.addEventListener('change', async () => {
+            this.log("Taluk dropdown 'change' event triggered. New value:", talukSelect.value);
+            await this.updatePanchayatDropdown();
+        });
+        this.log("Address dropdowns initialized and event listeners attached.");
     },
     // --- End: Kerala Address Dropdown Logic ---
 
@@ -231,7 +314,7 @@ const WaterLab = {
 
     initFormEnhancements: function() {
         document.querySelectorAll('form.validate-form').forEach(form => { // Add class 'validate-form' to forms needing this
-            this.initFormValidation(form);
+            this.initFormValidationListeners(form); // Changed to initFormValidationListeners
             form.addEventListener('submit', (event) => {
                 if (!this.validateForm(form)) {
                     event.preventDefault();
@@ -265,6 +348,24 @@ const WaterLab = {
         });
         return isValid;
     },
+
+    initFormValidationListeners: function(form) {
+        this.log("Initializing form validation listeners for", form.id || "form");
+        form.querySelectorAll('input, select, textarea').forEach(field => {
+            // Example: Validate on blur
+            // field.addEventListener('blur', () => this.validateField(field));
+            // For select elements, 'change' event is more appropriate
+            if (field.tagName === 'SELECT') {
+                field.addEventListener('change', () => this.validateField(field));
+            } else {
+                field.addEventListener('blur', () => this.validateField(field));
+                // Optionally, validate on input for immediate feedback for some fields
+                // if (field.type === 'text' || field.type === 'email' || field.type === 'password') {
+                //    field.addEventListener('input', this.debounce(() => this.validateField(field), 500));
+                // }
+            }
+        });
+    },
     
     validateField: function(field) {
         let isValid = true;
@@ -294,6 +395,35 @@ const WaterLab = {
              isValid = false;
              errorMessage = field.dataset.errorMessageEmail || 'Please enter a valid email address.';
         }
+        
+        // PIN Code validation
+        if (isValid && field.id === 'id_pincode' && value) {
+            if (!/^\d{6}$/.test(value)) {
+                isValid = false;
+                errorMessage = 'PIN code must be 6 digits.';
+            } else {
+                const pinNum = parseInt(value, 10);
+                if (pinNum < 670001 || pinNum > 695615) {
+                    isValid = false;
+                    errorMessage = 'PIN code is not in the valid Kerala range (670001-695615).';
+                }
+            }
+        }
+        
+        // Required validation for select elements (District, Taluk, Panchayat)
+        if (isValid && field.tagName === 'SELECT' && field.hasAttribute('required') && !value) {
+            // Check if it's one of our address dropdowns that might be dynamically populated
+            if (['id_district', 'id_taluk', 'id_panchayat_municipality'].includes(field.id)) {
+                 if (!field.disabled) { // Only validate if not disabled
+                    isValid = false;
+                    errorMessage = field.dataset.errorMessageRequired || 'This field is required.';
+                 }
+            } else { // For other required selects
+                isValid = false;
+                errorMessage = field.dataset.errorMessageRequired || 'This field is required.';
+            }
+        }
+
 
         if (!isValid) {
             this.setFieldError(field, errorMessage);

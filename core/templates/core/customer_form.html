@@ -28,7 +28,7 @@
                     {% if form.instance.pk %}Update customer information{% else %}Register a new customer in the system{% endif %}
                 </p>
 
-                <form method="post" novalidate>
+                <form method="post" novalidate class="validate-form">
                     {% csrf_token %}
                     
                     {# Display non-field errors first #}
@@ -75,39 +75,39 @@
                     <div class="row">
                         <div class="input-field col s12">
                             {{ form.street_locality_landmark }}
-                            <label for="{{ form.street_locality_landmark.id_for_label }}">Street / Locality / Landmark <span class="red-text">*</span></label>
-                            {% if form.street_locality_landmark.errors %}<span class="helper-text red-text">{{ form.street_locality_landmark.errors.0 }}</span>{% else %}<span class="helper-text">e.g., M.G. Road, Near Temple</span>{% endif %}
+                            <label for="{{ form.street_locality_landmark.id_for_label }}">Street / Locality <span class="red-text">*</span></label>
+                            {% if form.street_locality_landmark.errors %}<span class="helper-text red-text">{{ form.street_locality_landmark.errors.0 }}</span>{% else %}<span class="helper-text">e.g., M.G. Road, Near Temple. This field is required.</span>{% endif %}
                         </div>
                     </div>
                     <div class="row">
                         <div class="input-field col s12 m6">
                             {{ form.village_town_city }}
-                            <label for="{{ form.village_town_city.id_for_label }}">Village / Town / City <span class="red-text">*</span></label>
-                            {% if form.village_town_city.errors %}<span class="helper-text red-text">{{ form.village_town_city.errors.0 }}</span>{% else %}<span class="helper-text">e.g., Varkala, Kochi</span>{% endif %}
+                            <label for="{{ form.village_town_city.id_for_label }}">Village / Town <span class="red-text">*</span></label>
+                            {% if form.village_town_city.errors %}<span class="helper-text red-text">{{ form.village_town_city.errors.0 }}</span>{% else %}<span class="helper-text">e.g., Varkala, Kochi. This field is required.</span>{% endif %}
                         </div>
-                        <div class="input-field col s12 m6">
-                            {{ form.panchayat_municipality }}
-                            <label for="{{ form.panchayat_municipality.id_for_label }}">Panchayat / Municipality / Corporation <span class="red-text">*</span></label>
-                            {% if form.panchayat_municipality.errors %}<span class="helper-text red-text">{{ form.panchayat_municipality.errors.0 }}</span>{% else %}<span class="helper-text">e.g., Varkala Panchayat</span>{% endif %}
+                         <div class="input-field col s12 m6">
+                            {{ form.district }}
+                            <label for="{{ form.district.id_for_label }}">District <span class="red-text">*</span></label>
+                            {% if form.district.errors %}<span class="helper-text red-text">{{ form.district.errors.0 }}</span>{% else %}<span class="helper-text">Select a district to populate Taluks.</span>{% endif %}
                         </div>
                     </div>
                     <div class="row">
                         <div class="input-field col s12 m6">
                             {{ form.taluk }}
                             <label for="{{ form.taluk.id_for_label }}">Taluk <span class="red-text">*</span></label>
-                            {% if form.taluk.errors %}<span class="helper-text red-text">{{ form.taluk.errors.0 }}</span>{% else %}<span class="helper-text">e.g., Chirayinkeezhu</span>{% endif %}
+                            {% if form.taluk.errors %}<span class="helper-text red-text">{{ form.taluk.errors.0 }}</span>{% else %}<span class="helper-text">Populated after selecting District.</span>{% endif %}
                         </div>
                         <div class="input-field col s12 m6">
-                            {{ form.district }}
-                            <label for="{{ form.district.id_for_label }}">District <span class="red-text">*</span></label>
-                            {% if form.district.errors %}<span class="helper-text red-text">{{ form.district.errors.0 }}</span>{% endif %}
+                            {{ form.panchayat_municipality }}
+                            <label for="{{ form.panchayat_municipality.id_for_label }}">Panchayat / Municipality / Corporation <span class="red-text">*</span></label>
+                            {% if form.panchayat_municipality.errors %}<span class="helper-text red-text">{{ form.panchayat_municipality.errors.0 }}</span>{% else %}<span class="helper-text">Populated after selecting Taluk.</span>{% endif %}
                         </div>
                     </div>
                     <div class="row">
                         <div class="input-field col s12 m6">
                             {{ form.pincode }}
                             <label for="{{ form.pincode.id_for_label }}">PIN Code <span class="red-text">*</span></label>
-                            {% if form.pincode.errors %}<span class="helper-text red-text">{{ form.pincode.errors.0 }}</span>{% else %}<span class="helper-text">6-digit Kerala PIN (starts with 6)</span>{% endif %}
+                            {% if form.pincode.errors %}<span class="helper-text red-text">{{ form.pincode.errors.0 }}</span>{% else %}<span class="helper-text">6-digit Kerala PIN (670001-695615).</span>{% endif %}
                         </div>
                     </div>
                     

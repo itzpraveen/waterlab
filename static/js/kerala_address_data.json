@@ -1,24 +1,97 @@
 {
-  "Thiruvananthapuram": {
+  "thiruvananthapuram": {
     "Neyyattinkara": ["Perumkadavila Grama Panchayat", "Karakonam Grama Panchayat", "Chenkal Grama Panchayat"],
     "Chirayinkeezhu": ["Varkala Municipality", "Attingal Municipality", "Azhoor Grama Panchayat"],
     "Kattakada": ["Kattakada Grama Panchayat", "Malayinkeezhu Grama Panchayat", "Vilappil Grama Panchayat"],
     "Thiruvananthapuram": ["Thiruvananthapuram Corporation"]
   },
-  "Ernakulam": {
+  "ernakulam": {
     "Kochi": ["Kochi Corporation"],
     "Aluva": ["Aluva Municipality", "Angamaly Municipality", "Kalady Grama Panchayat"],
     "Kunnathunad": ["Perumbavoor Municipality", "Vazhakulam Grama Panchayat", "Rayonpuram Grama Panchayat"],
     "Kanayannur": ["Maradu Municipality", "Thrippunithura Municipality"]
   },
-  "Kozhikode": {
+  "kozhikode": {
     "Kozhikode": ["Kozhikode Corporation"],
     "Vadakara": ["Vadakara Municipality", "Chorode Grama Panchayat", "Onchiyam Grama Panchayat"],
     "Koyilandy": ["Koyilandy Municipality", "Payyoli Municipality", "Thikkodi Grama Panchayat"]
   },
-  "Malappuram": {
+  "malappuram": {
     "Eranad": ["Manjeri Municipality", "Areekode Grama Panchayat", "Edavanna Grama Panchayat"],
     "Tirurangadi": ["Tirurangadi Municipality", "Parappanangadi Grama Panchayat", "Thenhipalam Grama Panchayat"],
     "Perinthalmanna": ["Perinthalmanna Municipality", "Angadippuram Grama Panchayat", "Mankada Grama Panchayat"]
+  },
+  "kollam": {
+    "Kollam Taluk": [],
+    "Karunagappally Taluk": [],
+    "Kottarakkara Taluk": [],
+    "Punalur Taluk": [],
+    "Pathanapuram Taluk": [],
+    "Kunnathur Taluk": []
+  },
+  "pathanamthitta": {
+    "Adoor Taluk": [],
+    "Konni Taluk": [],
+    "Kozhencherry Taluk": [],
+    "Ranni Taluk": [],
+    "Mallappally Taluk": [],
+    "Thiruvalla Taluk": []
+  },
+  "alappuzha": {
+    "Cherthala Taluk": [],
+    "Ambalappuzha Taluk": [],
+    "Kuttanad Taluk": [],
+    "Karthikappally Taluk": [],
+    "Chengannur Taluk": [],
+    "Mavelikkara Taluk": []
+  },
+  "kottayam": {
+    "Kottayam Taluk": [],
+    "Changanassery Taluk": [],
+    "Vaikom Taluk": [],
+    "Meenachil Taluk": [],
+    "Kanjirappally Taluk": []
+  },
+  "idukki": {
+    "Devikulam Taluk": [],
+    "Udumbanchola Taluk": [],
+    "Thodupuzha Taluk": [],
+    "Peerumade Taluk": [],
+    "Idukki Taluk": []
+  },
+  "thrissur": {
+    "Thrissur Taluk": [],
+    "Mukundapuram Taluk": [],
+    "Kodungallur Taluk": [],
+    "Chavakkad Taluk": [],
+    "Thalapilly Taluk": [],
+    "Chalakudy Taluk": [],
+    "Kunnamkulam Taluk": []
+  },
+  "palakkad": {
+    "Palakkad Taluk": [],
+    "Alathur Taluk": [],
+    "Chittur Taluk": [],
+    "Ottappalam Taluk": [],
+    "Mannarkkad Taluk": [],
+    "Pattambi Taluk": []
+  },
+  "wayanad": {
+    "Mananthavady Taluk": [],
+    "Sulthan Bathery Taluk": [],
+    "Vythiri Taluk": []
+  },
+  "kannur": {
+    "Kannur Taluk": [],
+    "Thalassery Taluk": [],
+    "Taliparamba Taluk": [],
+    "Iritty Taluk": [],
+    "Payyanur Taluk": []
+  },
+  "kasaragod": {
+    "Kasaragod Taluk": [],
+    "Hosdurg Taluk": [],
+    "Vellarikundu Taluk": [],
+    "Manjeshwaram Taluk": []
   }
 }
