@@ -28,7 +28,7 @@
 
 <!-- Lab Testing Stats -->
 <div class="row section stats-card">
-    <div class="col s6 m4 l2"> {# Adjusted for 5 cards, l2 might be tight, consider l2-l3 or custom class for 5 items #}
+    <div class="col s12 m6 l4">
         <a href="{% url 'core:sample_list' %}?status=SENT_TO_LAB" class="black-text">
             <div class="card-panel hoverable center-align">
                 <i class="material-icons large orange-text text-darken-2">hourglass_empty</i>
@@ -37,7 +37,7 @@
             </div>
         </a>
     </div>
-    <div class="col s6 m4 l2">
+    <div class="col s12 m6 l4">
         <a href="{% url 'core:sample_list' %}?status=RESULTS_ENTERED&status=REPORT_APPROVED" class="black-text">
             <div class="card-panel hoverable center-align">
                 <i class="material-icons large green-text text-darken-2">check_circle</i>
@@ -46,7 +46,7 @@
             </div>
         </a>
     </div>
-    <div class="col s6 m4 l2">
+    <div class="col s12 m6 l4">
         <a href="/admin/core/testresult/?entered_by__id__exact={{ user.id }}" class="black-text">
             <div class="card-panel hoverable center-align">
                 <i class="material-icons large blue-text text-darken-2">assignment_turned_in</i>
@@ -55,7 +55,7 @@
             </div>
         </a>
     </div>
-    <div class="col s6 m6 l3"> {# Adjusted for 5 cards, making last two slightly larger #}
+    <div class="col s12 m6 l4">
          <a href="/admin/core/testresult/?test_date__day={{ now.day }}&test_date__month={{ now.month }}&test_date__year={{ now.year }}" class="black-text">
             <div class="card-panel hoverable center-align">
                 <i class="material-icons large teal-text text-darken-2">today</i>
@@ -64,7 +64,7 @@
             </div>
         </a>
     </div>
-    <div class="col s12 m6 l3"> {# Adjusted for 5 cards #}
+    <div class="col s12 m6 l4">
         <a href="{% url 'core:setup_test_parameters' %}" class="black-text">
             <div class="card-panel hoverable center-align">
                 <i class="material-icons large purple-text text-darken-2">settings_input_component</i>

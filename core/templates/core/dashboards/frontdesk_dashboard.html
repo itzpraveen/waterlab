@@ -29,7 +29,7 @@
 
 <!-- Customer & Sample Stats -->
 <div class="row section stats-card"> {# Replaced dashboard-stats with admin_dashboard structure #}
-    <div class="col s6 m4 l2-fd"> {# Custom class for 5 items if needed, or adjust l2/l3 #}
+    <div class="col s12 m6 l4">
         <a href="{% url 'core:customer_list' %}" class="black-text">
             <div class="card-panel hoverable center-align">
                 <i class="material-icons large blue-text text-darken-2">people</i>
@@ -38,7 +38,7 @@
             </div>
         </a>
     </div>
-    <div class="col s6 m4 l2-fd">
+    <div class="col s12 m6 l4">
         <a href="{% url 'core:sample_list' %}?status=SENT_TO_LAB&status=TESTING_IN_PROGRESS" class="black-text">
             <div class="card-panel hoverable center-align">
                 <i class="material-icons large orange-text text-darken-2">hourglass_empty</i>
@@ -47,7 +47,7 @@
             </div>
         </a>
     </div>
-    <div class="col s6 m4 l2-fd">
+    <div class="col s12 m6 l4">
         <a href="{% url 'core:sample_list' %}" class="black-text"> {# Link to all samples, user can filter by date #}
             <div class="card-panel hoverable center-align">
                 <i class="material-icons large teal-text text-darken-2">today</i>
@@ -56,7 +56,7 @@
             </div>
         </a>
     </div>
-    <div class="col s6 m6 l3-fd">
+    <div class="col s12 m6 l4">
         <a href="{% url 'core:sample_list' %}?status=REPORT_APPROVED" class="black-text">
             <div class="card-panel hoverable center-align">
                 <i class="material-icons large green-text text-darken-2">check_circle</i>
@@ -65,7 +65,7 @@
             </div>
         </a>
     </div>
-    <div class="col s12 m6 l3-fd">
+    <div class="col s12 m6 l4">
         <a href="{% url 'core:sample_list' %}" class="black-text"> {# Link to all samples, user can filter by date #}
             <div class="card-panel hoverable center-align">
                 <i class="material-icons large purple-text text-darken-2">date_range</i>
@@ -297,14 +297,7 @@
         margin-bottom: 0; /* Remove extra space below label */
     }
      /* Specific adjustments for 5 stat cards to fit better on large screens */
-    .stats-card .col.l2-fd .card-panel .material-icons.large { font-size: 2.2rem !important; }
-    .stats-card .col.l2-fd .card-panel h5 { font-size: 1.4rem !important; }
-    .stats-card .col.l2-fd .card-panel p { font-size: 0.75rem !important; }
-
-    .stats-card .col.l3-fd .card-panel .material-icons.large { font-size: 2.5rem !important; }
-    .stats-card .col.l3-fd .card-panel h5 { font-size: 1.5rem !important; }
-    .stats-card .col.l3-fd .card-panel p { font-size: 0.8rem !important; }
-
+    /* Removed l2-fd and l3-fd specific styles as we are standardizing on l4 */
 
     .mt-3 { /* For User Distribution title */
         margin-top: 1.5rem !important;
