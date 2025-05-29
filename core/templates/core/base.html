@@ -51,7 +51,7 @@
     <header class="no-print">
         <nav>
             <div class="nav-wrapper">
-                <a href="{% url 'core:home' %}" class="brand-logo" style="display: flex; align-items: center;">
+                <a href="{% if user.is_authenticated %}{% url 'core:dashboard' %}{% else %}{% url 'core:home' %}{% endif %}" class="brand-logo" style="display: flex; align-items: center;">
                     <img src="{% static 'images/biofix_logo.png' %}" alt="Biofix Research Institute Logo" style="height: 40px; margin-right: 10px; vertical-align: middle;">
                     <span class="logo-text" style="vertical-align: middle;">WaterLab LIMS</span>
                 </a>

@@ -204,6 +204,23 @@
 
 {% block extra_css %}
 <style>
+.dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center; /* Vertically align title and user-info */
+    margin-bottom: 1.5rem; /* Consistent margin */
+}
+
+.dashboard-header .page-title {
+    margin: 0; /* Remove default h1 margin if any, to help with alignment */
+}
+
+.user-info {
+    display: flex;
+    align-items: center; /* Vertically align items within user-info (badge and text) */
+    gap: 0.75rem; /* Space between role badge and welcome text */
+}
+
 .customer-list {
     max-height: 400px;
     overflow-y: auto;
