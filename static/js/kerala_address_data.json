@@ -22,76 +22,76 @@
     "Perinthalmanna": ["Perinthalmanna Municipality", "Angadippuram Grama Panchayat", "Mankada Grama Panchayat"]
   },
   "kollam": {
-    "Kollam Taluk": [],
-    "Karunagappally Taluk": [],
-    "Kottarakkara Taluk": [],
-    "Punalur Taluk": [],
-    "Pathanapuram Taluk": [],
-    "Kunnathur Taluk": []
+    "Kollam Taluk": ["Kollam Corporation", "Paravur Municipality", "Mayyanad Grama Panchayat"],
+    "Karunagappally Taluk": ["Karunagappally Municipality", "Oachira Grama Panchayat", "Alappad Grama Panchayat"],
+    "Kottarakkara Taluk": ["Kottarakkara Municipality", "Veliyam Grama Panchayat", "Pooyappally Grama Panchayat"],
+    "Punalur Taluk": ["Punalur Municipality", "Valacode Grama Panchayat", "Karavaloor Grama Panchayat"],
+    "Pathanapuram Taluk": ["Pathanapuram Grama Panchayat", "Vilakkudy Grama Panchayat", "Piravanthoor Grama Panchayat"],
+    "Kunnathur Taluk": ["Sasthamcotta Grama Panchayat", "West Kallada Grama Panchayat", "Poruvazhy Grama Panchayat"]
   },
   "pathanamthitta": {
-    "Adoor Taluk": [],
-    "Konni Taluk": [],
-    "Kozhencherry Taluk": [],
-    "Ranni Taluk": [],
-    "Mallappally Taluk": [],
-    "Thiruvalla Taluk": []
+    "Adoor Taluk": ["Adoor Municipality", "Kadampanad Grama Panchayat", "Enadimangalam Grama Panchayat"],
+    "Konni Taluk": ["Konni Grama Panchayat", "Vadasserikkara Grama Panchayat", "Kalanjoor Grama Panchayat"],
+    "Kozhencherry Taluk": ["Kozhencherry Grama Panchayat", "Aranmula Grama Panchayat", "Pandalam Thekkekara Grama Panchayat"],
+    "Ranni Taluk": ["Ranni Angadi Grama Panchayat", "Seethathodu Grama Panchayat", "Perunad Grama Panchayat"],
+    "Mallappally Taluk": ["Mallappally Grama Panchayat", "Ezhumattoor Grama Panchayat", "Kallooppara Grama Panchayat"],
+    "Thiruvalla Taluk": ["Thiruvalla Municipality", "Nedumpuram Grama Panchayat", "Kaviyoor Grama Panchayat"]
   },
   "alappuzha": {
-    "Cherthala Taluk": [],
-    "Ambalappuzha Taluk": [],
-    "Kuttanad Taluk": [],
-    "Karthikappally Taluk": [],
-    "Chengannur Taluk": [],
-    "Mavelikkara Taluk": []
+    "Cherthala Taluk": ["Cherthala Municipality", "Arookutty Grama Panchayat", "Mararikulam South Grama Panchayat"],
+    "Ambalappuzha Taluk": ["Alappuzha Municipality", "Ambalappuzha South Grama Panchayat", "Purakkad Grama Panchayat"],
+    "Kuttanad Taluk": ["Kainakary Grama Panchayat", "Edathua Grama Panchayat", "Nedumudy Grama Panchayat"],
+    "Karthikappally Taluk": ["Haripad Municipality", "Karuvatta Grama Panchayat", "Thrikkunnapuzha Grama Panchayat"],
+    "Chengannur Taluk": ["Chengannur Municipality", "Mulakuzha Grama Panchayat", "Thiruvanvandoor Grama Panchayat"],
+    "Mavelikkara Taluk": ["Mavelikkara Municipality", "Chunakkara Grama Panchayat", "Thazhakkara Grama Panchayat"]
   },
   "kottayam": {
-    "Kottayam Taluk": [],
-    "Changanassery Taluk": [],
-    "Vaikom Taluk": [],
-    "Meenachil Taluk": [],
-    "Kanjirappally Taluk": []
+    "Kottayam Taluk": ["Kottayam Municipality", "Athirampuzha Grama Panchayat", "Kumarakom Grama Panchayat"],
+    "Changanassery Taluk": ["Changanassery Municipality", "Thrikodithanam Grama Panchayat", "Vazappally Grama Panchayat"],
+    "Vaikom Taluk": ["Vaikom Municipality", "Chempu Grama Panchayat", "Vadayar Grama Panchayat"],
+    "Meenachil Taluk": ["Pala Municipality", "Erattupetta Municipality", "Kuravilangad Grama Panchayat"],
+    "Kanjirappally Taluk": ["Kanjirappally Grama Panchayat", "Koottickal Grama Panchayat", "Manimala Grama Panchayat"]
   },
   "idukki": {
-    "Devikulam Taluk": [],
-    "Udumbanchola Taluk": [],
-    "Thodupuzha Taluk": [],
-    "Peerumade Taluk": [],
-    "Idukki Taluk": []
+    "Devikulam Taluk": ["Munnar Grama Panchayat", "Marayoor Grama Panchayat", "Kannan Devan Hills Grama Panchayat"],
+    "Udumbanchola Taluk": ["Nedumkandam Grama Panchayat", "Rajakkad Grama Panchayat", "Vathikudy Grama Panchayat"],
+    "Thodupuzha Taluk": ["Thodupuzha Municipality", "Muttom Grama Panchayat", "Purappuzha Grama Panchayat"],
+    "Peerumade Taluk": ["Peermade Grama Panchayat", "Elappara Grama Panchayat", "Vandiperiyar Grama Panchayat"],
+    "Idukki Taluk": ["Idukki-Kanjikuzhy Grama Panchayat", "Ayyappancoil Grama Panchayat", "Kanchiyar Grama Panchayat"]
   },
   "thrissur": {
-    "Thrissur Taluk": [],
-    "Mukundapuram Taluk": [],
-    "Kodungallur Taluk": [],
-    "Chavakkad Taluk": [],
-    "Thalapilly Taluk": [],
-    "Chalakudy Taluk": [],
-    "Kunnamkulam Taluk": []
+    "Thrissur Taluk": ["Thrissur Corporation", "Ollukkara Grama Panchayat", "Pananchery Grama Panchayat"],
+    "Mukundapuram Taluk": ["Irinjalakuda Municipality", "Puthenchira Grama Panchayat", "Muriyad Grama Panchayat"],
+    "Kodungallur Taluk": ["Kodungallur Municipality", "Mathilakam Grama Panchayat", "Methala Grama Panchayat"],
+    "Chavakkad Taluk": ["Chavakkad Municipality", "Orumanayur Grama Panchayat", "Punnayurkulam Grama Panchayat"],
+    "Thalapilly Taluk": ["Vadakkanchery Municipality", "Kunnamkulam Municipality", "Kadavallur Grama Panchayat"],
+    "Chalakudy Taluk": ["Chalakudy Municipality", "Melur Grama Panchayat", "Potta Grama Panchayat"],
+    "Kunnamkulam Taluk": ["Kunnamkulam Municipality", "Kadalayi Grama Panchayat", "Choondal Grama Panchayat"]
   },
   "palakkad": {
-    "Palakkad Taluk": [],
-    "Alathur Taluk": [],
-    "Chittur Taluk": [],
-    "Ottappalam Taluk": [],
-    "Mannarkkad Taluk": [],
-    "Pattambi Taluk": []
+    "Palakkad Taluk": ["Palakkad Municipality", "Kanjikode Grama Panchayat", "Marutharode Grama Panchayat"],
+    "Alathur Taluk": ["Alathur Municipality", "Tarur Grama Panchayat", "Kizhakkenchery Grama Panchayat"],
+    "Chittur Taluk": ["Chittur-Tattamangalam Municipality", "Ayilur Grama Panchayat", "Nallepilly Grama Panchayat"],
+    "Ottappalam Taluk": ["Ottappalam Municipality", "Shoranur Municipality", "Lakkidi-Perur-I Grama Panchayat"],
+    "Mannarkkad Taluk": ["Mannarkkad Municipality", "Agali Grama Panchayat", "Kottoppadam Grama Panchayat"],
+    "Pattambi Taluk": ["Pattambi Municipality", "Thrithala Grama Panchayat", "Koppam Grama Panchayat"]
   },
   "wayanad": {
-    "Mananthavady Taluk": [],
-    "Sulthan Bathery Taluk": [],
-    "Vythiri Taluk": []
+    "Mananthavady Taluk": ["Mananthavady Municipality", "Thavinhal Grama Panchayat", "Thirunelli Grama Panchayat"],
+    "Sulthan Bathery Taluk": ["Sulthan Bathery Municipality", "Nenmeni Grama Panchayat", "Ambalavayal Grama Panchayat"],
+    "Vythiri Taluk": ["Kalpetta Municipality", "Meppadi Grama Panchayat", "Pozhuthana Grama Panchayat"]
   },
   "kannur": {
-    "Kannur Taluk": [],
-    "Thalassery Taluk": [],
-    "Taliparamba Taluk": [],
-    "Iritty Taluk": [],
-    "Payyanur Taluk": []
+    "Kannur Taluk": ["Kannur Corporation", "Edakkad Grama Panchayat", "Chelora Grama Panchayat"],
+    "Thalassery Taluk": ["Thalassery Municipality", "Mokery Grama Panchayat", "New Mahe Grama Panchayat"],
+    "Taliparamba Taluk": ["Taliparamba Municipality", "Sreekandapuram Municipality", "Mayyil Grama Panchayat"],
+    "Iritty Taluk": ["Iritty Municipality", "Ulikkal Grama Panchayat", "Keezhur-Chavassery Grama Panchayat"],
+    "Payyanur Taluk": ["Payyannur Municipality", "Cheruthazham Grama Panchayat", "Kunhimangalam Grama Panchayat"]
   },
   "kasaragod": {
-    "Kasaragod Taluk": [],
-    "Hosdurg Taluk": [],
-    "Vellarikundu Taluk": [],
-    "Manjeshwaram Taluk": []
+    "Kasaragod Taluk": ["Kasaragod Municipality", "Madhur Grama Panchayat", "Chemnad Grama Panchayat"],
+    "Hosdurg Taluk": ["Kanhangad Municipality", "Bekal Grama Panchayat", "Nileshwaram Municipality"],
+    "Vellarikundu Taluk": ["Vellarikundu Grama Panchayat", "Balal Grama Panchayat", "West Eleri Grama Panchayat"],
+    "Manjeshwaram Taluk": ["Manjeshwaram Grama Panchayat", "Uppala Grama Panchayat", "Paivalike Grama Panchayat"]
   }
 }
