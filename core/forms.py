@@ -168,9 +168,9 @@ class SampleForm(forms.ModelForm):
         model = Sample
         fields = ['customer', 'collection_datetime', 'sample_source', 'collected_by', 'tests_requested']
         widgets = {
-            'collection_datetime': forms.DateTimeInput(attrs={
-                'type': 'datetime-local',
-                'class': 'form-control'
+            'collection_datetime': forms.TextInput(attrs={
+                'class': 'form-control datepicker', # Changed type, added 'datepicker' class
+                'placeholder': 'Select date, then type time (HH:MM:SS)' # Added placeholder
             }),
             'customer': forms.Select(attrs={'class': 'form-control'}),
             'sample_source': forms.Select(attrs={'class': 'form-control'}),

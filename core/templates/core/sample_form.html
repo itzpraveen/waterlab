@@ -141,29 +141,31 @@ document.addEventListener('DOMContentLoaded', function() {
     var selectElems = document.querySelectorAll('select');
     M.FormSelect.init(selectElems);
 
-    // Initialize Materialize Date Picker & Time Picker for collection_datetime
-    // Assuming your Django form widget for collection_datetime renders an input with type="text"
-    // and you might need to split it or use a combined picker if available/customized.
-    // For simplicity, let's assume it's a text input that Materialize can enhance.
-    // If it's a Django DateTimeInput, it might render two separate fields or need custom handling.
-    // This example assumes a single text input field for date & time.
-    const dateTimeField = document.querySelector('#{{ form.collection_datetime.id_for_label }}');
-    if (dateTimeField) {
-        // A common approach is to use one field for date and another for time.
-        // Or use a library that combines them if Materialize doesn't directly.
-        // For now, let's just enable datepicker, timepicker would need separate field or custom widget.
-        // This might need adjustment based on how Django renders DateTimeField.
-        // If Django renders it as type="datetime-local", browser might handle it.
-        // If type="text", then:
-        if (dateTimeField.getAttribute('type') === 'text') {
-             M.Datepicker.init(dateTimeField, {
-                format: 'yyyy-mm-dd', // Match Django's expected date format part
-                autoClose: true,
-                // Additional options for time would be needed here if combined
-            });
-            // M.Timepicker.init(timeField, { autoClose: true }); // If you have a separate time field
+    // Initialize Materialize Date Picker for collection_datetime
+    const datepickerElems = document.querySelectorAll('.datepicker');
+    M.Datepicker.init(datepickerElems, {
+        format: 'yyyy-mm-dd', // Django's expected date format part
+        autoClose: true,
+        onSelect: function(selectedDate) {
+            // 'this' refers to the datepicker instance. 'this.el' is the input element.
+            // We only want to set the date part. User will type the time.
+            // If the input already has a time part, try to preserve it.
+            const currentValue = this.el.value;
+            let timePart = '';
+            if (currentValue && currentValue.includes(' ')) {
+                timePart = currentValue.substring(currentValue.indexOf(' '));
+            }
+            
+            // Format the selectedDate to 'YYYY-MM-DD'
+            const year = selectedDate.getFullYear();
+            const month = ('0' + (selectedDate.getMonth() + 1)).slice(-2);
+            const day = ('0' + selectedDate.getDate()).slice(-2);
+            const formattedDate = `${year}-${month}-${day}`;
+            
+            this.el.value = formattedDate + (timePart || ' HH:MM:SS'); // Append existing time or placeholder
+            M.updateTextFields(); // Update Materialize label
         }
-    }
+    });
     
     // Initialize Character Counters for any textareas (if you add them later)
     // var textareas = document.querySelectorAll('textarea');
