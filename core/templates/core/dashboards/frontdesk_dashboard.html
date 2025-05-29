@@ -7,7 +7,7 @@
 <div class="col s12 breadcrumb-container">
     <nav>
         <div class="nav-wrapper">
-            <a href="{% url 'core:home' %}" class="breadcrumb">Home</a>
+            <a href="{% if user.is_authenticated %}{% url 'core:dashboard' %}{% else %}{% url 'core:home' %}{% endif %}" class="breadcrumb">Home</a>
             <span class="breadcrumb active">Front Desk Dashboard</span>
         </div>
     </nav>
