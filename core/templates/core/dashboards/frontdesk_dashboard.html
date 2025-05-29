@@ -3,57 +3,98 @@
 
 {% block title %}Front Desk Dashboard - Water Lab LIMS{% endblock %}
 
+{% block breadcrumbs %}
+<div class="col s12 breadcrumb-container">
+    <nav>
+        <div class="nav-wrapper">
+            <a href="{% url 'core:home' %}" class="breadcrumb">Home</a>
+            <span class="breadcrumb active">Front Desk Dashboard</span>
+        </div>
+    </nav>
+</div>
+{% endblock breadcrumbs %}
+
 {% block content %}
-<div class="dashboard-header">
-    <h1 class="page-title">📋 Front Desk Dashboard</h1>
-    <div class="user-info">
-        <span class="role-badge frontdesk">{{ user.get_role_display }}</span>
-        <span>Welcome, {{ user.first_name|default:user.username }}!</span>
+<div class="row section"> {# Replaced dashboard-header with admin_dashboard structure #}
+    <div class="col s12 m8">
+        <h4 class="header">📋 Front Desk Dashboard</h4>
+    </div>
+    <div class="col s12 m4 right-align">
+        <p>
+            <span class="role-badge {{ user.role }}">{{ user.get_role_display }}</span>
+            Welcome, {{ user.first_name|default:user.username }}!
+        </p>
     </div>
 </div>
 
 <!-- Customer & Sample Stats -->
-<div class="dashboard-stats">
-    <div class="stat-card">
-        <div class="stat-value">{{ total_customers }}</div>
-        <div class="stat-label">Total Customers</div>
+<div class="row section stats-card"> {# Replaced dashboard-stats with admin_dashboard structure #}
+    <div class="col s6 m4 l2-fd"> {# Custom class for 5 items if needed, or adjust l2/l3 #}
+        <a href="{% url 'core:customer_list' %}" class="black-text">
+            <div class="card-panel hoverable center-align">
+                <i class="material-icons large blue-text text-darken-2">people</i>
+                <h5>{{ total_customers }}</h5>
+                <p class="grey-text">Total Customers</p>
+            </div>
+        </a>
     </div>
-    <div class="stat-card warning">
-        <div class="stat-value">{{ pending_samples }}</div>
-        <div class="stat-label">Pending Samples</div>
+    <div class="col s6 m4 l2-fd">
+        <a href="{% url 'core:sample_list' %}?status=SENT_TO_LAB&status=TESTING_IN_PROGRESS" class="black-text">
+            <div class="card-panel hoverable center-align">
+                <i class="material-icons large orange-text text-darken-2">hourglass_empty</i>
+                <h5>{{ pending_samples }}</h5>
+                <p class="grey-text">Pending Samples</p>
+            </div>
+        </a>
     </div>
-    <div class="stat-card info">
-        <div class="stat-value">{{ today_samples }}</div>
-        <div class="stat-label">Today's Samples</div>
+    <div class="col s6 m4 l2-fd">
+        <a href="{% url 'core:sample_list' %}" class="black-text"> {# Link to all samples, user can filter by date #}
+            <div class="card-panel hoverable center-align">
+                <i class="material-icons large teal-text text-darken-2">today</i>
+                <h5>{{ today_samples }}</h5>
+                <p class="grey-text">Today's Samples</p>
+            </div>
+        </a>
     </div>
-    <div class="stat-card success">
-        <div class="stat-value">{{ ready_reports }}</div>
-        <div class="stat-label">Ready Reports</div>
+    <div class="col s6 m6 l3-fd">
+        <a href="{% url 'core:sample_list' %}?status=REPORT_APPROVED" class="black-text">
+            <div class="card-panel hoverable center-align">
+                <i class="material-icons large green-text text-darken-2">check_circle</i>
+                <h5>{{ ready_reports }}</h5>
+                <p class="grey-text">Ready Reports</p>
+            </div>
+        </a>
     </div>
-    <div class="stat-card">
-        <div class="stat-value">{{ week_samples }}</div>
-        <div class="stat-label">This Week</div>
+    <div class="col s12 m6 l3-fd">
+        <a href="{% url 'core:sample_list' %}" class="black-text"> {# Link to all samples, user can filter by date #}
+            <div class="card-panel hoverable center-align">
+                <i class="material-icons large purple-text text-darken-2">date_range</i>
+                <h5>{{ week_samples }}</h5>
+                <p class="grey-text">This Week's Samples</p>
+            </div>
+        </a>
     </div>
 </div>
 
 <!-- Quick Actions -->
-<div class="dashboard-section">
-    <div class="section-header">
-        <h2 class="section-title">⚡ Quick Actions</h2>
-    </div>
-    <div class="quick-actions">
-        <a href="{% url 'core:customer_add' %}" class="btn btn-primary">👤 Register Customer</a>
-        <a href="{% url 'core:sample_add' %}" class="btn btn-primary">🧪 Register Sample</a>
-        <a href="{% url 'core:customer_list' %}" class="btn btn-outline">📋 View Customers</a>
-        <a href="{% url 'core:sample_list' %}" class="btn btn-outline">🔬 View Samples</a>
+<div class="row section"> {# Replaced dashboard-section with admin_dashboard structure #}
+    <div class="col s12">
+        <h5 class="header">⚡ Quick Actions</h5>
+        <a href="{% url 'core:customer_add' %}" class="btn waves-effect waves-light"><i class="material-icons left">person_add</i>Register Customer</a>
+        <a href="{% url 'core:sample_add' %}" class="btn waves-effect waves-light"><i class="material-icons left">colorize</i>Register Sample</a>
+        <a href="{% url 'core:customer_list' %}" class="btn-flat waves-effect waves-teal"><i class="material-icons left">list_alt</i>View Customers</a>
+        <a href="{% url 'core:sample_list' %}" class="btn-flat waves-effect waves-teal"><i class="material-icons left">view_list</i>View Samples</a>
     </div>
 </div>
 
-<div class="grid-2-col">
+<div class="row"> {# Replaced grid-2-col with row #}
     <!-- Recent Customers -->
-    <div class="card">
-        <div class="card-header">
-            <h3 class="card-title">👥 Recent Customers</h3>
+    <div class="col s12 m6"> {# Added column class #}
+        <div class="card dashboard-card"> {# Added dashboard-card class #}
+            <div class="card-content"> {# Moved card-header content into card-content with card-title #}
+                <span class="card-title"><i class="material-icons left">group</i>Recent Customers
+                    <a href="{% url 'core:customer_add' %}" class="btn-floating halfway-fab waves-effect waves-light green right tooltipped" data-position="left" data-tooltip="Add New Customer"><i class="material-icons">add</i></a>
+                </span>
             <a href="{% url 'core:customer_add' %}" class="btn btn-sm btn-primary">Add New</a>
         </div>
         {% if recent_customers %}
@@ -86,10 +127,11 @@
     </div>
 
     <!-- Sample Status Overview -->
-    <div class="card">
-        <div class="card-header">
-            <h3 class="card-title">📊 Sample Status Overview</h3>
-        </div>
+    <div class="col s12 m6"> {# Added column class #}
+        <div class="card dashboard-card"> {# Added dashboard-card class #}
+            <div class="card-content"> {# Moved card-header content into card-content with card-title #}
+                <span class="card-title"><i class="material-icons left">assessment</i>Sample Status Overview</span>
+            </div>
         <div class="p-3">
             {% if samples_by_status %}
                 {% for status in samples_by_status %}
@@ -118,10 +160,11 @@
 </div>
 
 <!-- Recent Samples -->
-<div class="card">
-    <div class="card-header">
-        <h3 class="card-title">🧪 Recent Samples</h3>
-        <a href="{% url 'core:sample_add' %}" class="btn btn-sm btn-primary">Register New</a>
+<div class="card dashboard-card"> {# Added dashboard-card class #}
+    <div class="card-content"> {# Moved card-header content into card-content with card-title #}
+        <span class="card-title"><i class="material-icons left">list_alt</i>Recent Samples
+            <a href="{% url 'core:sample_add' %}" class="btn-floating halfway-fab waves-effect waves-light green right tooltipped" data-position="left" data-tooltip="Register New Sample"><i class="material-icons">add</i></a>
+        </span>
     </div>
     {% if recent_samples %}
     <div class="table-responsive">
@@ -175,9 +218,9 @@
 </div>
 
 <!-- Tasks for Front Desk -->
-<div class="card">
-    <div class="card-header">
-        <h3 class="card-title">✅ Today's Tasks</h3>
+<div class="card dashboard-card"> {# Added dashboard-card class #}
+    <div class="card-content"> {# Moved card-header content into card-content with card-title #}
+        <span class="card-title"><i class="material-icons left">playlist_add_check</i>Today's Tasks</span>
     </div>
     <div class="p-3">
         <div class="task-list">
@@ -204,24 +247,256 @@
 
 {% block extra_css %}
 <style>
-.dashboard-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center; /* Vertically align title and user-info */
-    margin-bottom: 1.5rem; /* Consistent margin */
-}
+    .section {
+        margin-bottom: 2rem;
+    }
+    .header { /* For h4, h5 used as section titles */
+        font-weight: 400; /* Adjusted for M3 feel */
+        margin-top: 1rem;
+        margin-bottom: 1.5rem;
+        color: var(--text-color-dark);
+    }
+    .card-panel.hoverable { /* Ensure card panels in stats section use surface color */
+        background-color: var(--surface-color);
+    }
+    .card-panel h5 {
+        margin-top: 0.5rem;
+        margin-bottom: 0.5rem;
+        font-size: 1.8rem;
+        font-weight: 500; /* Slightly bolder for stat numbers */
+        color: var(--text-color-dark);
+    }
+    .card-panel p {
+        font-size: 0.9rem;
+        color: var(--text-color-medium);
+    }
 
-.dashboard-header .page-title {
-    margin: 0; /* Remove default h1 margin if any, to help with alignment */
-}
+    /* Styles for compact stat cards */
+    .stats-card .card-panel {
+        padding: 15px !important; /* Slightly adjusted padding */
+        border-radius: var(--m3-border-radius-medium) !important; /* Ensure M3 radius */
+        border-left: 5px solid var(--primary-color); /* Default left border */
+        transition: box-shadow 0.3s ease-in-out, transform 0.2s ease-in-out;
+    }
+    .stats-card .card-panel:hover {
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15), 0 2px 8px rgba(0,0,0,0.1) !important;
+        transform: translateY(-2px);
+    }
 
-.user-info {
-    display: flex;
-    align-items: center; /* Vertically align items within user-info (badge and text) */
-    gap: 0.75rem; /* Space between role badge and welcome text */
-}
+    .stats-card .card-panel .material-icons.large {
+        font-size: 2.5rem !important; /* Reduced icon size */
+        margin-bottom: 0; /* Remove extra space below icon */
+    }
+    .stats-card .card-panel h5 {
+        font-size: 1.5rem !important; /* Reduced number size */
+        margin-top: 0.25rem;
+        margin-bottom: 0.25rem;
+    }
+    .stats-card .card-panel p {
+        font-size: 0.8rem !important; /* Reduced label size */
+        margin-bottom: 0; /* Remove extra space below label */
+    }
+     /* Specific adjustments for 5 stat cards to fit better on large screens */
+    .stats-card .col.l2-fd .card-panel .material-icons.large { font-size: 2.2rem !important; }
+    .stats-card .col.l2-fd .card-panel h5 { font-size: 1.4rem !important; }
+    .stats-card .col.l2-fd .card-panel p { font-size: 0.75rem !important; }
 
-.customer-list {
+    .stats-card .col.l3-fd .card-panel .material-icons.large { font-size: 2.5rem !important; }
+    .stats-card .col.l3-fd .card-panel h5 { font-size: 1.5rem !important; }
+    .stats-card .col.l3-fd .card-panel p { font-size: 0.8rem !important; }
+
+
+    .mt-3 { /* For User Distribution title */
+        margin-top: 1.5rem !important;
+    }
+    .collection .collection-item.avatar .secondary-content.chip {
+        top: 25px; /* Adjust chip position in avatar collection items */
+        font-weight: 500;
+    }
+    .collection .collection-header {
+        background-color: var(--primary-color-light);
+        color: var(--primary-color-dark);
+        font-weight: 500;
+        padding-top: 0.5rem;
+        padding-bottom: 0.5rem;
+    }
+    .collection .collection-item {
+        border-bottom-color: var(--primary-color-light);
+    }
+    .collection a.collection-item { /* Ensure links in collections are styled correctly */
+        color: var(--text-color-dark);
+    }
+    .collection a.collection-item:hover {
+        background-color: var(--primary-color-light);
+        color: var(--primary-color-dark);
+    }
+    .card .card-action a:not(.btn):not(.btn-large):not(.btn-small):not(.btn-large):not(.btn-floating) {
+        color: var(--primary-color) !important; /* Ensure card action links use primary color */
+    }
+    .card .card-action a:not(.btn):not(.btn-large):not(.btn-small):not(.btn-large):not(.btn-floating):hover {
+        color: var(--primary-color-dark) !important;
+    }
+    .card.dashboard-card .card-content .card-title {
+        display: flex;
+        align-items: center;
+        font-size: 1.2rem; /* Consistent card title size */
+        font-weight: 500;
+        position: relative; /* For halfway-fab positioning */
+    }
+    .card.dashboard-card .card-content .card-title .material-icons.left { /* Ensure icon is to the left */
+        margin-right: 8px; /* Space between icon and title text */
+        font-size: 1.5rem; /* Icon size in card titles */
+        color: var(--primary-color); /* Match icon color to primary theme */
+    }
+     .card.dashboard-card .card-content .card-title .btn-floating.halfway-fab {
+        position: absolute;
+        right: 24px; /* Default Materialize position */
+        top: -20px; /* Adjust to be truly halfway or as desired */
+    }
+
+
+    @media screen and (max-width: 600px) {
+        /* Header section adjustments */
+        .row.section:first-child h4.header { /* Target the main dashboard title */
+            font-size: 1.6rem; /* Reduce font size for mobile */
+            margin-bottom: 0.25rem;
+            line-height: 1.2;
+        }
+
+        .row.section:first-child .col.s12.m4.right-align p { /* Welcome message */
+            text-align: left;
+            font-size: 0.85rem;
+            margin-top: 0;
+            line-height: 1.3;
+        }
+        .row.section:first-child .col.s12.m4.right-align p .role-badge {
+            font-size: 0.7rem; /* Smaller role badge */
+            padding: 2px 6px;
+            vertical-align: middle;
+        }
+
+        /* Stat Cards - make them more compact on small screens (now 2-column s6) */
+        .stats-card .col.s6 .card-panel,
+        .stats-card .col.m4 .card-panel { /* Ensure m4 also gets these styles for 5-card layout */
+            padding: 10px !important;
+            display: flex; /* Use flexbox for better alignment */
+            flex-direction: column;
+            align-items: center; /* Center content horizontally */
+            justify-content: center; /* Center content vertically */
+            min-height: 100px; /* Ensure a minimum tap height, but allow shrinking */
+        }
+
+        .stats-card .col.s6 .card-panel .material-icons.large,
+        .stats-card .col.m4 .card-panel .material-icons.large {
+            font-size: 2rem !important; /* Smaller icons */
+            margin-bottom: 2px; /* Minimal margin */
+        }
+
+        .stats-card .col.s6 .card-panel h5,
+        .stats-card .col.m4 .card-panel h5 {
+            font-size: 1.2rem !important; /* Smaller numbers */
+            margin-top: 0;
+            margin-bottom: 2px;
+        }
+
+        .stats-card .col.s6 .card-panel p,
+        .stats-card .col.m4 .card-panel p {
+            font-size: 0.7rem !important; /* Smaller text label */
+            line-height: 1.2;
+        }
+
+
+        /* Quick Actions buttons styling for mobile */
+        .row.section .btn, 
+        .row.section .btn-flat {
+            display: block;
+            width: 100%;
+            margin-left: 0; /* Ensure no horizontal margin inherited */
+            margin-right: 0; /* Ensure no horizontal margin inherited */
+            margin-bottom: 10px; /* Space between stacked buttons */
+            text-align: center;
+            padding-top: 8px; /* Adjust padding for better appearance */
+            padding-bottom: 8px;
+            height: auto; /* Allow height to adjust to content */
+            line-height: 1.5; /* Adjust line height for button text */
+        }
+
+        .row.section .btn:last-child,
+        .row.section .btn-flat:last-child {
+            margin-bottom: 0; /* No margin for the last button */
+        }
+
+        .row.section .btn i.material-icons.left,
+        .row.section .btn-flat i.material-icons.left {
+            float: none;
+            margin-right: 5px;
+            line-height: inherit;
+            vertical-align: middle; /* Better vertical alignment of icon */
+            font-size: 1.2em; /* Adjust icon size relative to button text */
+        }
+        
+        /* Reduce margin for sections on mobile */
+        .section {
+            margin-bottom: 1.5rem;
+        }
+        h5.header { /* Quick Actions title, etc. */
+            font-size: 1.3rem;
+        }
+
+        /* Further refinements for dashboard cards on mobile */
+        .dashboard-card .collection .collection-item {
+            padding-top: 8px;
+            padding-bottom: 8px;
+        }
+
+        .dashboard-card .collection .collection-item.avatar {
+            min-height: 0; /* Reset min-height if Materialize default is too large */
+            padding-left: 65px; /* Adjust if avatar icon size changes */
+        }
+        
+        .dashboard-card .collection .collection-item.avatar .circle {
+            width: 32px; /* Smaller avatar icon */
+            height: 32px;
+            line-height: 32px;
+            font-size: 1.2rem; /* Smaller icon within circle */
+        }
+
+        .dashboard-card .collection .collection-item.avatar .title {
+            font-size: 0.9rem; /* Slightly smaller title in list items */
+            line-height: 1.3;
+        }
+
+        .dashboard-card .collection .collection-item.avatar p {
+            font-size: 0.75rem; /* Smaller paragraph text in list items */
+            line-height: 1.2;
+            margin-bottom: 2px;
+        }
+        
+        .dashboard-card .collection .collection-item.avatar .secondary-content.chip {
+            font-size: 0.7rem;
+            padding: 2px 6px;
+            height: auto;
+            line-height: 1.2;
+            top: 15px; /* Re-adjust chip position based on new item padding/sizing */
+        }
+
+        .dashboard-card .card-content .card-title { /* Card titles within dashboard cards */
+            font-size: 1.1rem;
+            margin-bottom: 0.5rem; /* Less space below card titles */
+        }
+        .card.dashboard-card .card-content .card-title .btn-floating.halfway-fab {
+            top: -15px; /* Adjust for smaller card titles on mobile */
+            right: 10px;
+        }
+        .dashboard-card .card-content h6 { /* Sub-headers like "Latest Samples" */
+            font-size: 0.95rem;
+            margin: 0.5rem 0;
+        }
+    }
+
+    /* Front Desk Dashboard Specific Styles - Keep these below common styles */
+    /* (Removed .dashboard-header and .user-info as they are now common) */
+    .customer-list {
     max-height: 400px;
     overflow-y: auto;
 }
