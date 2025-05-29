@@ -1,9 +1,18 @@
 from django.db import models
 import uuid
+from django.core.validators import RegexValidator
+from django.core.exceptions import ValidationError
 # import json # Not directly used, JSONField handles serialization
 from django.conf import settings # Recommended way to import User model
 from django.contrib.auth.models import AbstractUser
 from django.utils import timezone
+
+# Validator for Kerala PIN Codes
+def validate_kerala_pincode(value):
+    if not (670001 <= int(value) <= 695615):
+        raise ValidationError(
+            f'{value} is not a valid Kerala PIN code (must be between 670001 and 695615).'
+        )
 
 class CustomUser(AbstractUser):
     ROLE_CHOICES = [
@@ -81,12 +90,19 @@ class Customer(models.Model):
     
     # Detailed Kerala address fields following standard format
     house_name_door_no = models.CharField(max_length=100, blank=True, null=True, verbose_name="House Name / Door Number")
-    street_locality_landmark = models.CharField(max_length=200, blank=True, default='', verbose_name="Street / Locality / Landmark")
-    village_town_city = models.CharField(max_length=100, blank=True, default='', verbose_name="Village / Town / City")
+    street_locality_landmark = models.CharField(max_length=200, verbose_name="Street / Locality") # Made required
+    village_town_city = models.CharField(max_length=100, verbose_name="Village / Town") # Made required
     panchayat_municipality = models.CharField(max_length=100, blank=True, default='', verbose_name="Panchayat / Municipality / Corporation")
     taluk = models.CharField(max_length=100, blank=True, default='', verbose_name="Taluk")
-    district = models.CharField(max_length=50, choices=KERALA_DISTRICTS, blank=True, default='thiruvananthapuram', verbose_name="District")
-    pincode = models.CharField(max_length=6, blank=True, default='', verbose_name="PIN Code")
+    district = models.CharField(max_length=50, choices=KERALA_DISTRICTS, blank=False, null=False, default='thiruvananthapuram', verbose_name="District") # Made required
+    pincode = models.CharField(
+        max_length=6,
+        verbose_name="PIN Code",
+        validators=[
+            RegexValidator(r'^\d{6}$', 'PIN code must be 6 digits.'),
+            validate_kerala_pincode
+        ]
+    )
     
     # Keep old address field for backward compatibility
     address = models.TextField(blank=True, null=True, help_text="Complete address (auto-populated)")
