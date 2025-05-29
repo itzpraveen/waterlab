@@ -221,4 +221,4 @@ if SENTRY_DSN and not DEBUG: # Only initialize Sentry if DSN is provided and not
         print(f"⚠️ Error initializing Sentry: {e}")
 
 # Custom Application Settings (if any)
-# EXAMPLE_SETTING = config('EXAMPLE_SETTING', default='some_value')
+# EXAMPLE_SETTING = config('EXAMPLE_SETTING', default='some_value') # Removed example placeholder

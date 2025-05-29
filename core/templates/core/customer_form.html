@@ -194,23 +194,35 @@ document.addEventListener('DOMContentLoaded', function() {
             'street_locality_landmark': '{{ form.street_locality_landmark.id_for_label }}',
             'village_town_city': '{{ form.village_town_city.id_for_label }}',
             'panchayat_municipality': '{{ form.panchayat_municipality.id_for_label }}',
-            'taluk': '{{ form.taluk.id_for_label }}',
-            'district': '{{ form.district.id_for_label }}',
+            'taluk': '{{ form.taluk.id_for_label }}', // This will be id_taluk
+            'district': '{{ form.district.id_for_label }}', // This will be id_district
             'pincode': '{{ form.pincode.id_for_label }}'
         };
 
         for (const key in fieldSelectors) {
             const element = document.getElementById(fieldSelectors[key]);
-            if (element && element.value.trim()) {
-                let value = element.value.trim();
-                if (key === 'taluk') value += ' Taluk';
-                else if (key === 'district' && element.tagName === 'SELECT') {
+            if (element && element.value) { // Check element.value directly, not trim for selects
+                let value = element.value;
+                let textValue = value; // Default to value
+
+                if (element.tagName === 'SELECT') {
                     const selectedOption = element.options[element.selectedIndex];
-                    if (selectedOption && selectedOption.value) value = selectedOption.text + ' District';
-                    else continue; // Skip if "Select District" or empty
+                    if (selectedOption && selectedOption.value) { // Ensure a meaningful option is selected
+                        textValue = selectedOption.text;
+                    } else {
+                        continue; // Skip if default "---------" or empty value option is selected
+                    }
+                } else {
+                     textValue = value.trim(); // Trim for text inputs
+                     if (!textValue) continue; // Skip if empty after trim
                 }
-                else if (key === 'pincode') value = 'Kerala - ' + value;
-                addressParts.push(value);
+
+                if (key === 'taluk') textValue += ' Taluk';
+                else if (key === 'district') textValue += ' District';
+                // For panchayat_municipality, no specific suffix is added unless desired
+                else if (key === 'pincode') textValue = 'Kerala - ' + textValue;
+                
+                addressParts.push(textValue);
             }
         }
         

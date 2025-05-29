@@ -1,3 +1,4 @@
+import json # Added for loading address data
 from django import forms
 from django.contrib.auth.forms import PasswordChangeForm
 from django.core.exceptions import ValidationError
@@ -10,7 +11,7 @@ class CustomerForm(forms.ModelForm):
         fields = [
             'name', 'email', 'phone', 
             'house_name_door_no', 'street_locality_landmark', 'village_town_city',
-            'panchayat_municipality', 'taluk', 'district', 'pincode'
+            'panchayat_municipality', 'taluk', 'district', 'pincode' # Corrected field name
         ]
         widgets = {
             'name': forms.TextInput(attrs={
@@ -38,16 +39,17 @@ class CustomerForm(forms.ModelForm):
                 'class': 'form-control',
                 'placeholder': 'e.g., Varkala, Kochi'
             }),
-            'panchayat_municipality': forms.TextInput(attrs={
+            'panchayat_municipality': forms.Select(attrs={ # Changed to Select
                 'class': 'form-control',
-                'placeholder': 'e.g., Varkala Panchayat, Kochi Corporation'
+                'id': 'id_panchayat_municipality' # Added ID for JS
             }),
-            'taluk': forms.TextInput(attrs={
+            'taluk': forms.Select(attrs={ # Changed to Select
                 'class': 'form-control',
-                'placeholder': 'e.g., Chirayinkeezhu'
+                'id': 'id_taluk' # Added ID for JS
             }),
-            'district': forms.Select(attrs={
-                'class': 'form-control'
+            'district': forms.Select(attrs={ # Widget remains Select
+                'class': 'form-control',
+                'id': 'id_district' # Added ID for JS
             }),
             'pincode': forms.TextInput(attrs={
                 'class': 'form-control',
@@ -55,6 +57,39 @@ class CustomerForm(forms.ModelForm):
                 'maxlength': '6'
             }),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        
+        # Load address data for district choices
+        try:
+            with open('static/js/kerala_address_data.json', 'r') as f:
+                address_data = json.load(f)
+            district_choices = [('', '---------')] + [(district, district) for district in address_data.keys()]
+        except FileNotFoundError:
+            # Fallback if JSON file is not found
+            address_data = {}
+            district_choices = [('', '---------'), ('Data not found', 'Data not found')]
+
+        self.fields['district'] = forms.ChoiceField(
+            choices=district_choices,
+            widget=forms.Select(attrs={'class': 'form-control', 'id': 'id_district'})
+        )
+        # Taluk and Panchayat will be populated by JavaScript, so start with empty choices
+        # but ensure they are ChoiceFields so the submitted value is validated against choices (dynamically set by JS)
+        self.fields['taluk'] = forms.ChoiceField(
+            choices=[('', '---------')], 
+            widget=forms.Select(attrs={'class': 'form-control', 'id': 'id_taluk'}),
+            required=True # Or False, depending on your model
+        )
+        self.fields['panchayat_municipality'] = forms.ChoiceField(
+            choices=[('', '---------')],
+            widget=forms.Select(attrs={'class': 'form-control', 'id': 'id_panchayat_municipality'}),
+            required=True # Or False, depending on your model
+        )
+        # Ensure the field name matches the model if it was 'panchayat_municipality'
+        # If your model field is 'panchayat_municipality_corporation', adjust accordingly.
+        # For now, assuming 'panchayat_municipality' is the correct field name in the model and form.
 
 class SampleForm(forms.ModelForm):
     class Meta:

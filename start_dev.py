@@ -7,7 +7,7 @@ import string
 
 # --- Configuration ---
 VENV_DIR = "venv"
-REQUIREMENTS_FILE = "requirements.txt"
+REQUIREMENTS_FILE = "requirements_dev.txt" # Changed to dev requirements
 ENV_EXAMPLE_FILE = ".env.example"
 ENV_FILE = ".env"
 MANAGE_PY = "manage.py"
@@ -135,7 +135,8 @@ def setup_env_file():
                 new_content.append(f"SECRET_KEY='{default_secret_key}' # Auto-generated for local dev\n")
                 secret_key_found = True
             elif line.startswith("DEBUG="):
-                new_content.append("DEBUG=True # Set for local development\n")
+                new_content.append("DEBUG=True\n") # Removed trailing comment
+                new_content.append("# DEBUG=True is set for local development\n") # Comment on a new line
                 debug_found = True
             elif line.startswith("DJANGO_SETTINGS_MODULE="):
                  new_content.append("DJANGO_SETTINGS_MODULE=waterlab.settings # Default to local settings\n")
@@ -220,7 +221,7 @@ def create_initial_data():
 
     create_dummies_q = input("Do you want to create dummy users for testing (e.g., lab_technician, customer)? (y/n): ").lower()
     if create_dummies_q == 'y':
-        if not run_command([sys.executable, MANAGE_PY, "create_dummy_users", "--count", "5"]):
+        if not run_command([sys.executable, MANAGE_PY, "create_dummy_users"]): # Removed --count argument
             print_warning("Failed to create dummy users.")
         else:
             print_success("Dummy users created.")

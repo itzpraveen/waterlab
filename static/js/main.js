@@ -23,8 +23,130 @@ const WaterLab = {
         this.initAccessibilityImprovements();
         this.initAlerts();
         this.initServiceWorker(); // PWA feature
+        this.initAddressDropdowns(); // Added for address cascading dropdowns
         this.log("WaterLab JS Initialized.");
     },
+
+    // --- Start: Kerala Address Dropdown Logic ---
+    _keralaAddressData: null,
+
+    loadAddressData: async function() {
+        if (this._keralaAddressData) {
+            return this._keralaAddressData;
+        }
+        try {
+            const response = await fetch('/static/js/kerala_address_data.json');
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            this._keralaAddressData = await response.json();
+            this.log("Kerala address data loaded:", this._keralaAddressData);
+            return this._keralaAddressData;
+        } catch (error) {
+            this.log("Error loading Kerala address data:", error);
+            M.toast({html: 'Could not load address options. Please try refreshing.', classes: 'red darken-1'});
+            return null;
+        }
+    },
+
+    populateDropdown: function(selectElement, optionsArray, defaultOptionText = '---------') {
+        if (!selectElement) return;
+        
+        // Preserve selected value if it exists in new options
+        const previouslySelectedValue = selectElement.value;
+
+        // Destroy existing Materialize select instance before repopulating
+        const existingInstance = M.FormSelect.getInstance(selectElement);
+        if (existingInstance) {
+            existingInstance.destroy();
+        }
+
+        selectElement.innerHTML = `<option value="">${defaultOptionText}</option>`; // Clear existing options and add default
+        optionsArray.forEach(option => {
+            const optionElement = document.createElement('option');
+            optionElement.value = option;
+            optionElement.textContent = option;
+            selectElement.appendChild(optionElement);
+        });
+        
+        // Try to reselect the previous value if it's still valid
+        if (optionsArray.includes(previouslySelectedValue)) {
+            selectElement.value = previouslySelectedValue;
+        }
+
+        // Re-initialize Materialize select
+        M.FormSelect.init(selectElement);
+    },
+
+    updateTalukDropdown: async function(districtSelectId = 'id_district', talukSelectId = 'id_taluk', panchayatSelectId = 'id_panchayat_municipality') {
+        const districtSelect = document.getElementById(districtSelectId);
+        const talukSelect = document.getElementById(talukSelectId);
+        const panchayatSelect = document.getElementById(panchayatSelectId);
+
+        if (!districtSelect || !talukSelect) return;
+
+        const selectedDistrict = districtSelect.value;
+        const data = await this.loadAddressData();
+
+        if (data && selectedDistrict && data[selectedDistrict]) {
+            const taluks = Object.keys(data[selectedDistrict]);
+            this.populateDropdown(talukSelect, taluks, 'Select Taluk');
+        } else {
+            this.populateDropdown(talukSelect, [], 'Select Taluk'); // Clear if no district or data
+        }
+        // Also clear and update panchayat dropdown as taluk changed
+        this.populateDropdown(panchayatSelect, [], 'Select Panchayat/Municipality');
+    },
+
+    updatePanchayatDropdown: async function(districtSelectId = 'id_district', talukSelectId = 'id_taluk', panchayatSelectId = 'id_panchayat_municipality') {
+        const districtSelect = document.getElementById(districtSelectId);
+        const talukSelect = document.getElementById(talukSelectId);
+        const panchayatSelect = document.getElementById(panchayatSelectId);
+
+        if (!districtSelect || !talukSelect || !panchayatSelect) return;
+
+        const selectedDistrict = districtSelect.value;
+        const selectedTaluk = talukSelect.value;
+        const data = await this.loadAddressData();
+
+        if (data && selectedDistrict && selectedTaluk && data[selectedDistrict] && data[selectedDistrict][selectedTaluk]) {
+            const panchayats = data[selectedDistrict][selectedTaluk];
+            this.populateDropdown(panchayatSelect, panchayats, 'Select Panchayat/Municipality');
+        } else {
+            this.populateDropdown(panchayatSelect, [], 'Select Panchayat/Municipality'); // Clear if no taluk or data
+        }
+    },
+
+    initAddressDropdowns: async function() {
+        this.log("Initializing address dropdowns...");
+        await this.loadAddressData(); // Pre-load data
+
+        const districtSelect = document.getElementById('id_district');
+        const talukSelect = document.getElementById('id_taluk');
+        // const panchayatSelect = document.getElementById('id_panchayat_municipality'); // Not directly needed for init listeners
+
+        if (districtSelect) {
+            // Initial population for Taluk if a district is already selected (e.g. on form edit)
+            if (districtSelect.value) {
+                this.updateTalukDropdown(); // This will also trigger panchayat update
+            }
+            districtSelect.addEventListener('change', () => {
+                this.updateTalukDropdown();
+            });
+        }
+
+        if (talukSelect) {
+             // Initial population for Panchayat if a taluk is already selected
+            if (talukSelect.value && districtSelect && districtSelect.value) {
+                 this.updatePanchayatDropdown();
+            }
+            talukSelect.addEventListener('change', () => {
+                this.updatePanchayatDropdown();
+            });
+        }
+        this.log("Address dropdowns initialized.");
+    },
+    // --- End: Kerala Address Dropdown Logic ---
 
     initMaterializeComponents: function() {
         this.log("Initializing Materialize components...");

@@ -1,7 +1,7 @@
 from functools import wraps
 from django.shortcuts import redirect
 from django.contrib.auth.decorators import login_required
-from django.core.exceptions import PermissionDenied
+# from django.core.exceptions import PermissionDenied # Not used
 from django.contrib import messages
 
 def role_required(roles):

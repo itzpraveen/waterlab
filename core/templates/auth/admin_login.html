@@ -5,23 +5,43 @@
 
 {% block extra_css %}
 <style>
+    html, body {
+        width: 100%;
+        height: 100%;
+        overflow-x: hidden; /* Prevent accidental horizontal scroll on html/body */
+        margin: 0;
+        padding: 0;
+    }
     body {
         /* Admin login page uses a slightly different gradient */
         background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+        display: flex; /* Ensure body remains a flex container if needed, though main will be fixed */
+        flex-direction: column;
     }
     /* Override base.html styles for a centered login page */
     header, .page-footer {
         display: none !important; /* Hide default header and footer for login page */
     }
-    main.site-content {
-        padding-top: 0 !important; /* Remove padding from main if header is hidden */
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        min-height: 100vh; /* Ensure it takes full viewport height */
-        width: 100%;
+    main.site-content { /* Make main content area cover viewport and center its child */
+        width: 100vw !important;
+        min-height: 100vh !important; /* Use min-height for flexibility */
+        height: 100vh; /* Explicitly set height for fixed positioning context */
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        position: fixed !important; /* Position relative to viewport */
+        top: 0;
+        left: 0;
+        overflow-y: auto; /* Allow login card to scroll if viewport too short */
+        z-index: 1; /* Ensure it's above default body content if any overlap */
     }
-    .login-card-container {
+    /* The .container div from base.html is inside main.site-content.
+       It should not constrain the login-card-container.
+       The login-card-container itself is now a direct child of the fixed main.site-content.
+    */
+    .login-card-container { /* This is the actual card for the login form */
         max-width: 500px; /* Increased max-width for desktop */
         width: 90%;
         margin-left: auto; /* Ensure centering with width % */
@@ -141,7 +161,8 @@
 {% endblock %}
 
 {% block content %}
-<div class="container login-card-container">
+{# Note: Removed the outer "container" class, login-card-container handles its own sizing and is centered by main.site-content flex properties #}
+<div class="login-card-container">
     <div class="card login-card z-depth-3">
         <div class="card-content">
             <div class="login-header">

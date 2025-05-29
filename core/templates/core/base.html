@@ -33,8 +33,6 @@
     {% block extra_css %}{% endblock %}
 </head>
 <body>
-    <a href="#main-content" class="skip-link no-print">Skip to main content</a>
-
     <div id="page-preloader" class="page-preloader no-print">
         <div class="preloader-wrapper big active">
             <div class="spinner-layer spinner-blue-only">
@@ -53,9 +51,9 @@
     <header class="no-print">
         <nav>
             <div class="nav-wrapper">
-                <a href="{% url 'core:home' %}" class="brand-logo">
-                    <i class="material-icons">science</i>
-                    <span class="logo-text">WaterLab LIMS</span>
+                <a href="{% url 'core:home' %}" class="brand-logo" style="display: flex; align-items: center;">
+                    <img src="{% static 'images/biofix_logo.png' %}" alt="Biofix Research Institute Logo" style="height: 40px; margin-right: 10px; vertical-align: middle;">
+                    <span class="logo-text" style="vertical-align: middle;">WaterLab LIMS</span>
                 </a>
                 {% if user.is_authenticated %}
                 <a href="#" data-target="mobile-nav" class="sidenav-trigger"><i class="material-icons">menu</i></a>
