@@ -83,6 +83,40 @@
         color: #777;
         font-size: 0.9rem;
     }
+
+    @media screen and (max-width: 600px) {
+        .login-container {
+            width: 95%; /* Take more width on small screens */
+            padding: 20px; /* Reduce padding */
+            margin-top: 20px; /* Add some margin from top if needed */
+            margin-bottom: 20px; /* Add some margin from bottom */
+            max-height: calc(100vh - 40px); /* Ensure it fits viewport height with margins */
+            overflow-y: auto; /* Allow scrolling if content overflows */
+        }
+        .logo-text-login {
+            font-size: 1.8rem; /* Smaller logo text */
+        }
+        .logo-text-login i {
+            font-size: 2rem; /* Smaller logo icon */
+        }
+        .subtitle-login {
+            font-size: 0.9rem; /* Smaller subtitle */
+            margin-bottom: 20px;
+        }
+        .login-card .card-content {
+            padding: 16px !important; /* More compact card content */
+        }
+        .login-card .card-title {
+            font-size: 1.2rem; /* Smaller card titles */
+            margin-bottom: 8px;
+        }
+        .login-card .card-description {
+            font-size: 0.85rem; /* Smaller card descriptions */
+        }
+        .footer-login {
+            font-size: 0.8rem;
+        }
+    }
 </style>
 {% endblock %}
 
