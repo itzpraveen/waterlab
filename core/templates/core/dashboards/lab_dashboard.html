@@ -86,182 +86,192 @@
     </div>
 </div>
 
-<div class="row"> {# Changed grid-2-col to row #}
-    <!-- Samples for Testing -->
-    <div class="col s12 m6"> {# Added column class #}
-        <div class="card dashboard-card"> {# Added dashboard-card class #}
+<div class="row section">
+    <!-- Samples for Testing - Full Width -->
+    <div class="col s12">
+        <div class="card dashboard-card">
             <div class="card-content">
                 <span class="card-title"><i class="material-icons left">colorize</i>Samples Awaiting Testing</span>
             </div>
-        {% if samples_for_testing %}
-        <div class="p-3">
-            <div class="sample-list">
-                {% for sample in samples_for_testing %}
-                <div class="sample-item">
-                    <div class="sample-info">
-                        <a href="{% url 'core:sample_detail' sample.pk %}" class="sample-id">
-                            {{ sample.sample_id|truncatechars:13 }}
-                        </a>
-                        <div class="sample-meta">
-                            👤 {{ sample.customer.name }}
+            {% if samples_for_testing %}
+            <div class="p-3">
+                <div class="sample-list">
+                    {% for sample in samples_for_testing %}
+                    <div class="sample-item">
+                        <div class="sample-info">
+                            <a href="{% url 'core:sample_detail' sample.pk %}" class="sample-id">
+                                {{ sample.sample_id|truncatechars:13 }}
+                            </a>
+                            <div class="sample-meta">
+                                👤 {{ sample.customer.name }}
+                            </div>
+                            <div class="sample-meta">
+                                📅 Collected: {{ sample.collection_datetime|date:"M d, H:i" }}
+                            </div>
+                            <div class="sample-meta">
+                                🏷️ {{ sample.get_sample_source_display }}
+                            </div>
                         </div>
-                        <div class="sample-meta">
-                            📅 Collected: {{ sample.collection_datetime|date:"M d, H:i" }}
-                        </div>
-                        <div class="sample-meta">
-                            🏷️ {{ sample.get_sample_source_display }}
+                        <div class="sample-actions">
+                            <span class="badge badge-warning">{{ sample.get_current_status_display }}</span>
+                            <a href="{% url 'core:test_result_entry' sample.pk %}" class="btn btn-sm btn-primary">
+                                Enter Results
+                            </a>
                         </div>
                     </div>
-                    <div class="sample-actions">
-                        <span class="badge badge-warning">{{ sample.get_current_status_display }}</span>
-                        <a href="{% url 'core:test_result_entry' sample.pk %}" class="btn btn-sm btn-primary">
-                            Enter Results
-                        </a>
-                    </div>
+                    {% endfor %}
                 </div>
-                {% endfor %}
             </div>
+            {% else %}
+            <div class="p-3 text-center text-muted">
+                <p>No samples pending testing</p>
+                <p>Great job! All samples are up to date.</p>
+            </div>
+            {% endif %}
         </div>
-        {% else %}
-        <div class="p-3 text-center text-muted">
-            <p>No samples pending testing</p>
-            <p>Great job! All samples are up to date.</p>
-        </div>
-        {% endif %}
     </div>
+</div>
 
+<div class="row section">
     <!-- My Recent Test Results -->
-    <div class="col s12 m6"> {# Added column class #}
-        <div class="card dashboard-card"> {# Added dashboard-card class #}
+    <div class="col s12 m6">
+        <div class="card dashboard-card">
             <div class="card-content">
                 <span class="card-title"><i class="material-icons left">playlist_add_check</i>My Recent Test Results</span>
             </div>
-        {% if recent_results %}
-        <div class="p-3">
-            <div class="results-list">
-                {% for result in recent_results %}
-                <div class="result-item">
-                    <div class="result-info">
-                        <div class="result-parameter">{{ result.parameter.name }}</div>
-                        <div class="result-sample">
-                            Sample: <a href="{% url 'core:sample_detail' result.sample.pk %}" class="link">
-                                {{ result.sample.sample_id|truncatechars:10 }}
+            {% if recent_results %}
+            <div class="p-3">
+                <div class="results-list">
+                    {% for result in recent_results %}
+                    <div class="result-item">
+                        <div class="result-info">
+                            <div class="result-parameter">{{ result.parameter.name }}</div>
+                            <div class="result-sample">
+                                Sample: <a href="{% url 'core:sample_detail' result.sample.pk %}" class="link">
+                                    {{ result.sample.sample_id|truncatechars:10 }}
+                                </a>
+                            </div>
+                            <div class="result-value">
+                                Result: <strong>{{ result.result_value }} {{ result.parameter.unit }}</strong>
+                            </div>
+                            <div class="result-date">{{ result.test_date|date:"M d, H:i" }}</div>
+                        </div>
+                        {% if result.parameter.min_permissible_limit and result.parameter.max_permissible_limit %}
+                        <div class="result-status">
+                            {% with result.result_value|floatformat:3|add:0 as numeric_value %}
+                            {% if numeric_value >= result.parameter.min_permissible_limit and numeric_value <= result.parameter.max_permissible_limit %}
+                                <span class="badge badge-success">Within Limits</span>
+                            {% else %}
+                                <span class="badge badge-danger">Out of Range</span>
+                            {% endif %}
+                            {% endwith %}
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% else %}
+            <div class="p-3 text-center text-muted">
+                <p>No test results entered yet</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- My Recently Completed Samples -->
+    <div class="col s12 m6">
+        <div class="card dashboard-card">
+            <div class="card-content">
+                <span class="card-title"><i class="material-icons left">fact_check</i>My Recently Completed Samples</span>
+            </div>
+            {% if recently_completed_samples %}
+            <div class="p-3">
+                <div class="sample-list">
+                    {% for sample in recently_completed_samples %}
+                    <div class="sample-item">
+                        <div class="sample-info">
+                            <a href="{% url 'core:sample_detail' sample.pk %}" class="sample-id">
+                                {{ sample.sample_id|truncatechars:13 }}
+                            </a>
+                            <div class="sample-meta">
+                                👤 {{ sample.customer.name }}
+                            </div>
+                            <div class="sample-meta">
+                                📅 Completed: {{ sample.updated_at|date:"M d, H:i" }}
+                            </div>
+                            <div class="sample-meta">
+                                🏷️ {{ sample.get_sample_source_display }}
+                            </div>
+                        </div>
+                        <div class="sample-actions">
+                            {% if sample.current_status == 'RESULTS_ENTERED' %}
+                                <span class="badge badge-success">{{ sample.get_current_status_display }}</span>
+                            {% elif sample.current_status == 'REVIEW_PENDING' %}
+                                <span class="badge badge-warning">{{ sample.get_current_status_display }}</span>
+                            {% elif sample.current_status == 'REPORT_APPROVED' %}
+                                <span class="badge badge-success">{{ sample.get_current_status_display }}</span>
+                            {% else %}
+                                <span class="badge badge-info">{{ sample.get_current_status_display }}</span>
+                            {% endif %}
+                            <a href="{% url 'core:sample_detail' sample.pk %}" class="btn btn-sm btn-outline">
+                                View Details
                             </a>
                         </div>
-                        <div class="result-value">
-                            Result: <strong>{{ result.result_value }} {{ result.parameter.unit }}</strong>
-                        </div>
-                        <div class="result-date">{{ result.test_date|date:"M d, H:i" }}</div>
                     </div>
-                    {% if result.parameter.min_permissible_limit and result.parameter.max_permissible_limit %}
-                    <div class="result-status">
-                        {% with result.result_value|floatformat:3|add:0 as numeric_value %}
-                        {% if numeric_value >= result.parameter.min_permissible_limit and numeric_value <= result.parameter.max_permissible_limit %}
-                            <span class="badge badge-success">Within Limits</span>
-                        {% else %}
-                            <span class="badge badge-danger">Out of Range</span>
-                        {% endif %}
-                        {% endwith %}
-                    </div>
-                    {% endif %}
-                </div>
-                {% endfor %}
-            </div>
-        </div>
-        {% else %}
-        <div class="p-3 text-center text-muted">
-            <p>No test results entered yet</p>
-        </div>
-        {% endif %}
-    </div>
-</div>
-
-<!-- Recently Completed Samples -->
-<div class="card dashboard-card"> {# Added dashboard-card class #}
-    <div class="card-content">
-        <span class="card-title"><i class="material-icons left">fact_check</i>My Recently Completed Samples</span>
-    </div>
-    {% if recently_completed_samples %}
-    <div class="p-3">
-        <div class="sample-list">
-            {% for sample in recently_completed_samples %}
-            <div class="sample-item">
-                <div class="sample-info">
-                    <a href="{% url 'core:sample_detail' sample.pk %}" class="sample-id">
-                        {{ sample.sample_id|truncatechars:13 }}
-                    </a>
-                    <div class="sample-meta">
-                        👤 {{ sample.customer.name }}
-                    </div>
-                    <div class="sample-meta">
-                        📅 Completed: {{ sample.updated_at|date:"M d, H:i" }}
-                    </div>
-                    <div class="sample-meta">
-                        🏷️ {{ sample.get_sample_source_display }}
-                    </div>
-                </div>
-                <div class="sample-actions">
-                    {% if sample.current_status == 'RESULTS_ENTERED' %}
-                        <span class="badge badge-success">{{ sample.get_current_status_display }}</span>
-                    {% elif sample.current_status == 'REVIEW_PENDING' %}
-                        <span class="badge badge-warning">{{ sample.get_current_status_display }}</span>
-                    {% elif sample.current_status == 'REPORT_APPROVED' %}
-                        <span class="badge badge-success">{{ sample.get_current_status_display }}</span>
-                    {% else %}
-                        <span class="badge badge-info">{{ sample.get_current_status_display }}</span>
-                    {% endif %}
-                    <a href="{% url 'core:sample_detail' sample.pk %}" class="btn btn-sm btn-outline">
-                        View Details
-                    </a>
+                    {% endfor %}
                 </div>
             </div>
-            {% endfor %}
-        </div>
-    </div>
-    {% else %}
-    <div class="p-3 text-center text-muted">
-        <p>No completed samples yet</p>
-        <p>Samples you've worked on will appear here after completion.</p>
-    </div>
-    {% endif %}
-</div>
-
-<!-- Laboratory Equipment Status -->
-<div class="card dashboard-card"> {# Added dashboard-card class #}
-    <div class="card-content">
-        <span class="card-title"><i class="material-icons left">build_circle</i>Laboratory Status</span>
-    </div>
-    <div class="p-3">
-        <div class="equipment-grid">
-            <div class="equipment-item">
-                <div class="equipment-name">pH Meter</div>
-                <span class="badge badge-success">Operational</span>
-                <div class="equipment-meta">Last calibrated: 2 days ago</div>
+            {% else %}
+            <div class="p-3 text-center text-muted">
+                <p>No completed samples yet</p>
+                <p>Samples you've worked on will appear here after completion.</p>
             </div>
-            <div class="equipment-item">
-                <div class="equipment-name">Turbidity Meter</div>
-                <span class="badge badge-success">Operational</span>
-                <div class="equipment-meta">Last calibrated: 1 day ago</div>
-            </div>
-            <div class="equipment-item">
-                <div class="equipment-name">Conductivity Meter</div>
-                <span class="badge badge-warning">Needs Calibration</span>
-                <div class="equipment-meta">Last calibrated: 7 days ago</div>
-            </div>
-            <div class="equipment-item">
-                <div class="equipment-name">Spectrophotometer</div>
-                <span class="badge badge-success">Operational</span>
-                <div class="equipment-meta">Last calibrated: 3 days ago</div>
-            </div>
+            {% endif %}
         </div>
     </div>
 </div>
 
-<!-- Quality Control Reminders -->
-<div class="card dashboard-card"> {# Added dashboard-card class #}
-    <div class="card-content">
-        <span class="card-title"><i class="material-icons left">checklist_rtl</i>Quality Control Checklist</span>
+<div class="row section">
+    <!-- Laboratory Equipment Status -->
+    <div class="col s12 m6">
+        <div class="card dashboard-card">
+            <div class="card-content">
+                <span class="card-title"><i class="material-icons left">build_circle</i>Laboratory Status</span>
+            </div>
+            <div class="p-3">
+                <div class="equipment-grid">
+                    <div class="equipment-item">
+                        <div class="equipment-name">pH Meter</div>
+                        <span class="badge badge-success">Operational</span>
+                        <div class="equipment-meta">Last calibrated: 2 days ago</div>
+                    </div>
+                    <div class="equipment-item">
+                        <div class="equipment-name">Turbidity Meter</div>
+                        <span class="badge badge-success">Operational</span>
+                        <div class="equipment-meta">Last calibrated: 1 day ago</div>
+                    </div>
+                    <div class="equipment-item">
+                        <div class="equipment-name">Conductivity Meter</div>
+                        <span class="badge badge-warning">Needs Calibration</span>
+                        <div class="equipment-meta">Last calibrated: 7 days ago</div>
+                    </div>
+                    <div class="equipment-item">
+                        <div class="equipment-name">Spectrophotometer</div>
+                        <span class="badge badge-success">Operational</span>
+                        <div class="equipment-meta">Last calibrated: 3 days ago</div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
+
+    <!-- Quality Control Reminders -->
+    <div class="col s12 m6">
+        <div class="card dashboard-card">
+            <div class="card-content">
+                <span class="card-title"><i class="material-icons left">checklist_rtl</i>Quality Control Checklist</span>
+            </div>
     <div class="p-3">
         <div class="qc-list">
             <div class="qc-item">
