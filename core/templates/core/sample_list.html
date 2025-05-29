@@ -15,46 +15,62 @@
 {% endblock breadcrumbs %}
 
 {% block content %}
-<div class="card">
+<div class="card fade-in-up">
     <div class="card-content">
-        <div class="row" style="margin-bottom: 10px;">
-            <div class="col s12 m9 l10">
-                <span class="card-title" style="font-size: 2rem; display: flex; align-items: center; color: var(--primary-color-dark);">
-                    <i class="material-icons" style="font-size: 2.5rem; margin-right: 10px; color: var(--primary-color);">science</i> Sample Management
-                </span>
-                <p class="grey-text text-darken-1" style="margin-top: -5px; margin-bottom: 15px;">Track and manage all water samples</p>
+        <div class="row mb-3">
+            <div class="col s12 m8 l9 flex items-center">
+                <i class="material-icons h1-icon mr-2 text-primary" style="font-size: 2.8rem;">science</i>
+                <h1 class="h2 mb-0">Sample Management</h1>
             </div>
-            <div class="col s12 m3 l2 right-align">
+            <div class="col s12 m4 l3 flex items-center justify-end mt-2 mt-m-0">
                 {% if user.is_frontdesk or user.is_admin %}
-                    <a href="{% url 'core:sample_add' %}" class="btn waves-effect waves-light"><i class="material-icons left">add_task</i>New Sample</a>
+                    <a href="{% url 'core:sample_add' %}" class="btn waves-effect waves-light w-100 w-m-auto"><i class="material-icons left">add_task</i>New Sample</a>
                 {% endif %}
             </div>
         </div>
+        <p class="text-muted mb-4">Track and manage all water samples registered in the system.</p>
 
-        {% if samples %}
-            <!-- Search and Filter -->
-            <div class="row" style="margin-bottom: 20px;">
-                <div class="input-field col s12 m6 l4">
-                    <i class="material-icons prefix">search</i>
-                    <input type="text" id="sample-search" placeholder="Search samples..." data-search="#sample-table">
-                    <label for="sample-search">Search Samples</label>
-                </div>
-                <div class="input-field col s12 m6 l4">
-                    <select id="status-filter">
-                        <option value="" selected>All Statuses</option>
-                        <option value="RECEIVED_FRONT_DESK">Received at Front Desk</option>
-                        <option value="SENT_TO_LAB">Sent to Lab</option>
-                        <option value="TESTING_IN_PROGRESS">Testing in Progress</option>
-                        <option value="RESULTS_ENTERED">Results Entered</option>
-                        <option value="REVIEW_PENDING">Review Pending</option>
-                        <option value="REPORT_APPROVED">Report Approved</option>
-                        <option value="REPORT_SENT">Report Sent</option>
-                    </select>
-                    <label>Filter by Status</label>
+        <!-- Search and Filter -->
+        <div class="row mb-4">
+            <div class="input-field col s12 m6 l4">
+                <i class="material-icons prefix">search</i>
+                <input type="text" id="sample-search" placeholder="Search by ID, Customer, Source..." data-search="#sample-table">
+                <label for="sample-search">Search Samples</label>
+            </div>
+            <div class="input-field col s12 m6 l4">
+                <i class="material-icons prefix">filter_list</i>
+                <select id="status-filter">
+                    <option value="" selected>All Statuses</option>
+                    <option value="RECEIVED_FRONT_DESK">Received at Front Desk</option>
+                    <option value="SENT_TO_LAB">Sent to Lab</option>
+                    <option value="TESTING_IN_PROGRESS">Testing in Progress</option>
+                    <option value="RESULTS_ENTERED">Results Entered</option>
+                    <option value="REVIEW_PENDING">Review Pending</option>
+                    <option value="REPORT_APPROVED">Report Approved</option>
+                    <option value="REPORT_SENT">Report Sent</option>
+                </select>
+                <label>Filter by Status</label>
+            </div>
+        </div>
+        
+        <div id="loading-indicator" style="display: none;" class="center-align p-5">
+            <div class="preloader-wrapper active">
+                <div class="spinner-layer spinner-blue-only">
+                    <div class="circle-clipper left">
+                        <div class="circle"></div>
+                    </div><div class="gap-patch">
+                        <div class="circle"></div>
+                    </div><div class="circle-clipper right">
+                        <div class="circle"></div>
+                    </div>
                 </div>
             </div>
-            
-            <div class="table-responsive">
+            <p class="mt-3 text-muted">Loading samples...</p>
+        </div>
+
+        <div id="sample-list-container">
+            {% if samples %}
+            <div class="table-responsive mobile-table-card fade-in" id="sample-table-wrapper">
                 <table class="highlight responsive-table" id="sample-table">
                     <thead>
                         <tr>
@@ -62,70 +78,72 @@
                             <th>Customer</th>
                             <th>Collection Date</th>
                             <th>Source</th>
-                            <th class="center-align">Tests</th>
+                            <th class="text-center">Tests</th>
                             <th>Status</th>
-                            <th class="center-align">Actions</th>
+                            <th class="text-center">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for sample in samples %}
                         <tr data-status="{{ sample.current_status }}">
-                            <td>
-                                <a href="{% url 'core:sample_detail' pk=sample.sample_id %}" style="color: var(--primary-color-dark); font-weight: 500;">
-                                    <code>{{ sample.sample_id|truncatechars:12 }}...</code>
+                            <td data-label="Sample ID">
+                                <a href="{% url 'core:sample_detail' pk=sample.sample_id %}" class="text-primary font-weight-medium">
+                                    <code>{{ sample.sample_id|truncatechars:12 }}</code>
                                 </a>
                             </td>
-                            <td>
-                                <a href="{% url 'core:customer_detail' pk=sample.customer.customer_id %}" style="color: var(--primary-color);">
+                            <td data-label="Customer">
+                                <a href="{% url 'core:customer_detail' pk=sample.customer.customer_id %}" class="text-primary">
                                     {{ sample.customer.name }}
                                 </a>
                                 <br>
-                                <small class="grey-text text-darken-1">{{ sample.customer.phone }}</small>
+                                <small class="text-muted">{{ sample.customer.phone }}</small>
                             </td>
-                            <td>
+                            <td data-label="Collection Date">
                                 {{ sample.collection_datetime|date:"M d, Y" }}
                                 <br>
-                                <small class="grey-text text-darken-1">{{ sample.collection_datetime|time:"H:i" }}</small>
+                                <small class="text-muted">{{ sample.collection_datetime|time:"H:i" }}</small>
                             </td>
-                            <td>
-                                <span class="chip" style="background-color: var(--primary-color-light); color: var(--primary-color-dark);">{{ sample.get_sample_source_display }}</span>
+                            <td data-label="Source">
+                                <span class="chip bg-primary-light">{{ sample.get_sample_source_display }}</span>
                             </td>
-                            <td class="center-align">
+                            <td data-label="Tests" class="text-center">
                                 <span class="chip grey lighten-2 black-text">
                                     {{ sample.tests_requested.count }}
                                 </span>
                             </td>
-                            <td>
+                            <td data-label="Status">
                                 {% if sample.current_status == 'REPORT_APPROVED' or sample.current_status == 'REPORT_SENT' %}
-                                    <span class="chip" style="background-color: var(--success-color); color: var(--text-on-primary);">{{ sample.get_current_status_display }}</span>
+                                    <span class="chip bg-success">{{ sample.get_current_status_display }}</span>
                                 {% elif sample.current_status == 'RESULTS_ENTERED' or sample.current_status == 'REVIEW_PENDING' %}
-                                    <span class="chip" style="background-color: var(--warning-color); color: var(--text-color-dark);">{{ sample.get_current_status_display }}</span>
+                                    <span class="chip bg-warning">{{ sample.get_current_status_display }}</span>
                                 {% elif sample.current_status == 'TESTING_IN_PROGRESS' %}
-                                    <span class="chip" style="background-color: var(--info-color); color: var(--text-on-primary);">{{ sample.get_current_status_display }}</span>
+                                    <span class="chip bg-info">{{ sample.get_current_status_display }}</span>
                                 {% else %}
-                                    <span class="chip" style="background-color: var(--error-color); color: var(--text-on-primary);">{{ sample.get_current_status_display }}</span>
+                                    <span class="chip bg-danger">{{ sample.get_current_status_display }}</span>
                                 {% endif %}
                             </td>
-                            <td class="center-align">
-                                <a href="{% url 'core:sample_detail' pk=sample.sample_id %}" class="btn-floating btn-small waves-effect waves-light tooltipped" style="background-color: var(--primary-color);" data-position="top" data-tooltip="View Details">
-                                    <i class="material-icons">visibility</i>
-                                </a>
-                                
-                                {% if user.is_lab_tech or user.is_admin %}
-                                    {% if sample.current_status in 'SENT_TO_LAB,TESTING_IN_PROGRESS,RESULTS_ENTERED' %}
-                                        <a href="{% url 'core:test_result_entry' sample_id=sample.sample_id %}" class="btn-floating btn-small waves-effect waves-light tooltipped" style="background-color: var(--success-color);" data-position="top" data-tooltip="Enter Results">
-                                            <i class="material-icons">edit_note</i>
-                                        </a>
+                            <td data-label="Actions" class="text-center actions-column">
+                                <div class="btn-group">
+                                    <a href="{% url 'core:sample_detail' pk=sample.sample_id %}" class="btn-floating btn-small waves-effect waves-light tooltipped bg-primary" data-position="top" data-tooltip="View Details">
+                                        <i class="material-icons">visibility</i>
+                                    </a>
+                                    
+                                    {% if user.is_lab_technician or user.is_admin %}
+                                        {% if sample.current_status in 'SENT_TO_LAB,TESTING_IN_PROGRESS,RESULTS_ENTERED' %}
+                                            <a href="{% url 'core:test_result_entry' sample_id=sample.sample_id %}" class="btn-floating btn-small waves-effect waves-light tooltipped bg-success" data-position="top" data-tooltip="Enter Results">
+                                                <i class="material-icons">edit_note</i>
+                                            </a>
+                                        {% endif %}
                                     {% endif %}
-                                {% endif %}
-                                
-                                {% if user.is_consultant or user.is_admin %}
-                                    {% if sample.current_status in 'RESULTS_ENTERED,REVIEW_PENDING' %}
-                                        <a href="{% url 'core:consultant_review' sample_id=sample.sample_id %}" class="btn-floating btn-small waves-effect waves-light tooltipped" style="background-color: var(--info-color);" data-position="top" data-tooltip="Review Sample">
-                                            <i class="material-icons">rate_review</i>
-                                        </a>
+                                    
+                                    {% if user.is_consultant or user.is_admin %}
+                                        {% if sample.current_status in 'RESULTS_ENTERED,REVIEW_PENDING' %}
+                                            <a href="{% url 'core:consultant_review' sample_id=sample.sample_id %}" class="btn-floating btn-small waves-effect waves-light tooltipped bg-info" data-position="top" data-tooltip="Review Sample">
+                                                <i class="material-icons">rate_review</i>
+                                            </a>
+                                        {% endif %}
                                     {% endif %}
-                                {% endif %}
+                                </div>
                             </td>
                         </tr>
                         {% endfor %}
@@ -133,20 +151,21 @@
                 </table>
             </div>
             
-            <div class="center-align grey-text" style="margin-top: 20px;">
+            <div class="text-center text-muted mt-4">
                 <small>Showing {{ samples|length }} sample{{ samples|length|pluralize }}</small>
             </div>
             
-        {% else %}
-            <div class="center-align" style="padding: 40px 0;">
-                <i class="material-icons" style="font-size: 5rem; color: var(--primary-color-light);">science</i>
-                <h5 style="color: var(--text-color-medium);">No samples yet</h5>
-                <p style="color: var(--text-color-light);">Start by adding your first sample to the system.</p>
+            {% else %}
+            <div id="no-samples-message" class="text-center p-5 fade-in">
+                <i class="material-icons" style="font-size: 5rem; color: var(--primary-color-light);">flask_outline</i> <!-- Assuming flask_outline or similar icon -->
+                <h5 class="mt-3" style="color: var(--text-color-medium);">No Samples Found</h5>
+                <p style="color: var(--text-color-light);">There are currently no samples matching your criteria, or no samples have been added yet.</p>
                 {% if user.is_frontdesk or user.is_admin %}
-                    <a href="{% url 'core:sample_add' %}" class="btn waves-effect waves-light"><i class="material-icons left">add_task</i>Add First Sample</a>
+                    <a href="{% url 'core:sample_add' %}" class="btn waves-effect waves-light mt-3"><i class="material-icons left">add_task</i>Add First Sample</a>
                 {% endif %}
             </div>
-        {% endif %}
+            {% endif %}
+        </div>
     </div>
 </div>
 {% endblock %}
@@ -162,46 +181,152 @@ document.addEventListener('DOMContentLoaded', function() {
     var tooltippedElems = document.querySelectorAll('.tooltipped');
     M.Tooltip.init(tooltippedElems);
 
-    // Search functionality
-    const searchInput = document.querySelector('input[data-search]');
-    if (searchInput) {
-        const tableId = searchInput.getAttribute('data-search');
-        const table = document.querySelector(tableId);
-        if (table) {
-            const tableBody = table.querySelector('tbody');
-            const rows = tableBody.querySelectorAll('tr');
+    const searchInput = document.getElementById('sample-search');
+    const statusFilter = document.getElementById('status-filter');
+    const sampleTableBody = document.querySelector('#sample-table tbody');
+    const allRows = sampleTableBody ? Array.from(sampleTableBody.querySelectorAll('tr')) : [];
+    const loadingIndicator = document.getElementById('loading-indicator');
+    const sampleListContainer = document.getElementById('sample-list-container');
+    const noSamplesMessage = document.getElementById('no-samples-message'); // Assuming you have this element
+    const sampleTableWrapper = document.getElementById('sample-table-wrapper');
 
-            searchInput.addEventListener('keyup', function() {
-                const searchTerm = searchInput.value.toLowerCase();
-                filterTableRows(searchTerm, document.getElementById('status-filter').value, rows);
-            });
+    function showLoading(show) {
+        if (loadingIndicator && sampleListContainer) {
+            if (show) {
+                loadingIndicator.style.display = 'block';
+                sampleListContainer.style.display = 'none';
+            } else {
+                loadingIndicator.style.display = 'none';
+                sampleListContainer.style.display = 'block';
+            }
         }
     }
     
-    // Status filter functionality
-    const statusFilter = document.getElementById('status-filter');
-    if (statusFilter) {
-        statusFilter.addEventListener('change', function() {
-            const selectedStatus = this.value;
-            const searchTerm = document.querySelector('input[data-search]').value.toLowerCase();
-            const rows = document.querySelectorAll('#sample-table tbody tr');
-            filterTableRows(searchTerm, selectedStatus, rows);
-        });
-    }
+    // Simulate initial loading (remove if backend handles this)
+    // showLoading(true);
+    // setTimeout(() => {
+    //     showLoading(false);
+    //     if (allRows.length === 0 && noSamplesMessage) {
+    //         if(sampleTableWrapper) sampleTableWrapper.style.display = 'none';
+    //         noSamplesMessage.style.display = 'block';
+    //     } else if (noSamplesMessage) {
+    //         if(sampleTableWrapper) sampleTableWrapper.style.display = 'block';
+    //         noSamplesMessage.style.display = 'none';
+    //     }
+    // }, 500); // Simulate network delay
 
-    function filterTableRows(searchTerm, selectedStatus, rows) {
-        rows.forEach(row => {
+
+    function filterTableRows() {
+        if (!sampleTableBody) return;
+
+        const searchTerm = searchInput.value.toLowerCase();
+        const selectedStatus = statusFilter.value;
+        let visibleRows = 0;
+
+        allRows.forEach(row => {
             const textContent = row.textContent.toLowerCase();
             const statusMatches = !selectedStatus || row.getAttribute('data-status') === selectedStatus;
             const searchMatches = !searchTerm || textContent.includes(searchTerm);
 
             if (statusMatches && searchMatches) {
                 row.style.display = '';
+                visibleRows++;
             } else {
                 row.style.display = 'none';
             }
         });
+        
+        // Handle no results message after filtering
+        if (noSamplesMessage && sampleTableWrapper) {
+            if (visibleRows === 0 && allRows.length > 0) { // Only show if there were rows to begin with
+                sampleTableWrapper.style.display = 'none';
+                noSamplesMessage.innerHTML = `
+                    <i class="material-icons" style="font-size: 5rem; color: var(--primary-color-light);">search_off</i>
+                    <h5 class="mt-3" style="color: var(--text-color-medium);">No Samples Match Your Search</h5>
+                    <p style="color: var(--text-color-light);">Try adjusting your search terms or filters.</p>
+                `;
+                noSamplesMessage.style.display = 'block';
+            } else if (allRows.length > 0) { // If there are rows and some are visible
+                 sampleTableWrapper.style.display = 'block'; // or 'table' or initial display type
+                 noSamplesMessage.style.display = 'none';
+            } else if (allRows.length === 0) { // Original no samples message
+                 sampleTableWrapper.style.display = 'none';
+                 noSamplesMessage.innerHTML = `
+                    <i class="material-icons" style="font-size: 5rem; color: var(--primary-color-light);">flask_outline</i>
+                    <h5 class="mt-3" style="color: var(--text-color-medium);">No Samples Yet</h5>
+                    <p style="color: var(--text-color-light);">Start by adding your first sample to the system.</p>
+                    {% if user.is_frontdesk or user.is_admin %}
+                        <a href="{% url 'core:sample_add' %}" class="btn waves-effect waves-light mt-3"><i class="material-icons left">add_task</i>Add First Sample</a>
+                    {% endif %}
+                 `;
+                 noSamplesMessage.style.display = 'block';
+            }
+        }
+    }
+
+    if (searchInput) {
+        searchInput.addEventListener('keyup', filterTableRows);
+    }
+    
+    if (statusFilter) {
+        statusFilter.addEventListener('change', filterTableRows);
+    }
+    
+    // Initial filter call in case of pre-filled filters or to handle initial no-samples message
+    if (allRows.length > 0) {
+        filterTableRows();
+    } else if (noSamplesMessage && sampleTableWrapper) {
+        sampleTableWrapper.style.display = 'none';
+        noSamplesMessage.style.display = 'block';
     }
 });
 </script>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.h1-icon {
+    font-size: 2.8rem; /* Match h1 size or adjust as needed */
+    position: relative;
+    top: -2px; /* Align with text */
+}
+
+.actions-column .btn-group {
+    display: flex;
+    flex-wrap: nowrap; /* Prevent wrapping on mobile card view if too many buttons */
+    justify-content: flex-end; /* Align to right in table cell */
+}
+
+@media (max-width: 768px) { /* Corresponds to mobile-table-card breakpoint */
+    .actions-column .btn-group {
+        justify-content: flex-end; /* Ensure buttons stay on the right in card view */
+        gap: var(--space-xs);
+    }
+    .actions-column .btn-floating.btn-small { /* Ensure buttons are tappable */
+        width: 36px;
+        height: 36px;
+        line-height: 36px;
+    }
+    .actions-column .btn-floating.btn-small i {
+        font-size: 1.2rem;
+        line-height: 36px;
+    }
+}
+
+/* Responsive button width for "New Sample" */
+@media (max-width: 600px) { /* Materialize 's' breakpoint */
+    .w-m-auto {
+        /* On small screens, it's already w-100. This is for medium up. */
+    }
+}
+@media (min-width: 601px) {
+    .w-m-auto {
+        width: auto !important;
+    }
+    .mt-m-0 {
+        margin-top: 0 !important;
+    }
+}
+
+</style>
 {% endblock %}

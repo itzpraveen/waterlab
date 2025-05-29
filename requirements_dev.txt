@@ -1,0 +1,28 @@
+# WaterLab LIMS - Development Requirements
+# This file lists essential packages for local development.
+# For a full list including production dependencies, see requirements.txt.
+
+# Core Django framework
+Django>=5.2,<5.3
+
+# For parsing DATABASE_URL from .env file (used in settings.py)
+dj-database-url>=2.1.0
+
+# For managing environment variables from .env file (used in settings.py)
+python-decouple>=3.8
+
+# For PDF generation (likely essential for LIMS reports)
+reportlab>=4.0.0
+
+# --- Optional for specific local development setups ---
+
+# Uncomment and install if you plan to use PostgreSQL for local development.
+# The default local setup (via start_dev.py or manual .env) uses SQLite,
+# which does not require psycopg2-binary.
+# psycopg2-binary>=2.9,<3.0
+
+# Uncomment and install if you intend to use Redis for caching or sessions
+# during local development. The application can run without Redis for basic
+# functionality if Redis is not configured in your local .env file.
+# redis>=4.5.0
+# django-redis>=5.2.0
