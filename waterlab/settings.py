@@ -11,6 +11,9 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
+import os
+from decouple import config, Csv # For environment variables
+import dj_database_url # For database configuration
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -20,12 +23,21 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-5bk%$o610n*i6&1ib#foe49(&r=(lenxpr-j#bdycs#c1mo%l&'
+# Load SECRET_KEY from .env file. Fallback to a default (insecure) key if not found.
+# For production, ensure SECRET_KEY is set in your environment.
+SECRET_KEY = config('SECRET_KEY', default='django-insecure-fallback-key-replace-me-in-production')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+# Load DEBUG status from .env file. Defaults to False if not set.
+# For local development, set DEBUG=True in your .env file.
+DEBUG = config('DEBUG', default=False, cast=bool)
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'testserver', '*']
+# Load ALLOWED_HOSTS from .env file.
+# Expects a comma-separated string, e.g., "localhost,127.0.0.1,mydomain.com"
+# Defaults to common local development hosts if not set.
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='127.0.0.1,localhost', cast=Csv())
+if DEBUG and '*' not in ALLOWED_HOSTS: # Add '*' in DEBUG mode if not already broadly defined
+    ALLOWED_HOSTS.append('*')
 
 
 # Application definition
@@ -50,6 +62,7 @@ LOGOUT_REDIRECT_URL = 'core:login_selector' # Changed to redirect to login selec
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware', # Added for static files in production
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -63,10 +76,11 @@ ROOT_URLCONF = 'waterlab.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [BASE_DIR / 'templates'], # Optional: project-level templates
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
+                'django.template.context_processors.debug',
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
@@ -80,36 +94,18 @@ WSGI_APPLICATION = 'waterlab.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
-
-import os
-
-# Smart Database Configuration - SQLite for development, PostgreSQL for production
-if os.environ.get('USE_POSTGRESQL', 'False').lower() == 'true':
-    # PostgreSQL for Production
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': os.environ.get('DB_NAME', 'waterlab'),
-            'USER': os.environ.get('DB_USER', 'waterlab'),
-            'PASSWORD': os.environ.get('DB_PASSWORD', 'Well_567!'),
-            'HOST': os.environ.get('DB_HOST', 'localhost'),
-            'PORT': os.environ.get('DB_PORT', '5432'),
-            'OPTIONS': {
-                'connect_timeout': 20,
-            },
-            'CONN_MAX_AGE': 600,  # Connection pooling
-        }
-    }
+# Uses dj-database-url to parse DATABASE_URL from .env file.
+# Defaults to SQLite if DATABASE_URL is not set.
+DATABASES = {
+    'default': dj_database_url.config(
+        default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}",
+        conn_max_age=600 # Enable connection pooling
+    )
+}
+if DATABASES['default']['ENGINE'] == 'django.db.backends.sqlite3':
+    print("🗃️  Using SQLite Database (Development Mode or default)")
+elif DATABASES['default']['ENGINE'] == 'django.db.backends.postgresql':
     print("🐘 Using PostgreSQL Database")
-else:
-    # SQLite for Development/Testing (Default)
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
-        }
-    }
-    print("🗃️  Using SQLite Database (Development Mode)")
 
 
 # Password validation
@@ -136,11 +132,11 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = config('TIME_ZONE', default='UTC')
 
 USE_I18N = True
 
-USE_L10N = False # Explicitly disable locale-specific formatting for numbers/dates
+USE_L10N = config('USE_L10N', default=False, cast=bool) # Explicitly disable locale-specific formatting for numbers/dates by default
 
 USE_TZ = True
 
@@ -149,12 +145,80 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = 'static/'
+# Directories where Django will look for static files in addition to app's 'static/' directories
 STATICFILES_DIRS = [
     BASE_DIR / "static",
 ]
+# The absolute path to the directory where collectstatic will collect static files for deployment.
 STATIC_ROOT = BASE_DIR / "staticfiles"
+
+# WhiteNoise configuration for serving static files in production
+# Ensure DEBUG is False for WhiteNoise to serve files efficiently.
+# If DEBUG is True, Django's staticfiles app handles serving.
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Email Configuration
+# Defaults to console output if not set in .env, suitable for development.
+EMAIL_BACKEND = config('EMAIL_BACKEND', default='django.core.mail.backends.console.EmailBackend')
+EMAIL_HOST = config('EMAIL_HOST', default='')
+EMAIL_PORT = config('EMAIL_PORT', default=587, cast=int)
+EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=True, cast=bool)
+EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
+EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
+DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='webmaster@localhost')
+
+# Logging Configuration (Optional - Basic example)
+# For more advanced logging, refer to Django documentation.
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'INFO', # Change to 'DEBUG' for more verbose output
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': config('DJANGO_LOG_LEVEL', default='INFO'),
+            'propagate': False,
+        },
+    },
+}
+
+# Sentry Integration (Optional - for error tracking in production)
+SENTRY_DSN = config('SENTRY_DSN', default=None)
+if SENTRY_DSN and not DEBUG: # Only initialize Sentry if DSN is provided and not in DEBUG mode
+    try:
+        import sentry_sdk
+        from sentry_sdk.integrations.django import DjangoIntegration
+
+        sentry_sdk.init(
+            dsn=SENTRY_DSN,
+            integrations=[DjangoIntegration()],
+            # Set traces_sample_rate to 1.0 to capture 100%
+            # of transactions for performance monitoring.
+            # Adjust as needed for production.
+            traces_sample_rate=config('SENTRY_TRACES_SAMPLE_RATE', default=0.1, cast=float),
+            # If you wish to associate users to errors (assuming you have user data)
+            send_default_pii=True,
+            environment=config('SENTRY_ENVIRONMENT', default='development' if DEBUG else 'production')
+        )
+        print("🔒 Sentry SDK initialized.")
+    except ImportError:
+        print("⚠️ Sentry DSN provided, but 'sentry-sdk' is not installed. Skipping Sentry initialization.")
+    except Exception as e:
+        print(f"⚠️ Error initializing Sentry: {e}")
+
+# Custom Application Settings (if any)
+# EXAMPLE_SETTING = config('EXAMPLE_SETTING', default='some_value')
