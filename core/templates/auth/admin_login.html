@@ -22,8 +22,10 @@
         width: 100%;
     }
     .login-card-container {
-        max-width: 450px; /* Slightly wider for login form */
+        max-width: 500px; /* Increased max-width for desktop */
         width: 90%;
+        margin-left: auto; /* Ensure centering with width % */
+        margin-right: auto; /* Ensure centering with width % */
     }
     .login-card .card-content {
         padding: 30px !important;
@@ -105,6 +107,36 @@
         font-size: 0.9em;
     }
 
+    @media screen and (max-width: 600px) {
+        .login-card-container {
+            width: 95%; /* Take more width on small screens */
+            margin-top: 20px; /* Add some margin from top if needed */
+            margin-bottom: 20px;
+            max-height: calc(100vh - 40px); /* Ensure it fits viewport height with margins */
+            overflow-y: auto; /* Allow scrolling if content overflows */
+        }
+        .login-card .card-content {
+            padding: 20px !important; /* Reduce padding for mobile */
+        }
+        .login-title {
+            font-size: 1.5rem; /* Smaller title for mobile */
+        }
+        .login-subtitle {
+            font-size: 0.9rem;
+        }
+        .btn.login-btn {
+            height: 42px;
+            line-height: 42px;
+            font-size: 1rem;
+        }
+        .security-notice-panel {
+            padding: 10px;
+            font-size: 0.85rem;
+        }
+        .back-link-container {
+            margin-top: 20px;
+        }
+    }
 </style>
 {% endblock %}
 
