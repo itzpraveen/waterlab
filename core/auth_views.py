@@ -135,7 +135,10 @@ class DashboardView(LoginRequiredMixin, TemplateView):
 
 
 def login_selector(request):
-    """Landing page to choose login type"""
+    """Landing page to choose login type.
+    Redirects to dashboard if user is already authenticated."""
+    if request.user.is_authenticated:
+        return redirect(reverse_lazy('core:dashboard'))
     return render(request, 'auth/login_selector.html', {
         'page_title': 'Water Lab LIMS - Login'
     })

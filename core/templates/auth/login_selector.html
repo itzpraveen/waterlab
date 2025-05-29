@@ -93,12 +93,12 @@
         align-items: center;
         justify-content: center; /* Center icon and text horizontally */
     }
-    .login-card .card-title i {
+    .login-card .card-title .login-icon-svg {
         margin-right: 10px; /* Space between icon and text */
-        font-size: 1.3rem; /* Match text font-size */
-        line-height: 1; /* Normalize line height */
-        position: relative; /* For transform */
-        transform: translateY(-0.5px); /* Very subtle nudge */
+        width: 1.3em; /* Size relative to font-size of parent */
+        height: 1.3em; /* Size relative to font-size of parent */
+        vertical-align: middle; /* Align with text */
+        /* SVG fill is set to currentColor, so it will inherit color from .staff-card .card-title */
     }
     .login-card .card-title span {
         /* No specific styles, will align as flex item */
@@ -122,10 +122,10 @@
         border: 1px solid #ddd; /* Lighter border for staff card */
     }
     .staff-card .card-title,
-    .staff-card .card-description,
-    .staff-card i {
+    .staff-card .card-description {
         color: #333 !important; /* Standard dark text */
     }
+    /* The SVG icon will inherit its color from .staff-card .card-title due to fill="currentColor" */
 
     .footer-login {
         margin-top: 30px; /* Increased spacing */
@@ -189,7 +189,12 @@
             <a href="{% url 'core:user_login' %}" class="black-text">
                 <div class="card login-card staff-card hoverable">
                     <div class="card-content">
-                        <span class="card-title"><i class="material-icons">person_outline</i><span>Staff Login</span></span>
+                        <span class="card-title">
+                            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="currentColor" class="login-icon-svg" aria-hidden="true" focusable="false">
+                                <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                            </svg>
+                            <span>Staff Login</span>
+                        </span>
                         <p class="card-description">
                             Lab technicians, front desk staff, and consultants.
                         </p>
