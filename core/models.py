@@ -1,6 +1,6 @@
 from django.db import models
 import uuid
-import json
+# import json # Not directly used, JSONField handles serialization
 from django.conf import settings # Recommended way to import User model
 from django.contrib.auth.models import AbstractUser
 from django.utils import timezone
@@ -236,7 +236,7 @@ class TestParameter(models.Model):
     standard_method = models.CharField(max_length=255, blank=True, null=True)
     min_permissible_limit = models.DecimalField(max_digits=10, decimal_places=3, null=True, blank=True)
     max_permissible_limit = models.DecimalField(max_digits=10, decimal_places=3, null=True, blank=True)
-    # descriptive_limit = models.CharField(max_length=255, blank=True, null=True, help_text="For text-based limits like 'Absent'")
+    # descriptive_limit = models.CharField(max_length=255, blank=True, null=True, help_text="For text-based limits like 'Absent'") # Removed commented out field
 
 
     def __str__(self):
@@ -247,8 +247,8 @@ class TestResult(models.Model):
     sample = models.ForeignKey(Sample, on_delete=models.CASCADE, related_name='results')
     parameter = models.ForeignKey(TestParameter, on_delete=models.PROTECT, related_name='results') # PROTECT to avoid deleting parameter if results exist
     result_value = models.CharField(max_length=255, help_text="Actual result value. Can be numeric or text (e.g., 'Present', 'Absent')")
-    # For numeric results, consider a separate DecimalField and logic to use one or the other.
-    # result_value_numeric = models.DecimalField(max_digits=10, decimal_places=3, null=True, blank=True)
+    # For numeric results, consider a separate DecimalField and logic to use one or the other. # Removed commented out field
+    # result_value_numeric = models.DecimalField(max_digits=10, decimal_places=3, null=True, blank=True) # Removed commented out field
     observation = models.TextField(blank=True, null=True)
     test_date = models.DateTimeField(auto_now_add=True) # Or DateField if time is not critical
     technician = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='test_results_entered')
@@ -261,7 +261,7 @@ class TestResult(models.Model):
     
     def clean(self):
         from django.core.exceptions import ValidationError
-        import re
+        # import re # Not used in this method
         
         # Validate that technician has appropriate role
         if self.technician and not self.technician.is_lab_tech() and not self.technician.is_admin():

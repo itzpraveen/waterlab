@@ -1,0 +1,24 @@
+{
+  "Thiruvananthapuram": {
+    "Neyyattinkara": ["Perumkadavila Grama Panchayat", "Karakonam Grama Panchayat", "Chenkal Grama Panchayat"],
+    "Chirayinkeezhu": ["Varkala Municipality", "Attingal Municipality", "Azhoor Grama Panchayat"],
+    "Kattakada": ["Kattakada Grama Panchayat", "Malayinkeezhu Grama Panchayat", "Vilappil Grama Panchayat"],
+    "Thiruvananthapuram": ["Thiruvananthapuram Corporation"]
+  },
+  "Ernakulam": {
+    "Kochi": ["Kochi Corporation"],
+    "Aluva": ["Aluva Municipality", "Angamaly Municipality", "Kalady Grama Panchayat"],
+    "Kunnathunad": ["Perumbavoor Municipality", "Vazhakulam Grama Panchayat", "Rayonpuram Grama Panchayat"],
+    "Kanayannur": ["Maradu Municipality", "Thrippunithura Municipality"]
+  },
+  "Kozhikode": {
+    "Kozhikode": ["Kozhikode Corporation"],
+    "Vadakara": ["Vadakara Municipality", "Chorode Grama Panchayat", "Onchiyam Grama Panchayat"],
+    "Koyilandy": ["Koyilandy Municipality", "Payyoli Municipality", "Thikkodi Grama Panchayat"]
+  },
+  "Malappuram": {
+    "Eranad": ["Manjeri Municipality", "Areekode Grama Panchayat", "Edavanna Grama Panchayat"],
+    "Tirurangadi": ["Tirurangadi Municipality", "Parappanangadi Grama Panchayat", "Thenhipalam Grama Panchayat"],
+    "Perinthalmanna": ["Perinthalmanna Municipality", "Angadippuram Grama Panchayat", "Mankada Grama Panchayat"]
+  }
+}

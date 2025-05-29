@@ -1369,3 +1369,20 @@ table.highlight > thead > tr > th {
   }
 }
 
+/* Accessibility: Skip Link */
+.skip-link {
+  position: absolute;
+  top: -40px; /* Position off-screen */
+  left: 0;
+  background: var(--primary-color);
+  color: var(--text-on-primary);
+  padding: var(--space-sm) var(--space-md);
+  z-index: var(--z-index-fixed); /* Ensure it's on top */
+  transition: top var(--transition-fast) var(--transition-timing);
+  border-radius: 0 0 var(--border-radius-sm) 0;
+  box-shadow: var(--shadow-md);
+}
+
+.skip-link:focus {
+  top: 0; /* Bring it into view on focus */
+}

@@ -5,8 +5,8 @@ from django.contrib import messages
 from django.urls import reverse_lazy
 from django.views.generic import TemplateView
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.http import Http404
-from .models import CustomUser
+# from .models import CustomUser # CustomUser not directly used here
+# from django.http import Http404 # Http404 not explicitly used here
 
 
 class AdminLoginView(LoginView):

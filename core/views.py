@@ -981,8 +981,6 @@ def download_sample_report_view(request, pk):
     # response = HttpResponse(content_type='application/pdf')
     # response['Content-Disposition'] = f'attachment; filename="report_{sample.sample_id}.pdf"'
     # ... PDF generation logic using the html_content ...
-    # response.write(pdf_content)
-    # return response
 
     # Create a file-like buffer to receive PDF data.
     buffer = BytesIO()

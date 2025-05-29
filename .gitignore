@@ -156,3 +156,7 @@ backups/
 # Keep example files but ignore actual env files
 !.env.example
 !.env.render
+
+# Added by cleanup
+waterlab_data.json
+myenv/

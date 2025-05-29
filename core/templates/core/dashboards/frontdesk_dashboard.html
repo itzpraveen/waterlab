@@ -1,4 +1,5 @@
 {% extends 'core/base.html' %}
+{% load core_extras %}
 
 {% block title %}Front Desk Dashboard - Water Lab LIMS{% endblock %}
 
@@ -93,7 +94,7 @@
             {% if samples_by_status %}
                 {% for status in samples_by_status %}
                 <div class="status-item">
-                    <span class="status-label">{{ status.current_status|capfirst|replace:"_":" " }}:</span>
+                    <span class="status-label">{{ status.current_status|capfirst|replace:"_," }}:</span>
                     <span class="status-value">{{ status.count }}</span>
                 </div>
                 {% endfor %}
