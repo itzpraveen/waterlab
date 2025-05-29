@@ -19,7 +19,12 @@
   "malappuram": {
     "Eranad": ["Manjeri Municipality", "Areekode Grama Panchayat", "Edavanna Grama Panchayat"],
     "Tirurangadi": ["Tirurangadi Municipality", "Parappanangadi Grama Panchayat", "Thenhipalam Grama Panchayat"],
-    "Perinthalmanna": ["Perinthalmanna Municipality", "Angadippuram Grama Panchayat", "Mankada Grama Panchayat"]
+    "Perinthalmanna": ["Perinthalmanna Municipality", "Angadippuram Grama Panchayat", "Mankada Grama Panchayat"],
+    "Kondotty": [
+      "Vazhakkad Grama Panchayat",
+      "Pulikkal Grama Panchayat",
+      "Vazhayur Grama Panchayat"
+    ]
   },
   "kollam": {
     "Kollam Taluk": ["Kollam Corporation", "Paravur Municipality", "Mayyanad Grama Panchayat"],

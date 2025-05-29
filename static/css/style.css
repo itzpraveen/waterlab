@@ -483,7 +483,16 @@ nav ul a.active:hover,
 }
 
 .btn-floating i {
-  line-height: inherit;
+  /* line-height: inherit; */ /* Overridden by flex properties below */
+  width: 100%; /* Ensure the icon container takes full width of the button */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* font-size: 24px; /* Default for material icons, adjust if btn-small needs smaller */
+}
+
+.btn-floating.btn-small i.material-icons {
+  font-size: 18px; /* Slightly smaller icon for smaller button */
 }
 
 .btn-group {
@@ -1385,4 +1394,23 @@ table.highlight > thead > tr > th {
 
 .skip-link:focus {
   top: 0; /* Bring it into view on focus */
+}
+
+/* Materialize Datepicker Year Visibility Fix */
+.datepicker-container.modal-content { /* Ensure container isn't cutting off content */
+  overflow: visible !important; 
+}
+
+.datepicker-controls .select-year input.select-dropdown { /* Make year dropdown wider */
+  min-width: 80px !important; 
+}
+
+.datepicker-table-wrapper { /* Ensure table doesn't cause overflow issues for dropdowns */
+  overflow: visible !important;
+}
+
+.datepicker-year-options { /* Ensure year dropdown list is visible */
+  max-height: 200px !important; /* Adjust if necessary */
+  overflow-y: auto !important;
+  z-index: 1005 !important; /* Ensure it's above other datepicker elements */
 }

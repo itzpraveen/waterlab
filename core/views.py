@@ -442,6 +442,10 @@ class CustomerListView(ListView):
     model = Customer
     template_name = 'core/customer_list.html'
     context_object_name = 'customers'
+    # LoginRequiredMixin should be added to views that require a logged-in user.
+    # For CustomerListView, assuming it's a public or semi-public list, 
+    # it might not need login. If it does, LoginRequiredMixin should be added.
+    # For now, leaving as is, as the primary issue is with SampleListView.
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -491,7 +495,7 @@ class CustomerUpdateView(AuditMixin, FrontDeskRequiredMixin, UpdateView):
         context['is_edit'] = True
         return context
 
-class SampleListView(ListView):
+class SampleListView(LoginRequiredMixin, ListView): # Added LoginRequiredMixin
     model = Sample
     template_name = 'core/sample_list.html'
     context_object_name = 'samples'

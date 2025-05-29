@@ -69,8 +69,8 @@
         </div>
 
         <div id="sample-list-container">
-            {% if samples %}
-            <div class="table-responsive mobile-table-card fade-in" id="sample-table-wrapper">
+            <div class="table-responsive mobile-table-card" id="sample-table-wrapper"{% if not samples %} style="display: none;"{% endif %}> {# Removed fade-in class #}
+                {% if samples %}
                 <table class="highlight responsive-table" id="sample-table">
                     <thead>
                         <tr>
@@ -149,20 +149,24 @@
                         {% endfor %}
                     </tbody>
                 </table>
-            </div>
+                {% endif %} {# End of if samples for table content #}
+            </div> {# End of sample-table-wrapper #}
             
-            <div class="text-center text-muted mt-4">
-                <small>Showing {{ samples|length }} sample{{ samples|length|pluralize }}</small>
-            </div>
-            
-            {% else %}
-            <div id="no-samples-message" class="text-center p-5 fade-in">
-                <i class="material-icons" style="font-size: 5rem; color: var(--primary-color-light);">flask_outline</i> <!-- Assuming flask_outline or similar icon -->
+            <div id="no-samples-message" class="text-center p-5 fade-in"{% if samples %} style="display: none;"{% endif %}>
+                {% if not samples %}
+                {# This content is shown if Django's samples variable is empty #}
+                <i class="material-icons" style="font-size: 5rem; color: var(--primary-color-light);">flask_outline</i>
                 <h5 class="mt-3" style="color: var(--text-color-medium);">No Samples Found</h5>
                 <p style="color: var(--text-color-light);">There are currently no samples matching your criteria, or no samples have been added yet.</p>
                 {% if user.is_frontdesk or user.is_admin %}
                     <a href="{% url 'core:sample_add' %}" class="btn waves-effect waves-light mt-3"><i class="material-icons left">add_task</i>Add First Sample</a>
                 {% endif %}
+                {% endif %} {# End of initial content for no-samples-message #}
+            </div>
+
+            {% if samples %}
+            <div class="text-center text-muted mt-4">
+                <small>Showing {{ samples|length }} sample{{ samples|length|pluralize }}</small>
             </div>
             {% endif %}
         </div>
@@ -183,8 +187,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const searchInput = document.getElementById('sample-search');
     const statusFilter = document.getElementById('status-filter');
-    const sampleTableBody = document.querySelector('#sample-table tbody');
-    const allRows = sampleTableBody ? Array.from(sampleTableBody.querySelectorAll('tr')) : [];
+    // Note: allRows will now be queried inside filterTableRows
+    // sampleTableBody will be queried inside filterTableRows and the initial setup block
     const loadingIndicator = document.getElementById('loading-indicator');
     const sampleListContainer = document.getElementById('sample-list-container');
     const noSamplesMessage = document.getElementById('no-samples-message'); // Assuming you have this element
@@ -217,28 +221,56 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
     function filterTableRows() {
-        if (!sampleTableBody) return;
+        const sampleTableBody = document.querySelector('#sample-table tbody'); // Query fresh inside function
 
+        if (!sampleTableBody) {
+            // This handles cases where the table or tbody might not exist,
+            // e.g., if Django context 'samples' was empty and the table wasn't rendered.
+            if (noSamplesMessage && sampleTableWrapper) {
+                if (sampleTableWrapper) sampleTableWrapper.style.display = 'none';
+                noSamplesMessage.innerHTML = `
+                    <i class="material-icons" style="font-size: 5rem; color: var(--primary-color-light);">flask_outline</i>
+                    <h5 class="mt-3" style="color: var(--text-color-medium);">No Samples Yet</h5>
+                    <p style="color: var(--text-color-light);">Start by adding your first sample to the system.</p>
+                    {% if user.is_frontdesk or user.is_admin %}
+                        <a href="{% url 'core:sample_add' %}" class="btn waves-effect waves-light mt-3"><i class="material-icons left">add_task</i>Add First Sample</a>
+                    {% endif %}
+                `;
+                noSamplesMessage.style.display = 'block';
+            }
+            return;
+        }
+        
+        const currentRows = Array.from(sampleTableBody.querySelectorAll('tr')); // Query rows each time
         const searchTerm = searchInput.value.toLowerCase();
         const selectedStatus = statusFilter.value;
         let visibleRows = 0;
 
-        allRows.forEach(row => {
-            const textContent = row.textContent.toLowerCase();
-            const statusMatches = !selectedStatus || row.getAttribute('data-status') === selectedStatus;
-            const searchMatches = !searchTerm || textContent.includes(searchTerm);
-
-            if (statusMatches && searchMatches) {
+        if (searchTerm === "" && selectedStatus === "") {
+            currentRows.forEach(row => {
                 row.style.display = '';
-                visibleRows++;
-            } else {
-                row.style.display = 'none';
-            }
-        });
+            });
+            visibleRows = currentRows.length;
+        } else {
+            currentRows.forEach(row => {
+                const textContent = row.textContent.toLowerCase();
+                const statusMatches = !selectedStatus || row.getAttribute('data-status') === selectedStatus;
+                const searchMatches = !searchTerm || textContent.includes(searchTerm);
+
+                if (statusMatches && searchMatches) {
+                    row.style.display = '';
+                    visibleRows++;
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        }
         
-        // Handle no results message after filtering
         if (noSamplesMessage && sampleTableWrapper) {
-            if (visibleRows === 0 && allRows.length > 0) { // Only show if there were rows to begin with
+            if (visibleRows > 0) {
+                 sampleTableWrapper.style.display = 'block';
+                 noSamplesMessage.style.display = 'none';
+            } else if (currentRows.length > 0 && visibleRows === 0) {
                 sampleTableWrapper.style.display = 'none';
                 noSamplesMessage.innerHTML = `
                     <i class="material-icons" style="font-size: 5rem; color: var(--primary-color-light);">search_off</i>
@@ -246,10 +278,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     <p style="color: var(--text-color-light);">Try adjusting your search terms or filters.</p>
                 `;
                 noSamplesMessage.style.display = 'block';
-            } else if (allRows.length > 0) { // If there are rows and some are visible
-                 sampleTableWrapper.style.display = 'block'; // or 'table' or initial display type
-                 noSamplesMessage.style.display = 'none';
-            } else if (allRows.length === 0) { // Original no samples message
+            } else if (currentRows.length === 0) {
                  sampleTableWrapper.style.display = 'none';
                  noSamplesMessage.innerHTML = `
                     <i class="material-icons" style="font-size: 5rem; color: var(--primary-color-light);">flask_outline</i>
@@ -269,16 +298,40 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     if (statusFilter) {
-        statusFilter.addEventListener('change', filterTableRows);
+        // Delay attaching the event listener and the initial call to filterTableRows
+        // to ensure Materialize Select is fully initialized and its value is stable.
+        setTimeout(function() {
+            statusFilter.addEventListener('change', filterTableRows);
+            // Call filterTableRows once after this delay.
+            // This ensures that if Materialize Select initialization triggered any
+            // intermediate states, our function now sets the view based on stable, final values.
+            // The filterTableRows function is designed to show all rows if filters are empty.
+            filterTableRows();
+        }, 250); // Increased delay to 250ms
+    } else if (searchInput) {
+        // If only search input exists, call filterTableRows once in case it has a default value (unlikely for this app)
+        // or to ensure consistent handling of the noSamplesMessage.
+        filterTableRows();
     }
     
-    // Initial filter call in case of pre-filled filters or to handle initial no-samples message
-    if (allRows.length > 0) {
-        filterTableRows();
-    } else if (noSamplesMessage && sampleTableWrapper) {
-        sampleTableWrapper.style.display = 'none';
+    // Initial setup for "no samples" message if Django rendered an empty list.
+    // This runs once on load. filterTableRows() will manage this message during filtering.
+    const freshSampleTableBodyForInitialCheck = document.querySelector('#sample-table tbody');
+    const initialRows = freshSampleTableBodyForInitialCheck ? Array.from(freshSampleTableBodyForInitialCheck.querySelectorAll('tr')) : [];
+    if (initialRows.length === 0 && noSamplesMessage) { // sampleTableWrapper might not exist if no samples
+        if (sampleTableWrapper) sampleTableWrapper.style.display = 'none';
+        noSamplesMessage.innerHTML = `
+            <i class="material-icons" style="font-size: 5rem; color: var(--primary-color-light);">flask_outline</i>
+            <h5 class="mt-3" style="color: var(--text-color-medium);">No Samples Yet</h5>
+            <p style="color: var(--text-color-light);">Start by adding your first sample to the system.</p>
+            {% if user.is_frontdesk or user.is_admin %}
+                <a href="{% url 'core:sample_add' %}" class="btn waves-effect waves-light mt-3"><i class="material-icons left">add_task</i>Add First Sample</a>
+            {% endif %}
+        `;
         noSamplesMessage.style.display = 'block';
     }
+    // If initialRows.length > 0, Django renders the table visible, and noSamplesMessage hidden.
+    // The delayed call to filterTableRows will then confirm this state or adjust if filters were pre-filled (not applicable here).
 });
 </script>
 {% endblock %}

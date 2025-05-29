@@ -73,17 +73,19 @@
                             <span class="new badge" style="background-color: var(--primary-color); color: var(--text-on-primary);" data-badge-caption="sample{{ customer.samples.count|pluralize }}">{{ customer.samples.count }}</span>
                         </td>
                         <td class="center-align">
-                            <a href="{% url 'core:customer_detail' pk=customer.customer_id %}" class="btn-floating btn-small waves-effect waves-light tooltipped" style="background-color: var(--primary-color);" data-position="top" data-tooltip="View Details">
-                                <i class="material-icons">visibility</i>
-                            </a>
-                            {% if user.is_frontdesk or user.is_admin %}
-                                <a href="{% url 'core:customer_edit' pk=customer.customer_id %}" class="btn-floating btn-small waves-effect waves-light tooltipped" style="background-color: var(--warning-color);" data-position="top" data-tooltip="Edit Customer">
-                                    <i class="material-icons">edit</i>
+                            <div style="display: flex; justify-content: center; align-items: center; gap: 5px;">
+                                <a href="{% url 'core:customer_detail' pk=customer.customer_id %}" class="btn-floating btn-small waves-effect waves-light tooltipped" style="background-color: var(--primary-color);" data-position="top" data-tooltip="View Details">
+                                    <i class="material-icons">visibility</i>
                                 </a>
-                                <a href="{% url 'core:sample_add' %}?customer={{ customer.customer_id }}" class="btn-floating btn-small waves-effect waves-light tooltipped" style="background-color: var(--success-color);" data-position="top" data-tooltip="Add Sample">
-                                    <i class="material-icons">colorize</i>
-                                </a>
-                            {% endif %}
+                                {% if user.is_frontdesk or user.is_admin %}
+                                    <a href="{% url 'core:customer_edit' pk=customer.customer_id %}" class="btn-floating btn-small waves-effect waves-light tooltipped" style="background-color: var(--warning-color);" data-position="top" data-tooltip="Edit Customer">
+                                        <i class="material-icons">edit</i>
+                                    </a>
+                                    <a href="{% url 'core:sample_add' %}?customer={{ customer.customer_id }}" class="btn-floating btn-small waves-effect waves-light tooltipped" style="background-color: var(--success-color);" data-position="top" data-tooltip="Add Sample">
+                                        <i class="material-icons">colorize</i>
+                                    </a>
+                                {% endif %}
+                            </div>
                         </td>
                     </tr>
                     {% endfor %}
