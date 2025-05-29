@@ -91,10 +91,17 @@
         margin-bottom: 8px;
         display: flex;
         align-items: center;
+        justify-content: center; /* Center icon and text horizontally */
     }
     .login-card .card-title i {
         margin-right: 10px; /* Space between icon and text */
-        font-size: 1.6rem; /* Icon size */
+        font-size: 1.3rem; /* Match text font-size */
+        line-height: 1; /* Normalize line height */
+        position: relative; /* For transform */
+        transform: translateY(-0.5px); /* Very subtle nudge */
+    }
+    .login-card .card-title span {
+        /* No specific styles, will align as flex item */
     }
     .login-card .card-description {
         font-size: 0.9rem; /* Adjusted size */
@@ -182,7 +189,7 @@
             <a href="{% url 'core:user_login' %}" class="black-text">
                 <div class="card login-card staff-card hoverable">
                     <div class="card-content">
-                        <span class="card-title"><i class="material-icons">person_outline</i>Staff Login</span>
+                        <span class="card-title"><i class="material-icons">person_outline</i><span>Staff Login</span></span>
                         <p class="card-description">
                             Lab technicians, front desk staff, and consultants.
                         </p>
