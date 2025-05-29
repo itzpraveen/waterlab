@@ -86,11 +86,8 @@ class SecureLogoutView(LogoutView):
             messages.info(request, f'Goodbye {request.user.username}! You have been logged out securely.')
         return super().dispatch(request, *args, **kwargs)
     
-    def get_next_page(self):
-        # Redirect to appropriate login page based on user type
-        if self.request.user.is_authenticated and self.request.user.is_admin():
-            return reverse_lazy('core:admin_login')
-        return reverse_lazy('core:user_login')
+    # By removing get_next_page, it will use the LOGOUT_REDIRECT_URL from settings.
+    # The next_page attribute is also not set, so settings.LOGOUT_REDIRECT_URL will be the fallback.
 
 
 class DashboardView(LoginRequiredMixin, TemplateView):
