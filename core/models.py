@@ -9,9 +9,18 @@ from django.utils import timezone
 
 # Validator for Kerala PIN Codes
 def validate_kerala_pincode(value):
-    if not (670001 <= int(value) <= 695615):
+    try:
+        pincode_int = int(value)
+        if not (670001 <= pincode_int <= 695615):
+            raise ValidationError(
+                f'{value} is not a valid Kerala PIN code (must be between 670001 and 695615).'
+            )
+    except ValueError:
+        # This will be raised if value is not a valid integer string.
+        # The RegexValidator on the field should catch non-digit formats,
+        # but this makes the custom validator more robust.
         raise ValidationError(
-            f'{value} is not a valid Kerala PIN code (must be between 670001 and 695615).'
+            f'{value} is not a valid PIN code format (must be 6 digits).'
         )
 
 class CustomUser(AbstractUser):
@@ -146,7 +155,8 @@ class Sample(models.Model):
         ('CANCELLED', 'Cancelled'),
     ]
 
-    sample_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    sample_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, help_text="Primary key UUID")
+    display_id = models.CharField(max_length=20, unique=True, blank=True, null=False, editable=False, help_text="Human-readable Sample ID (e.g., WL2025-0001)") # null=False added
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name='samples')
     collection_datetime = models.DateTimeField()
     sample_source = models.CharField(max_length=50, choices=SAMPLE_SOURCE_CHOICES)
@@ -157,11 +167,33 @@ class Sample(models.Model):
     current_status = models.CharField(max_length=50, choices=SAMPLE_STATUS_CHOICES, default='RECEIVED_FRONT_DESK')
 
     def __str__(self):
-        return f"{self.sample_id} - {self.customer.name}"
-    
+        return self.display_id if self.display_id else str(self.sample_id)
+
+    def save(self, *args, **kwargs):
+        if not self.display_id:
+            current_year = timezone.now().year
+            prefix = f"WL{current_year}-"
+            
+            # Get the last sample created this year to determine the next sequence number
+            last_sample_this_year = Sample.objects.filter(display_id__startswith=prefix).order_by('display_id').last()
+            
+            if last_sample_this_year and last_sample_this_year.display_id:
+                try:
+                    last_sequence = int(last_sample_this_year.display_id.split('-')[-1])
+                    new_sequence = last_sequence + 1
+                except (IndexError, ValueError):
+                    # Fallback if parsing fails, though unlikely with the new format
+                    new_sequence = 1 
+            else:
+                new_sequence = 1
+            
+            self.display_id = f"{prefix}{new_sequence:04d}" # Padded to 4 digits
+
+        super().save(*args, **kwargs) # Call the "real" save() method.
+
     def clean(self):
         from django.core.exceptions import ValidationError
-        from django.utils import timezone
+        # from django.utils import timezone # Already imported at the top
         
         # Validate collection datetime is not in the future
         if self.collection_datetime and self.collection_datetime > timezone.now():
@@ -273,7 +305,7 @@ class TestResult(models.Model):
         unique_together = ('sample', 'parameter') # Ensure one result per parameter per sample
 
     def __str__(self):
-        return f"Result for {self.sample.sample_id} - {self.parameter.name}: {self.result_value}"
+        return f"Result for {self.sample.display_id} - {self.parameter.name}: {self.result_value}"
     
     def clean(self):
         from django.core.exceptions import ValidationError
@@ -304,7 +336,7 @@ class TestResult(models.Model):
     
     def is_within_limits(self):
         """Check if result is within permissible limits"""
-        if not self.parameter:
+        if self.parameter_id is None: # Check FK ID directly
             return None
             
         try:
@@ -322,7 +354,7 @@ class TestResult(models.Model):
     
     def get_limit_status(self):
         """Get status of result relative to limits"""
-        if not self.parameter:
+        if self.parameter_id is None: # Check FK ID directly
             return "UNKNOWN"
             
         try:
@@ -352,7 +384,7 @@ class ConsultantReview(models.Model):
     review_date = models.DateTimeField(auto_now_add=True) # Or auto_now=True if it should update on every save
 
     def __str__(self):
-        return f"Review for {self.sample.sample_id} by {self.reviewer.username if self.reviewer else 'N/A'}"
+        return f"Review for {self.sample.display_id} by {self.reviewer.username if self.reviewer else 'N/A'}"
     
     def clean(self):
         from django.core.exceptions import ValidationError
