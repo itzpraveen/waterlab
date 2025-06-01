@@ -956,134 +956,258 @@ def download_sample_report_view(request, pk):
     # For a real implementation, you'd use a library like ReportLab, WeasyPrint, or xhtml2pdf
     # to generate a PDF file and return it in the HttpResponse.
     
-    # Example: Basic HTML content for the report (to be rendered to PDF later)
-    report_html_content = f"""
-    <html>
-        <head><title>Test Report - {sample.sample_id}</title></head>
-        <body>
-            <h1>Test Report</h1>
-            <p><strong>Sample ID:</strong> {sample.sample_id}</p>
-            <p><strong>Customer:</strong> {sample.customer.name}</p>
-            <p><strong>Collection Date:</strong> {sample.collection_datetime}</p>
-            <p><strong>Sample Source:</strong> {sample.get_sample_source_display()}</p>
-            <hr>
-            <h2>Results:</h2>
-            <ul>
-    """
-    for result in sample.results.all():
-        report_html_content += f"<li>{result.parameter.name}: {result.result_value} {result.parameter.unit}</li>"
-    
-    report_html_content += """
-            </ul>
-            <hr>
-            <p><em>Report generated on: {timezone.now()}</em></p>
-            <p style='color: red; font-weight: bold;'>NOTE: This is a placeholder. PDF generation is pending implementation.</p>
-        </body>
-    </html>
-    """
-    # In a real scenario, you would render this HTML to a PDF
-    # response = HttpResponse(content_type='application/pdf')
-    # response['Content-Disposition'] = f'attachment; filename="report_{sample.sample_id}.pdf"'
-    # ... PDF generation logic using the html_content ...
+    import os
+    from django.conf import settings
+    from reportlab.lib.utils import ImageReader
+    from reportlab.lib import colors
 
-    # Create a file-like buffer to receive PDF data.
     buffer = BytesIO()
-
-    # Create the PDF object, using the buffer as its "file."
     p = canvas.Canvas(buffer, pagesize=letter)
-
-    # Set up document properties
     p.setTitle(f"Test Report - {sample.sample_id}")
 
-    # --- Draw things on the PDF ---
-    # Start drawing from the top of the page
-    y_position = 10 * inch  # Start 1 inch from the top
+    # Define margins and dimensions
+    left_margin = 1 * inch
+    right_margin = 7.5 * inch # Page width (8.5 inch) - 1 inch right margin
+    top_margin = 10 * inch # Start 1 inch from top (11 inch page height)
+    bottom_margin = 0.75 * inch
+    content_width = right_margin - left_margin
+    
+    # Colors
+    header_color = colors.HexColor("#007cba") # Biofix Blue
+    table_header_bg = colors.HexColor("#E0E0E0")
+    table_row_light = colors.white
+    table_row_dark = colors.HexColor("#F5F5F5")
+    line_color = colors.grey
 
-    # Title
-    p.setFont("Helvetica-Bold", 16)
-    p.drawString(1 * inch, y_position, "Water Quality Test Report")
-    y_position -= 0.5 * inch
+    # --- Header Section ---
+    y_position = top_margin
 
-    # Sample Information
-    p.setFont("Helvetica", 12)
-    p.drawString(1 * inch, y_position, f"Sample ID: {sample.sample_id}")
-    y_position -= 0.3 * inch
-    p.drawString(1 * inch, y_position, f"Customer: {sample.customer.name}")
-    y_position -= 0.3 * inch
-    p.drawString(1 * inch, y_position, f"Collection Date: {sample.collection_datetime.strftime('%Y-%m-%d %H:%M')}")
-    y_position -= 0.3 * inch
-    p.drawString(1 * inch, y_position, f"Sample Source: {sample.get_sample_source_display()}")
-    y_position -= 0.5 * inch
+    # Logo
+    logo_path = os.path.join(settings.BASE_DIR, 'static', 'images', 'biofix_logo.png')
+    logo_height_actual = 0
+    if os.path.exists(logo_path):
+        logo = ImageReader(logo_path)
+        logo_width = 1.5 * inch
+        logo_height_actual = 0.65 * inch # Reduced from 0.75 inch
+        p.drawImage(logo, left_margin, y_position - logo_height_actual, width=logo_width, height=logo_height_actual, mask='auto')
+    
+    # Report Title
+    p.setFont("Helvetica-Bold", 18)
+    p.setFillColor(header_color)
+    title_text = "Water Quality Test Report"
+    title_text_width = p.stringWidth(title_text, "Helvetica-Bold", 18)
+    
+    if os.path.exists(logo_path):
+        # Position title to the right of the logo, vertically centered with logo's visual center
+        title_x = left_margin + logo_width + 0.50 * inch # Increased gap from 0.40 to 0.50
+        title_font_size = 18
+        # Estimate ascent/descent to better center. For Helvetica, ascent is ~0.72*fontSize, descent ~0.22*fontSize. Height ~0.94*fontSize.
+        # Or, more simply, position baseline of title slightly below visual center of logo.
+        title_y = y_position - (logo_height_actual / 2) - (title_font_size * 0.45) # Increased downward offset for title
+        p.drawString(title_x, title_y, title_text)
+        y_position -= (logo_height_actual + 0.40 * inch) # Space after logo area + title
+    else:
+        # Center title if no logo
+        title_x = left_margin + (content_width - title_text_width) / 2
+        p.drawString(title_x, y_position - 0.3 * inch, title_text)
+        y_position -= (0.5 * inch + 0.40 * inch) # Increased space after title area from 0.35 to 0.40
 
-    # Horizontal line
-    p.line(1 * inch, y_position, 7.5 * inch, y_position)
-    y_position -= 0.3 * inch
+    # Horizontal line below header - increased spacing
+    p.setStrokeColor(header_color)
+    p.setLineWidth(2)
+    p.line(left_margin, y_position, right_margin, y_position)
+    y_position -= 0.4 * inch # Increased from 0.3 inch
+    p.setFillColor(colors.black) # Reset fill color
 
-    # Test Results Header
-    p.setFont("Helvetica-Bold", 14)
-    p.drawString(1 * inch, y_position, "Test Results:")
-    y_position -= 0.4 * inch
-
-    # Table Headers
-    p.setFont("Helvetica-Bold", 10)
-    col_widths = [2.5 * inch, 1.5 * inch, 1.5 * inch, 1 * inch]
-    current_x = 1 * inch
-    headers = ["Parameter", "Result", "Unit", "Limits"]
-    for i, header in enumerate(headers):
-        p.drawString(current_x, y_position, header)
-        current_x += col_widths[i]
-    y_position -= 0.15 * inch
-    p.line(1 * inch, y_position, 7.5 * inch, y_position) # Line under headers
+    # --- Sample Information Section ---
+    p.setFont("Helvetica-Bold", 12)
+    p.drawString(left_margin, y_position, "Sample Information")
     y_position -= 0.25 * inch
     
+    info_texts = [
+        (f"Sample ID:", f"{sample.sample_id}"),
+        (f"Customer Name:", f"{sample.customer.name}"),
+        (f"Collection Date:", f"{sample.collection_datetime.strftime('%Y-%m-%d %H:%M')}"),
+        (f"Sample Source:", f"{sample.get_sample_source_display()}"),
+        (f"Received Date:", f"{sample.date_received_at_lab.strftime('%Y-%m-%d %H:%M') if sample.date_received_at_lab else 'N/A'}"),
+        (f"Report Date:", f"{timezone.now().strftime('%Y-%m-%d')}"),
+    ]
+    
     p.setFont("Helvetica", 10)
-    for result in sample.results.all().select_related('parameter'):
-        if y_position < 1 * inch: # Check for page break
-            p.showPage()
-            p.setFont("Helvetica", 10)
-            y_position = 10 * inch # Reset y_position for new page (adjust as needed)
-             # Redraw headers on new page if needed (optional)
+    line_height = 0.20 * inch
+    
+    # Single column layout for sample info
+    label_value_gap = 0.1 * inch
+    for label, value in info_texts:
+        p.setFont("Helvetica-Bold", 10)
+        p.drawString(left_margin, y_position, label)
+        label_width = p.stringWidth(label, "Helvetica-Bold", 10)
+        
+        p.setFont("Helvetica", 10)
+        p.drawString(left_margin + label_width + label_value_gap, y_position, value)
+        y_position -= line_height
 
-        current_x = 1 * inch
+    y_position -= 0.1 * inch # Extra padding after the info section
+
+
+    # --- Test Results Table ---
+    p.setFont("Helvetica-Bold", 12)
+    p.drawString(left_margin, y_position, "Test Results")
+    y_position -= 0.3 * inch
+
+    # Table Headers
+    table_headers = ["Parameter", "Result", "Unit", "Permissible Limits", "Method"]
+    # Sum of col_widths should be content_width (6.5 inches)
+    # Adjusted: Parameter reduced, Unit increased, Permissible Limits reduced
+    col_widths = [1.8 * inch, 0.8 * inch, 1.2 * inch, 1.7 * inch, 1.0 * inch] 
+    
+    # Draw table header background and text
+    p.setFillColor(table_header_bg)
+    p.rect(left_margin, y_position - 0.25 * inch, content_width, 0.25 * inch, stroke=0, fill=1) # Use content_width
+    p.setFillColor(colors.black)
+    p.setFont("Helvetica-Bold", 9)
+    current_x = left_margin
+    for i, header in enumerate(table_headers):
+        p.drawString(current_x + 0.05 * inch, y_position - 0.18 * inch, header) # Small padding
+        current_x += col_widths[i]
+    y_position -= 0.25 * inch # Height of header row
+
+    # Table Grid Lines (Horizontal under header)
+    p.setStrokeColor(line_color)
+    p.setLineWidth(0.5)
+    p.line(left_margin, y_position, right_margin, y_position)
+    y_position -= 0.05 * inch # Small gap
+
+    # Table Rows
+    p.setFont("Helvetica", 9)
+    row_height = 0.25 * inch
+    results_data = sample.results.all().select_related('parameter')
+    
+    for i, result in enumerate(results_data):
+        if y_position - row_height < bottom_margin + 0.5 * inch: # Check for page break (leave space for footer)
+            # --- Footer for current page ---
+            p.setFont("Helvetica-Oblique", 8)
+            p.setStrokeColor(line_color)
+            p.line(left_margin, bottom_margin + 0.15*inch, right_margin, bottom_margin + 0.15*inch)
+            p.drawString(left_margin, bottom_margin, f"Report Generated: {timezone.now().strftime('%Y-%m-%d %H:%M:%S')}")
+            p.drawRightString(right_margin, bottom_margin, f"Page {p.getPageNumber()}")
+            
+            p.showPage() # New page
+            y_position = top_margin - 0.5 * inch # Reset y_position, leave space for potential page header
+            p.setFont("Helvetica", 9) # Reset font
+
+            # Optional: Redraw table headers on new page
+            p.setFillColor(table_header_bg)
+            p.rect(left_margin, y_position - 0.25 * inch, content_width, 0.25 * inch, stroke=0, fill=1) # Use content_width
+            p.setFillColor(colors.black)
+            p.setFont("Helvetica-Bold", 9)
+            current_x_header = left_margin
+            for k, header_text in enumerate(table_headers):
+                p.drawString(current_x_header + 0.05 * inch, y_position - 0.18 * inch, header_text)
+                current_x_header += col_widths[k]
+            y_position -= 0.25 * inch
+            p.setStrokeColor(line_color)
+            p.line(left_margin, y_position, right_margin, y_position)
+            y_position -= 0.05 * inch
+            p.setFont("Helvetica", 9)
+
+
+        # Alternating row color
+        row_color = table_row_light if i % 2 == 0 else table_row_dark
+        p.setFillColor(row_color)
+        p.rect(left_margin, y_position - row_height, content_width, row_height, stroke=0, fill=1) # Use content_width
+        p.setFillColor(colors.black)
+
+        current_x = left_margin
         
         # Parameter Name
-        p.drawString(current_x, y_position, result.parameter.name)
+        p.drawString(current_x + 0.05 * inch, y_position - 0.18 * inch, result.parameter.name)
         current_x += col_widths[0]
         
-        # Result Value
-        p.drawString(current_x, y_position, str(result.result_value))
+        # Result Value - Highlight if out of limits
+        is_out_of_limits = not result.is_within_limits()
+        if is_out_of_limits:
+            p.setFillColor(colors.red)
+            p.setFont("Helvetica-Bold", 9)
+        p.drawString(current_x + 0.05 * inch, y_position - 0.18 * inch, str(result.result_value))
+        if is_out_of_limits:
+            p.setFillColor(colors.black) # Reset color
+            p.setFont("Helvetica", 9)   # Reset font
         current_x += col_widths[1]
         
         # Unit
-        p.drawString(current_x, y_position, result.parameter.unit)
+        p.drawString(current_x + 0.05 * inch, y_position - 0.18 * inch, result.parameter.unit)
         current_x += col_widths[2]
         
         # Limits
         min_limit = result.parameter.min_permissible_limit
         max_limit = result.parameter.max_permissible_limit
-        limit_text = f"{min_limit if min_limit is not None else '-'} - {max_limit if max_limit is not None else '-'}"
-        p.drawString(current_x, y_position, limit_text)
-        
-        y_position -= 0.25 * inch
+        limit_text = f"{min_limit if min_limit is not None else '-'} to {max_limit if max_limit is not None else '-'}"
+        p.drawString(current_x + 0.05 * inch, y_position - 0.18 * inch, limit_text)
+        current_x += col_widths[3]
 
-    # Footer
-    y_position = 0.75 * inch # Position for footer
-    p.line(1 * inch, y_position + 0.1 * inch, 7.5 * inch, y_position + 0.1 * inch)
-    p.setFont("Helvetica-Oblique", 9)
-    p.drawString(1 * inch, y_position - 0.1 * inch, f"Report generated on: {timezone.now().strftime('%Y-%m-%d %H:%M:%S')}")
-    p.drawRightString(7.5 * inch, y_position - 0.1 * inch, f"Page {p.getPageNumber()}")
+        # Method (Placeholder, assuming it's on TestParameter model)
+        method = getattr(result.parameter, 'test_method', 'N/A') # Assuming 'test_method' field
+        p.drawString(current_x + 0.05 * inch, y_position - 0.18 * inch, method)
+
+        y_position -= row_height
+        # Horizontal line for each row
+        p.line(left_margin, y_position, right_margin, y_position)
 
 
-    # --- Close the PDF object cleanly ---
+    # --- Consultant Review Section (if applicable) ---
+    if hasattr(sample, 'review') and sample.review: # Check if review exists
+        review = sample.review
+        if review.status == 'APPROVED' and (review.comments or review.recommendations):
+            y_position -= 0.3 * inch
+            if y_position < bottom_margin + 1.5 * inch: # Check for page break
+                 # Footer for current page
+                p.setFont("Helvetica-Oblique", 8)
+                p.setStrokeColor(line_color)
+                p.line(left_margin, bottom_margin + 0.15*inch, right_margin, bottom_margin + 0.15*inch)
+                p.drawString(left_margin, bottom_margin, f"Report Generated: {timezone.now().strftime('%Y-%m-%d %H:%M:%S')}")
+                p.drawRightString(right_margin, bottom_margin, f"Page {p.getPageNumber()}")
+                p.showPage()
+                y_position = top_margin - 0.5 * inch
+            
+            p.setFont("Helvetica-Bold", 11)
+            p.drawString(left_margin, y_position, "Consultant's Remarks:")
+            y_position -= 0.25 * inch
+            
+            p.setFont("Helvetica", 9)
+            if review.comments:
+                p.drawString(left_margin, y_position, f"Comments: {review.comments}")
+                y_position -= 0.20 * inch
+            if review.recommendations:
+                 p.drawString(left_margin, y_position, f"Recommendations: {review.recommendations}")
+                 y_position -= 0.20 * inch
+            y_position -= 0.1 * inch # Extra space
+
+
+    # --- Final Footer ---
+    # Ensure footer is drawn even if no results or few results
+    if p.getPageNumber() == 1 and y_position > bottom_margin + 0.5 * inch : # If still on first page and content is short
+        pass # Footer will be drawn after showPage()
+    
+    p.setFont("Helvetica-Oblique", 8)
+    p.setStrokeColor(line_color)
+    p.line(left_margin, bottom_margin + 0.15*inch, right_margin, bottom_margin + 0.15*inch) # Line above footer text
+    p.drawString(left_margin, bottom_margin, f"Report Generated: {timezone.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    p.drawRightString(right_margin, bottom_margin, f"Page {p.getPageNumber()}")
+    
+    # Authorized Signatory (Placeholder)
+    signatory_y = bottom_margin + 0.5 * inch
+    if y_position > signatory_y + 0.5 * inch : # Only if there's space
+        p.setFont("Helvetica", 10)
+        p.drawRightString(right_margin, signatory_y, "Authorized Signatory")
+        p.line(right_margin - 2*inch, signatory_y - 0.05*inch, right_margin, signatory_y - 0.05*inch) # Signature line
+
     p.showPage()
     p.save()
 
-    # FileResponse sets the Content-Disposition header so that browsers
-    # present the option to save the file.
     buffer.seek(0)
     response = FileResponse(buffer, as_attachment=True, filename=f'report_{sample.sample_id}.pdf')
     
-    # Update sample status to REPORT_SENT if it was REPORT_APPROVED
     if sample.current_status == 'REPORT_APPROVED':
         try:
             sample.update_status('REPORT_SENT', request.user)
