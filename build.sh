@@ -5,6 +5,9 @@ set -o errexit
 # Install dependencies
 pip install -r requirements.txt
 
+# Run tests
+python manage.py test
+
 # Collect static files
 python manage.py collectstatic --noinput
 
