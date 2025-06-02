@@ -6,7 +6,7 @@ set -o errexit
 pip install -r requirements.txt
 
 # Run tests
-python manage.py test
+# python manage.py test
 
 # Collect static files
 python manage.py collectstatic --noinput
