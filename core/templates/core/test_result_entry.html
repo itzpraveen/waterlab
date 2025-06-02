@@ -57,9 +57,8 @@
                         <li>
                             <div class="collapsible-header grey lighten-4"><i class="material-icons">bug_report</i>Debug Information</div>
                             <div class="collapsible-body card-panel blue lighten-5 blue-text text-darken-4" style="padding:15px;">
-                                Tests Requested: {{ sample.tests_requested.count }}<br>
-                                Existing Results: {{ existing_results|length }}<br>
-                                Missing Tests: {{ missing_tests.count }}<br>
+                                Tests Requested (from sample model): {{ sample.tests_requested.count }}<br>
+                                Number of forms in form_data: {{ form_data|length }}<br>
                                 Can Edit: {{ can_edit }}<br>
                                 Sample Status: {{ sample.current_status }}
                             </div>
@@ -75,43 +74,43 @@
                         </div>
                     {% endif %}
                     
-                    {% for test_param in form_data %} {# Assuming form_data is passed from view with form fields #}
+                    {% for test_param_data in form_data.values %} {# Iterate over dictionary values #}
                     <div class="card" style="margin-bottom: 20px;">
                         <div class="card-content">
-                            <span class="card-title" style="color: var(--primary-color-dark); font-size:1.5rem;">{{ test_param.parameter.name }}</span>
+                            <span class="card-title" style="color: var(--primary-color-dark); font-size:1.5rem;">{{ test_param_data.parameter.name }}</span>
                             <div class="grey-text text-darken-2" style="font-size: 0.9rem; margin-bottom:10px;">
-                                <span><strong>Unit:</strong> {{ test_param.parameter.unit }}</span>
-                                {% if test_param.parameter.standard_method %}
-                                    <span style="margin-left:15px;"><strong>Method:</strong> {{ test_param.parameter.standard_method }}</span>
+                                <span><strong>Unit:</strong> {{ test_param_data.parameter.unit }}</span>
+                                {% if test_param_data.parameter.standard_method %}
+                                    <span style="margin-left:15px;"><strong>Method:</strong> {{ test_param_data.parameter.standard_method }}</span>
                                 {% endif %}
-                                {% if test_param.existing_result %}
-                                    <span class="green-text text-darken-1" style="margin-left:15px;"><strong>✓ Result Entered:</strong> {{ test_param.existing_result.result_value }}</span>
+                                {% if test_param_data.existing_result %}
+                                    <span class="green-text text-darken-1" style="margin-left:15px;"><strong>✓ Result Entered:</strong> {{ test_param_data.existing_result.result_value }}</span>
                                 {% endif %}
                             </div>
 
-                            {% if test_param.parameter.min_permissible_limit is not None or test_param.parameter.max_permissible_limit is not None %}
+                            {% if test_param_data.parameter.min_permissible_limit is not None or test_param_data.parameter.max_permissible_limit is not None %}
                             <div class="card-panel teal lighten-5" style="padding: 10px; margin-bottom:15px;">
                                 <strong class="teal-text text-darken-3">Permissible Range:</strong>
                                 <span class="chip teal white-text">
-                                    {% if test_param.parameter.min_permissible_limit is not None %}{{ test_param.parameter.min_permissible_limit }}{% endif %}
-                                    {% if test_param.parameter.min_permissible_limit is not None and test_param.parameter.max_permissible_limit is not None %} - {% endif %}
-                                    {% if test_param.parameter.max_permissible_limit is not None %}{{ test_param.parameter.max_permissible_limit }}{% endif %}
-                                    {{ test_param.parameter.unit }}
+                                    {% if test_param_data.parameter.min_permissible_limit is not None %}{{ test_param_data.parameter.min_permissible_limit }}{% endif %}
+                                    {% if test_param_data.parameter.min_permissible_limit is not None and test_param_data.parameter.max_permissible_limit is not None %} - {% endif %}
+                                    {% if test_param_data.parameter.max_permissible_limit is not None %}{{ test_param_data.parameter.max_permissible_limit }}{% endif %}
+                                    {{ test_param_data.parameter.unit }}
                                 </span>
                             </div>
                             {% endif %}
                             
                             <div class="row" style="margin-bottom:0;">
                                 <div class="input-field col s12 m6">
-                                    {{ test_param.form.result_value }}
-                                    <label for="{{ test_param.form.result_value.id_for_label }}">Result Value <span class="red-text">*</span></label>
-                                    {% if test_param.form.result_value.errors %}<span class="helper-text red-text">{{ test_param.form.result_value.errors.0 }}</span>{% endif %}
-                                    <span class="helper-text">Unit: {{ test_param.parameter.unit }}</span>
+                                    {{ test_param_data.form.result_value }}
+                                    <label for="{{ test_param_data.form.result_value.id_for_label }}">Result Value <span class="red-text">*</span></label>
+                                    {% if test_param_data.form.result_value.errors %}<span class="helper-text red-text">{{ test_param_data.form.result_value.errors.0 }}</span>{% endif %}
+                                    <span class="helper-text">Unit: {{ test_param_data.parameter.unit }}</span>
                                 </div>
                                 <div class="input-field col s12 m6">
-                                    {{ test_param.form.observation }}
-                                    <label for="{{ test_param.form.observation.id_for_label }}">Observation/Notes</label>
-                                    {% if test_param.form.observation.errors %}<span class="helper-text red-text">{{ test_param.form.observation.errors.0 }}</span>{% endif %}
+                                    {{ test_param_data.form.observation }}
+                                    <label for="{{ test_param_data.form.observation.id_for_label }}">Observation/Notes</label>
+                                    {% if test_param_data.form.observation.errors %}<span class="helper-text red-text">{{ test_param_data.form.observation.errors.0 }}</span>{% endif %}
                                 </div>
                             </div>
                         </div>
