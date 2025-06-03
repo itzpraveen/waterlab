@@ -9,7 +9,7 @@ The system is designed to support multiple user roles, facilitate efficient task
 ## 2. Technology Stack
 
 - **Backend:** Python with Django Framework
-- **Database:** PostgreSQL
+- **Database:** SQLite via `DATABASE_URL` by default. PostgreSQL is supported by setting the `DATABASE_URL` environment variable.
 - **Frontend:** (To be determined - likely React, Vue.js, or Angular, or Django templates)
 - **AI Model Interaction:** Planned via API
 
@@ -39,15 +39,10 @@ The following Django models have been defined in `core/models.py`:
 2.  **Set up a Python virtual environment** and activate it.
 3.  **Install dependencies:** `pip install -r requirements.txt` (A `requirements.txt` file will need to be created).
 4.  **Configure the database:**
-    -   Ensure PostgreSQL is running and configured.
-    -   The `waterlab/settings.py` is configured to connect to a PostgreSQL database named `waterlab` with a user `waterlab` and a password (see environment configuration) on `localhost:5432`.
-    -   You must ensure:
-        1.  Your PostgreSQL server is running.
-        2.  A database named `waterlab` exists. (e.g., `CREATE DATABASE waterlab;`)
-        3.  A user named `waterlab` exists with the appropriate password. (e.g., `CREATE USER waterlab WITH PASSWORD 'your_password_here';`)
-        4.  The `waterlab` user has all necessary privileges on the `waterlab` database. (e.g., `GRANT ALL PRIVILEGES ON DATABASE waterlab TO waterlab;`)
-        5.  If you encounter `FATAL: password authentication failed for user "waterlab"`, double-check the user's password and ensure your PostgreSQL server's `pg_hba.conf` file is configured to allow password authentication (e.g., `md5` or `scram-sha-256`) for the `waterlab` user from `localhost`. You might need to reload PostgreSQL configuration after changing `pg_hba.conf`.
-    -   If using different credentials, update the `DATABASES` setting in `waterlab/settings.py` accordingly.
+    -   The `.env` file sets `DATABASE_URL=sqlite:///db.sqlite3`, so SQLite works out of the box for development.
+    -   To use PostgreSQL, set the `DATABASE_URL` environment variable to your connection string (e.g., `postgres://user:password@host:port/dbname`).
+    -   `waterlab/settings.py` relies on `dj_database_url` and falls back to SQLite if `DATABASE_URL` is not provided.
+    -   When using PostgreSQL, ensure the server is running and the database referenced in `DATABASE_URL` exists.
 5.  **Apply database migrations:**
     ```bash
     python manage.py makemigrations
@@ -70,7 +65,7 @@ The following Django models have been defined in `core/models.py`:
 -   Core models (`Customer`, `Sample`, `TestParameter`, `TestResult`, `ConsultantReview`) defined.
 -   Models registered with the Django admin interface.
 -   Initial database migrations created.
--   Database connection is configured for PostgreSQL; migrations should be applied.
+-   Database configuration relies on `DATABASE_URL` via `dj_database_url`, with SQLite as the fallback. Apply migrations after choosing your database.
 
 ## 7. AI Integration Requirements (Summary)
 
