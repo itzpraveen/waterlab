@@ -185,7 +185,9 @@ const WaterLab = {
         } else {
             this.log(`updatePanchayatDropdown: District "${selectedDistrict}" or Taluk "${selectedTaluk}" not found, or no panchayats. Clearing panchayats.`);
             this.populateDropdown(panchayatSelect, [], 'Select Panchayat/Municipality');
+            panchayatSelect.disabled = true;
         }
+        M.FormSelect.init(panchayatSelect); // Re-initialize the panchayat dropdown
     },
 
     initAddressDropdowns: async function() {

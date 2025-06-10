@@ -76,20 +76,20 @@ class KeralaLocation(models.Model):
 
 class Customer(models.Model):
     KERALA_DISTRICTS = [
-        ('thiruvananthapuram', 'Thiruvananthapuram'),
-        ('kollam', 'Kollam'),
-        ('pathanamthitta', 'Pathanamthitta'),
-        ('alappuzha', 'Alappuzha'),
-        ('kottayam', 'Kottayam'),
-        ('idukki', 'Idukki'),
-        ('ernakulam', 'Ernakulam'),
-        ('thrissur', 'Thrissur'),
-        ('palakkad', 'Palakkad'),
-        ('malappuram', 'Malappuram'),
-        ('kozhikode', 'Kozhikode'),
-        ('wayanad', 'Wayanad'),
-        ('kannur', 'Kannur'),
-        ('kasaragod', 'Kasaragod'),
+        ('Thiruvananthapuram', 'Thiruvananthapuram'),
+        ('Kollam', 'Kollam'),
+        ('Pathanamthitta', 'Pathanamthitta'),
+        ('Alappuzha', 'Alappuzha'),
+        ('Kottayam', 'Kottayam'),
+        ('Idukki', 'Idukki'),
+        ('Ernakulam', 'Ernakulam'),
+        ('Thrissur', 'Thrissur'),
+        ('Palakkad', 'Palakkad'),
+        ('Malappuram', 'Malappuram'),
+        ('Kozhikode', 'Kozhikode'),
+        ('Wayanad', 'Wayanad'),
+        ('Kannur', 'Kannur'),
+        ('Kasaragod', 'Kasaragod'),
     ]
     
     customer_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -161,6 +161,7 @@ class Sample(models.Model):
     collection_datetime = models.DateTimeField()
     sample_source = models.CharField(max_length=50, choices=SAMPLE_SOURCE_CHOICES)
     collected_by = models.CharField(max_length=255) # Could be customer or lab personnel
+    referred_by = models.CharField(max_length=255, blank=True, null=True)
     # tests_requested will likely be a ManyToManyField to a TestParameter model
     tests_requested = models.ManyToManyField('TestParameter', blank=True, related_name='samples')
     date_received_at_lab = models.DateTimeField(null=True, blank=True)
@@ -284,6 +285,8 @@ class TestParameter(models.Model):
     standard_method = models.CharField(max_length=255, blank=True, null=True)
     min_permissible_limit = models.DecimalField(max_digits=10, decimal_places=3, null=True, blank=True)
     max_permissible_limit = models.DecimalField(max_digits=10, decimal_places=3, null=True, blank=True)
+    category = models.CharField(max_length=100, blank=True, null=True)
+    parent = models.ForeignKey('self', null=True, blank=True, on_delete=models.CASCADE, related_name='children')
     # descriptive_limit = models.CharField(max_length=255, blank=True, null=True, help_text="For text-based limits like 'Absent'") # Removed commented out field
 
 

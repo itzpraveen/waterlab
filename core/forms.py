@@ -63,78 +63,47 @@ class CustomerForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         
-        # Load address data
+        # Load address data for validation and pre-population
         try:
             with open('static/js/kerala_address_data.json', 'r') as f:
-                address_data = json.load(f)
+                self.address_data = json.load(f)
         except FileNotFoundError:
-            address_data = {}
-            # Consider logging this error or raising a more specific exception if the file is critical
-        
-        # Use KERALA_DISTRICTS from the model for district choices to ensure consistency (value, display_name)
-        # The first element is (value_to_store, display_name_in_dropdown)
-        # The value_to_store (e.g., 'thiruvananthapuram') must match keys in kerala_address_data.json
-        self.fields['district'] = forms.ChoiceField(
-            choices=[('', '---------')] + Customer.KERALA_DISTRICTS, # Using model's choices
-            widget=forms.Select(attrs={'class': 'form-control', 'id': 'id_district'}),
-            required=True 
-        )
-        # Taluk and Panchayat will be populated by JavaScript, so start with empty choices
-        # but ensure they are ChoiceFields so the submitted value is validated against choices (dynamically set by JS)
-        self.fields['taluk'] = forms.ChoiceField(
-            choices=[('', '---------')],
-            widget=forms.Select(attrs={'class': 'form-control', 'id': 'id_taluk', 'disabled': 'disabled'}), # Initially disabled
-            required=True 
-        )
-        self.fields['panchayat_municipality'] = forms.ChoiceField(
-            choices=[('', '---------')],
-            widget=forms.Select(attrs={'class': 'form-control', 'id': 'id_panchayat_municipality', 'disabled': 'disabled'}),
-            required=True 
-        )
-        
-        self.address_data = address_data
+            self.address_data = {}
 
-        # If form is bound with data, update choices for taluk and panchayat
-        # This ensures that the ChoiceField validation uses the correct dynamic choices.
+        # Correctly modify the choices of the fields created by ModelForm
+        self.fields['district'].choices = [('', '---------')] + Customer.KERALA_DISTRICTS
+        self.fields['taluk'].choices = [('', '---------')]
+        self.fields['panchayat_municipality'].choices = [('', '---------')]
+
+        # If form is bound with data (a POST request), set choices for validation
         if self.is_bound:
-            data = self.data or {} # Use self.data if available (POST), otherwise empty dict
-            
-            # Update Taluk choices based on submitted District
+            data = self.data
             district_val = data.get('district')
             if district_val and district_val in self.address_data:
                 taluk_keys = self.address_data[district_val].keys()
                 self.fields['taluk'].choices = [('', '---------')] + [(t, t) for t in taluk_keys]
-                self.fields['taluk'].widget.attrs.pop('disabled', None) # Enable if it was disabled
-
-                # Update Panchayat choices based on submitted District and Taluk
+                
                 taluk_val = data.get('taluk')
                 if taluk_val and taluk_val in self.address_data[district_val]:
                     panchayat_list = self.address_data[district_val][taluk_val]
                     self.fields['panchayat_municipality'].choices = [('', '---------')] + [(p, p) for p in panchayat_list]
-                    self.fields['panchayat_municipality'].widget.attrs.pop('disabled', None) # Enable
-                elif not taluk_val : # No taluk selected, keep panchayat disabled with default choice
-                    self.fields['panchayat_municipality'].choices = [('', '---------')]
-                    self.fields['panchayat_municipality'].widget.attrs['disabled'] = 'disabled'
 
-            elif not district_val: # No district selected, keep taluk and panchayat disabled
-                self.fields['taluk'].choices = [('', '---------')]
-                self.fields['taluk'].widget.attrs['disabled'] = 'disabled'
-                self.fields['panchayat_municipality'].choices = [('', '---------')]
-                self.fields['panchayat_municipality'].widget.attrs['disabled'] = 'disabled'
-
-        # If editing an existing instance, pre-populate choices based on instance data
+        # If editing an existing instance (a GET request for an existing object)
         elif self.instance and self.instance.pk:
             instance_district = self.instance.district
             if instance_district and instance_district in self.address_data:
                 taluk_keys = self.address_data[instance_district].keys()
                 self.fields['taluk'].choices = [('', '---------')] + [(t, t) for t in taluk_keys]
-                self.fields['taluk'].widget.attrs.pop('disabled', None)
-
+                
                 instance_taluk = self.instance.taluk
                 if instance_taluk and instance_taluk in self.address_data[instance_district]:
                     panchayat_list = self.address_data[instance_district][instance_taluk]
                     self.fields['panchayat_municipality'].choices = [('', '---------')] + [(p, p) for p in panchayat_list]
-                    self.fields['panchayat_municipality'].widget.attrs.pop('disabled', None)
+        
+        # For a new, unbound form, disable the dependent dropdowns
+        else:
+            self.fields['taluk'].widget.attrs['disabled'] = 'disabled'
+            self.fields['panchayat_municipality'].widget.attrs['disabled'] = 'disabled'
 
 
     def clean(self):
@@ -166,7 +135,7 @@ class CustomerForm(forms.ModelForm):
 class SampleForm(forms.ModelForm):
     class Meta:
         model = Sample
-        fields = ['customer', 'collection_datetime', 'sample_source', 'collected_by', 'tests_requested']
+        fields = ['customer', 'collection_datetime', 'sample_source', 'collected_by', 'referred_by', 'tests_requested']
         widgets = {
             'collection_datetime': forms.TextInput(attrs={
                 'class': 'form-control datepicker', # Changed type, added 'datepicker' class
@@ -177,6 +146,10 @@ class SampleForm(forms.ModelForm):
             'collected_by': forms.TextInput(attrs={
                 'class': 'form-control',
                 'placeholder': 'Name of person who collected the sample'
+            }),
+            'referred_by': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Name of person who referred the sample'
             }),
             'tests_requested': forms.CheckboxSelectMultiple(attrs={
                 'class': 'form-check-input'
@@ -205,10 +178,27 @@ class SampleForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         
-        # Check if test parameters exist
         from .models import TestParameter
+        
+        # Group parameters by category
+        self.grouped_parameters = {}
+        parameters = TestParameter.objects.filter(parent__isnull=True).prefetch_related('children')
+        
+        for parent in parameters:
+            self.grouped_parameters[parent] = parent.children.all()
+            
+        # Also get parameters that have no parent and no category (standalone)
+        standalone_params = TestParameter.objects.filter(parent__isnull=True, category__isnull=True)
+        if standalone_params.exists():
+            self.grouped_parameters['Standalone'] = standalone_params
+
+        # Set choices for the field
+        self.fields['tests_requested'].queryset = TestParameter.objects.all()
+        self.fields['tests_requested'].widget = forms.CheckboxSelectMultiple(attrs={
+            'class': 'form-check-input'
+        })
+
         if not TestParameter.objects.exists():
-            # Create a helpful message
             self.fields['tests_requested'].help_text = "⚠️ No test parameters available. Please contact admin to set up test parameters first."
             self.fields['tests_requested'].required = False
 
