@@ -1228,8 +1228,8 @@ def sample_status_update(request, sample_id):
     sample = get_object_or_404(Sample, sample_id=sample_id)
 
     if request.method == 'POST':
-        # Check permissions: Front Desk or Admin
-        if not (request.user.is_frontdesk() or request.user.is_admin()):
+        # Check permissions: Front Desk, Lab Tech or Admin
+        if not (request.user.is_frontdesk() or request.user.is_admin() or request.user.is_lab_tech()):
             messages.error(request, "You do not have permission to perform this action.")
             return redirect('core:sample_detail', pk=sample.sample_id)
 
