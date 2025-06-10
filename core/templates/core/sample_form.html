@@ -82,6 +82,14 @@
                     </div>
 
                     <div class="row">
+                        <div class="input-field col s12 m6">
+                            {{ form.referred_by }}
+                            <label for="{{ form.referred_by.id_for_label }}">Referred By</label>
+                            {% if form.referred_by.errors %}<span class="helper-text red-text">{{ form.referred_by.errors.0 }}</span>{% endif %}
+                        </div>
+                    </div>
+
+                    <div class="row">
                         <div class="col s12">
                             <h6 style="font-weight: 500; color: var(--primary-color-dark);">Tests Requested <span class="red-text">*</span></h6>
                             {% if form.tests_requested.help_text %}
@@ -90,20 +98,25 @@
                         </div>
                     </div>
                     <div class="row" style="margin-bottom: 0;">
-                        {% for choice in form.tests_requested %}
-                            <div class="col s12 m6 l4" style="margin-bottom: 10px;">
-                                <label>
-                                    {{ choice.tag }}
-                                    <span>{{ choice.choice_label }}</span>
-                                </label>
-                            </div>
-                        {% empty %}
-                            <div class="col s12">
-                                <div class="card-panel alert alert-danger">
-                                    <strong>⚠️ No test parameters available!</strong><br>
-                                    Please contact an administrator to set up test parameters before creating samples.
-                                    <br><br>
-                                    <em>Administrators can run: <code>python manage.py create_test_parameters</code></em>
+                        {% for group, parameters in form.grouped_parameters.items %}
+                            <div class="col s12 m6 l4">
+                                <div class="card-panel" style="padding: 15px;">
+                                    <h6 style="font-weight: 500; color: var(--primary-color-dark);">
+                                        <label>
+                                            <input type="checkbox" class="filled-in parent-checkbox" data-group="{{ group.name|slugify }}">
+                                            <span>{{ group.name }}</span>
+                                        </label>
+                                    </h6>
+                                    <div style="padding-left: 20px;">
+                                        {% for parameter in parameters %}
+                                            <p>
+                                                <label>
+                                                    <input type="checkbox" name="{{ form.tests_requested.name }}" value="{{ parameter.pk }}" class="filled-in child-checkbox" data-group="{{ group.name|slugify }}" {% if parameter.pk in form.tests_requested.value %}checked{% endif %}>
+                                                    <span>{{ parameter.name }}</span>
+                                                </label>
+                                            </p>
+                                        {% endfor %}
+                                    </div>
                                 </div>
                             </div>
                         {% endfor %}
@@ -167,12 +180,31 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
-    // Initialize Character Counters for any textareas (if you add them later)
-    // var textareas = document.querySelectorAll('textarea');
-    // M.CharacterCounter.init(textareas);
-
     // Re-initialize labels if form fields have values (e.g., on edit or after validation error)
     M.updateTextFields();
+
+    // Handle parent/child checkbox logic
+    const parentCheckboxes = document.querySelectorAll('.parent-checkbox');
+    parentCheckboxes.forEach(parent => {
+        parent.addEventListener('change', function() {
+            const group = this.dataset.group;
+            const childCheckboxes = document.querySelectorAll(`.child-checkbox[data-group="${group}"]`);
+            childCheckboxes.forEach(child => {
+                child.checked = this.checked;
+            });
+        });
+    });
+
+    const childCheckboxes = document.querySelectorAll('.child-checkbox');
+    childCheckboxes.forEach(child => {
+        child.addEventListener('change', function() {
+            const group = this.dataset.group;
+            const parentCheckbox = document.querySelector(`.parent-checkbox[data-group="${group}"]`);
+            const allChildrenInGroup = document.querySelectorAll(`.child-checkbox[data-group="${group}"]`);
+            const allChecked = Array.from(allChildrenInGroup).every(c => c.checked);
+            parentCheckbox.checked = allChecked;
+        });
+    });
 });
 </script>
 {% endblock %}

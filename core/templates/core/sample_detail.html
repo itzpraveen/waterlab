@@ -45,6 +45,9 @@
                     <li class="collection-item"><div>Collection Date:<span class="secondary-content black-text">{{ sample.collection_datetime|date:"M d, Y H:i" }}</span></div></li>
                     <li class="collection-item"><div>Sample Source:<span class="secondary-content black-text">{{ sample.get_sample_source_display }}</span></div></li>
                     <li class="collection-item"><div>Collected By:<span class="secondary-content black-text">{{ sample.collected_by }}</span></div></li>
+                    {% if sample.referred_by %}
+                    <li class="collection-item"><div>Referred By:<span class="secondary-content black-text">{{ sample.referred_by }}</span></div></li>
+                    {% endif %}
                     <li class="collection-item"><div>Date Received:<span class="secondary-content black-text">{{ sample.date_received_at_lab|date:"M d, Y H:i"|default:"Not yet received" }}</span></div></li>
                     <li class="collection-item"><div>Current Status:
                         <span class="secondary-content">
