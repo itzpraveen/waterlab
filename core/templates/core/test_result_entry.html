@@ -117,7 +117,7 @@
                                     {{ test_param_data.form.result_value }}
                                     <label for="{{ test_param_data.form.result_value.id_for_label }}">Result Value <span class="red-text">*</span></label>
                                     {% if test_param_data.form.result_value.errors %}<span class="helper-text red-text">{{ test_param_data.form.result_value.errors.0 }}</span>{% endif %}
-                                    <span class="helper-text">Unit: {{ test_param_data.parameter.unit }}</span>
+                                    <span class="helper-text" id="status-{{ test_param_data.form.result_value.id_for_label }}">Unit: {{ test_param_data.parameter.unit }}</span>
                                 </div>
                                 <div class="input-field col s12 m6">
                                     {{ test_param_data.form.observation }}
@@ -186,7 +186,39 @@ document.addEventListener('DOMContentLoaded', function() {
             if (targetInput) {
                 targetInput.value = value;
                 M.updateTextFields(); // Update Materialize label
+                targetInput.dispatchEvent(new Event('input')); // Trigger validation
             }
+        });
+    });
+
+    // Live validation for result values
+    const resultInputs = document.querySelectorAll('input[data-min-limit], input[data-max-limit]');
+    resultInputs.forEach(input => {
+        input.addEventListener('input', function() {
+            const value = parseFloat(this.value);
+            const minLimit = this.dataset.minLimit !== 'None' ? parseFloat(this.dataset.minLimit) : null;
+            const maxLimit = this.dataset.maxLimit !== 'None' ? parseFloat(this.dataset.maxLimit) : null;
+            const statusEl = document.getElementById('status-' + this.id);
+
+            if (isNaN(value)) {
+                statusEl.textContent = 'Unit: ' + statusEl.textContent.split('Unit: ')[1];
+                statusEl.className = 'helper-text';
+                return;
+            }
+
+            let statusText = 'Within Limits';
+            let statusClass = 'green-text';
+
+            if (minLimit !== null && value < minLimit) {
+                statusText = 'Below Minimum Limit';
+                statusClass = 'red-text';
+            } else if (maxLimit !== null && value > maxLimit) {
+                statusText = 'Exceeds Maximum Limit';
+                statusClass = 'red-text';
+            }
+
+            statusEl.textContent = statusText;
+            statusEl.className = 'helper-text ' + statusClass;
         });
     });
 
