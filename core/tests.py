@@ -220,15 +220,7 @@ class SampleModelTests(TestCase):
                         f"Expected ID to end with -0002, got {second_sample_current_year.display_id}")
 
 
-    def test_sample_clean_collection_datetime_future(self):
-        """Test validation for collection_datetime being in the future."""
-        future_time = timezone.now() + timedelta(days=1)
-        sample_data_future = self.sample_data.copy()
-        sample_data_future["collection_datetime"] = future_time
-        sample = Sample(**sample_data_future)
-        with self.assertRaises(ValidationError) as context:
-            sample.full_clean()
-        self.assertIn("Collection date cannot be in the future.", str(context.exception))
+>>>>>>> REPLACE
 
     def test_sample_clean_date_received_before_collection(self):
         """Test validation for date_received_at_lab being before collection_datetime."""

@@ -592,12 +592,7 @@ class SampleUpdateView(AuditMixin, FrontDeskRequiredMixin, UpdateView):
                     'Contact lab staff if changes are needed.')
                 return redirect('core:sample_detail', pk=sample.sample_id)
         
-        # Additional validation for collection datetime changes
-        if sample.current_status != 'RECEIVED_FRONT_DESK':
-            if sample.collection_datetime != form.cleaned_data.get('collection_datetime'):
-                messages.error(self.request,
-                    'Cannot modify collection date/time after sample processing has begun.')
-                return redirect('core:sample_detail', pk=sample.sample_id)
+        
         
         messages.success(self.request, f'Sample has been updated successfully!')
         return super().form_valid(form)
