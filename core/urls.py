@@ -25,7 +25,8 @@ from .views import (
     fix_admin_role_web,
     sample_status_update,
     setup_test_parameters,
-    TestResultListView, 
+    TestResultListView,
+    TestResultDetailView,
     download_sample_report_view,
     TestParameterUpdateView # Added TestParameterUpdateView
 )
@@ -90,6 +91,7 @@ urlpatterns = [
 
     # Test Results List (New)
     path('results/', TestResultListView.as_view(), name='test_result_list'),
+    path('results/<uuid:pk>/', TestResultDetailView.as_view(), name='test_result_detail'),
     path('samples/<uuid:pk>/download-report/', download_sample_report_view, name='download_sample_report'),
     
     # Test Parameter Management (Admin)

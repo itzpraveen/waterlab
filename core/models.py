@@ -302,7 +302,7 @@ class TestParameter(models.Model):
     parameter_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=100, unique=True)
     unit = models.CharField(max_length=50)
-    standard_method = models.CharField(max_length=255, blank=True, null=True)
+    method = models.CharField(max_length=255, blank=True, null=True)
     min_permissible_limit = models.DecimalField(max_digits=10, decimal_places=3, null=True, blank=True)
     max_permissible_limit = models.DecimalField(max_digits=10, decimal_places=3, null=True, blank=True)
     category = models.CharField(max_length=100, blank=True, null=True)
@@ -322,6 +322,7 @@ class TestResult(models.Model):
     sample = models.ForeignKey(Sample, on_delete=models.CASCADE, related_name='results')
     parameter = models.ForeignKey(TestParameter, on_delete=models.PROTECT, related_name='results') # PROTECT to avoid deleting parameter if results exist
     result_value = models.CharField(max_length=255, help_text="Actual result value. Can be numeric or text (e.g., 'Present', 'Absent')")
+    remarks = models.CharField(max_length=255, blank=True, null=True, help_text="Auto-populated remarks based on limits")
     # For numeric results, consider a separate DecimalField and logic to use one or the other. # Removed commented out field
     # result_value_numeric = models.DecimalField(max_digits=10, decimal_places=3, null=True, blank=True) # Removed commented out field
     observation = models.TextField(blank=True, null=True)

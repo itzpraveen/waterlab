@@ -80,15 +80,15 @@
                             <span class="card-title" style="color: var(--primary-color-dark); font-size:1.5rem;">{{ test_param_data.parameter.name }}</span>
                             <div class="grey-text text-darken-2" style="font-size: 0.9rem; margin-bottom:10px;">
                                 <span><strong>Unit:</strong> {{ test_param_data.parameter.unit }}</span>
-                                {% if test_param_data.parameter.standard_method %}
-                                    <span style="margin-left:15px;"><strong>Method:</strong> {{ test_param_data.parameter.standard_method }}</span>
+                                {% if test_param_data.parameter.method %}
+                                    <span style="margin-left:15px;"><strong>Method:</strong> {{ test_param_data.parameter.method }}</span>
                                 {% endif %}
                                 {% if test_param_data.existing_result %}
                                     <span class="green-text text-darken-1" style="margin-left:15px;"><strong>✓ Result Entered:</strong> {{ test_param_data.existing_result.result_value }}</span>
                                 {% endif %}
                             </div>
 
-                            {% if test_param_data.parameter.unit %}
+                            {% if test_param_data.parameter.unit or test_param_data.parameter.name == 'pH' %}
                             <div class="card-panel teal lighten-5" style="padding: 10px; margin-bottom:15px;">
                                 <strong class="teal-text text-darken-3">Acceptable Limit:</strong>
                                 {% if test_param_data.parameter.min_permissible_limit is not None and test_param_data.parameter.max_permissible_limit is not None %}
@@ -123,6 +123,11 @@
                                     {{ test_param_data.form.observation }}
                                     <label for="{{ test_param_data.form.observation.id_for_label }}">Observation/Notes</label>
                                     {% if test_param_data.form.observation.errors %}<span class="helper-text red-text">{{ test_param_data.form.observation.errors.0 }}</span>{% endif %}
+                                </div>
+                                <div class="input-field col s12 m6">
+                                    {{ test_param_data.form.remarks }}
+                                    <label for="{{ test_param_data.form.remarks.id_for_label }}">Remarks</label>
+                                    {% if test_param_data.form.remarks.errors %}<span class="helper-text red-text">{{ test_param_data.form.remarks.errors.0 }}</span>{% endif %}
                                 </div>
                             </div>
                         </div>
@@ -199,26 +204,35 @@ document.addEventListener('DOMContentLoaded', function() {
             const minLimit = this.dataset.minLimit !== 'None' ? parseFloat(this.dataset.minLimit) : null;
             const maxLimit = this.dataset.maxLimit !== 'None' ? parseFloat(this.dataset.maxLimit) : null;
             const statusEl = document.getElementById('status-' + this.id);
+            const remarksInput = document.getElementById(this.id.replace('result_value', 'remarks'));
 
             if (isNaN(value)) {
                 statusEl.textContent = 'Unit: ' + statusEl.textContent.split('Unit: ')[1];
                 statusEl.className = 'helper-text';
+                if(remarksInput) remarksInput.value = '';
                 return;
             }
 
             let statusText = 'Within Limits';
             let statusClass = 'green-text';
+            let remarksText = 'Complies with IS 10500:2012';
 
             if (minLimit !== null && value < minLimit) {
                 statusText = 'Below Minimum Limit';
                 statusClass = 'red-text';
+                remarksText = 'Below Acceptable Limit';
             } else if (maxLimit !== null && value > maxLimit) {
                 statusText = 'Exceeds Maximum Limit';
                 statusClass = 'red-text';
+                remarksText = 'Above Acceptable Limit';
             }
 
             statusEl.textContent = statusText;
             statusEl.className = 'helper-text ' + statusClass;
+            if(remarksInput) {
+                remarksInput.value = remarksText;
+                M.updateTextFields();
+            }
         });
     });
 

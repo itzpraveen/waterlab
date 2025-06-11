@@ -205,6 +205,10 @@ class TestResultEntryForm(forms.Form):
         required=False,
         widget=forms.Textarea(attrs={'class': 'materialize-textarea', 'rows': 2})
     )
+    remarks = forms.CharField(
+        required=False,
+        widget=forms.TextInput(attrs={'class': 'form-control', 'readonly': True})
+    )
 
     def __init__(self, *args, **kwargs):
         parameter = kwargs.pop('parameter', None)
@@ -219,13 +223,13 @@ class TestParameterForm(forms.ModelForm):
     class Meta:
         model = TestParameter
         fields = [
-            'name', 'unit', 'standard_method', 'min_permissible_limit', 'max_permissible_limit',
+            'name', 'unit', 'method', 'min_permissible_limit', 'max_permissible_limit',
             'group', 'discipline', 'fssai_limit', 'category', 'parent'
         ]
         widgets = {
             'name': forms.TextInput(attrs={'class': 'validate'}),
             'unit': forms.TextInput(attrs={'class': 'validate'}),
-            'standard_method': forms.TextInput(attrs={'class': 'validate'}),
+            'method': forms.TextInput(attrs={'class': 'validate'}),
             'min_permissible_limit': forms.NumberInput(attrs={'class': 'validate', 'step': 'any'}),
             'max_permissible_limit': forms.NumberInput(attrs={'class': 'validate', 'step': 'any'}),
             'group': forms.TextInput(attrs={'class': 'validate'}),

@@ -26,60 +26,57 @@
                 <p class="grey-text text-darken-1" style="margin-top: -5px; margin-bottom: 20px;">Browse samples and click to view their detailed test results.</p>
 
                 {% if samples_with_results %}
+                {% for sample in samples_with_results %}
+                <div class="card">
+                    <div class="card-content">
+                        <span class="card-title">Sample ID: {{ sample.display_id }}</span>
+                        <p>Customer: {{ sample.customer.name }}</p>
+                        <p>Collection Date: {{ sample.collection_datetime|date:"M d, Y H:i" }}</p>
+                    </div>
+                    <div class="card-action">
+                        <a href="{% url 'core:sample_detail' pk=sample.pk %}">View Sample Details</a>
+                    </div>
+                </div>
+                {% regroup sample.results.all by parameter.category as results_by_category %}
                 <div class="table-container">
                     <table class="responsive-table highlight striped">
                         <thead>
                             <tr>
-                                <th>Sample ID</th>
-                                <th>Customer</th>
-                                <th>Collection Date</th>
-                                <th>Status</th>
-                                <th>Tests (Results/Requested)</th>
-                                <th>Last Result Date</th>
-                                <th>Actions</th>
+                                <th>S.No</th>
+                                <th>Test Parameters</th>
+                                <th>Test Method</th>
+                                <th>Result</th>
+                                <th>Unit</th>
+                                <th>Acceptable Limit as per IS 10500 : 2012</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {% for sample_item in samples_with_results %} {# Changed loop variable #}
+                            {% for category in results_by_category %}
                             <tr>
+                                <td colspan="6" style="background-color: #f0f0f0;"><strong>Table - {{ category.grouper }}</strong></td>
+                            </tr>
+                            {% for result in category.list %}
+                            <tr>
+                                <td>{{ forloop.counter }}</td>
+                                <td>{{ result.parameter.name }}</td>
+                                <td>{{ result.parameter.method }}</td>
+                                <td>{{ result.result_value }}</td>
+                                <td>{{ result.parameter.unit }}</td>
                                 <td>
-                                    <a href="{% url 'core:sample_detail' pk=sample_item.pk %}" style="color: var(--primary-color); font-weight: bold;">
-                                        {{ sample_item.sample_id|truncatechars:12 }}
-                                    </a>
-                                </td>
-                                <td>
-                                    {% if sample_item.customer %}
-                                    <a href="{% url 'core:customer_detail' pk=sample_item.customer.pk %}" style="color: var(--primary-color);">
-                                        {{ sample_item.customer.name|truncatechars:20 }}
-                                    </a>
+                                    {% if result.parameter.max_permissible_limit and not result.parameter.min_permissible_limit %}
+                                        Max {{ result.parameter.max_permissible_limit }}
                                     {% else %}
-                                    N/A
+                                        {{ result.parameter.min_permissible_limit|default:"" }} - {{ result.parameter.max_permissible_limit|default:"" }}
                                     {% endif %}
-                                </td>
-                                <td>{{ sample_item.collection_datetime|date:"M d, Y H:i" }}</td>
-                                <td>
-                                    {% if sample_item.current_status == 'REPORT_APPROVED' or sample_item.current_status == 'REPORT_SENT' %}
-                                        <span class="chip" style="background-color: var(--success-color); color: var(--text-on-primary);">{{ sample_item.get_current_status_display }}</span>
-                                    {% elif sample_item.current_status == 'RESULTS_ENTERED' or sample_item.current_status == 'REVIEW_PENDING' %}
-                                        <span class="chip" style="background-color: var(--warning-color); color: var(--text-color-dark);">{{ sample_item.get_current_status_display }}</span>
-                                    {% elif sample_item.current_status == 'TESTING_IN_PROGRESS' %}
-                                        <span class="chip" style="background-color: var(--info-color); color: var(--text-on-primary);">{{ sample_item.get_current_status_display }}</span>
-                                    {% else %}
-                                        <span class="chip" style="background-color: var(--text-color-light); color: var(--text-on-primary);">{{ sample_item.get_current_status_display }}</span>
-                                    {% endif %}
-                                </td>
-                                <td>{{ sample_item.results.count }}/{{ sample_item.tests_requested.count }}</td>
-                                <td>{{ sample_item.latest_test_date|date:"M d, Y H:i"|default:"N/A" }}</td>
-                                <td>
-                                    <a href="{% url 'core:sample_detail' pk=sample_item.pk %}" class="btn-small waves-effect waves-light" style="background-color: var(--primary-color);">
-                                        <i class="material-icons tiny">visibility</i> View Results
-                                    </a>
                                 </td>
                             </tr>
+                            {% endfor %}
                             {% endfor %}
                         </tbody>
                     </table>
                 </div>
+                {% endfor %}
+>>>>>>> REPLACE
 
                 {% if is_paginated %}
                 <div class="pagination center-align" style="margin-top: 30px;">
