@@ -135,25 +135,34 @@ class CustomerForm(forms.ModelForm):
 class SampleForm(forms.ModelForm):
     class Meta:
         model = Sample
-        fields = ['customer', 'collection_datetime', 'sample_source', 'collected_by', 'referred_by', 'tests_requested']
+        fields = [
+            'customer', 'collection_datetime', 'sample_source', 'collected_by', 'referred_by', 'tests_requested',
+            'ulr_number', 'report_number', 'sample_type', 'quantity_received', 'sampling_procedure',
+            'sampling_location', 'deviations', 'test_commenced_on', 'test_completed_on',
+            'reviewed_by', 'lab_manager', 'food_analyst'
+        ]
         widgets = {
             'collection_datetime': forms.TextInput(attrs={
-                'class': 'form-control datepicker', # Changed type, added 'datepicker' class
-                'placeholder': 'Select date, then type time (HH:MM:SS)' # Added placeholder
+                'class': 'form-control datepicker',
+                'placeholder': 'Select date, then type time (HH:MM:SS)'
             }),
             'customer': forms.Select(attrs={'class': 'form-control'}),
             'sample_source': forms.Select(attrs={'class': 'form-control'}),
-            'collected_by': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'Name of person who collected the sample'
-            }),
-            'referred_by': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'Name of person who referred the sample'
-            }),
-            'tests_requested': forms.CheckboxSelectMultiple(attrs={
-                'class': 'form-check-input'
-            }),
+            'collected_by': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Name of person who collected the sample'}),
+            'referred_by': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Name of person who referred the sample'}),
+            'tests_requested': forms.CheckboxSelectMultiple(attrs={'class': 'form-check-input'}),
+            'ulr_number': forms.TextInput(attrs={'class': 'form-control'}),
+            'report_number': forms.TextInput(attrs={'class': 'form-control'}),
+            'sample_type': forms.TextInput(attrs={'class': 'form-control'}),
+            'quantity_received': forms.TextInput(attrs={'class': 'form-control'}),
+            'sampling_procedure': forms.TextInput(attrs={'class': 'form-control'}),
+            'sampling_location': forms.TextInput(attrs={'class': 'form-control'}),
+            'deviations': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
+            'test_commenced_on': forms.DateInput(attrs={'class': 'form-control datepicker'}),
+            'test_completed_on': forms.DateInput(attrs={'class': 'form-control datepicker'}),
+            'reviewed_by': forms.Select(attrs={'class': 'form-control'}),
+            'lab_manager': forms.Select(attrs={'class': 'form-control'}),
+            'food_analyst': forms.Select(attrs={'class': 'form-control'}),
         }
     
     def clean_collection_datetime(self):
@@ -215,13 +224,21 @@ class TestResultEntryForm(forms.Form):
 class TestParameterForm(forms.ModelForm):
     class Meta:
         model = TestParameter
-        fields = ['name', 'unit', 'standard_method', 'min_permissible_limit', 'max_permissible_limit']
+        fields = [
+            'name', 'unit', 'standard_method', 'min_permissible_limit', 'max_permissible_limit',
+            'group', 'discipline', 'fssai_limit', 'category', 'parent'
+        ]
         widgets = {
             'name': forms.TextInput(attrs={'class': 'validate'}),
             'unit': forms.TextInput(attrs={'class': 'validate'}),
             'standard_method': forms.TextInput(attrs={'class': 'validate'}),
             'min_permissible_limit': forms.NumberInput(attrs={'class': 'validate', 'step': 'any'}),
             'max_permissible_limit': forms.NumberInput(attrs={'class': 'validate', 'step': 'any'}),
+            'group': forms.TextInput(attrs={'class': 'validate'}),
+            'discipline': forms.TextInput(attrs={'class': 'validate'}),
+            'fssai_limit': forms.TextInput(attrs={'class': 'validate'}),
+            'category': forms.TextInput(attrs={'class': 'validate'}),
+            'parent': forms.Select(attrs={'class': 'form-control'}),
         }
         labels = {
             'min_permissible_limit': 'Min. Permissible Limit',

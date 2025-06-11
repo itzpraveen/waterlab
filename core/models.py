@@ -162,10 +162,25 @@ class Sample(models.Model):
     sample_source = models.CharField(max_length=50, choices=SAMPLE_SOURCE_CHOICES)
     collected_by = models.CharField(max_length=255) # Could be customer or lab personnel
     referred_by = models.CharField(max_length=255, blank=True, null=True)
-    # tests_requested will likely be a ManyToManyField to a TestParameter model
     tests_requested = models.ManyToManyField('TestParameter', blank=True, related_name='samples')
     date_received_at_lab = models.DateTimeField(null=True, blank=True)
     current_status = models.CharField(max_length=50, choices=SAMPLE_STATUS_CHOICES, default='RECEIVED_FRONT_DESK')
+
+    # New fields for professional PDF report
+    ulr_number = models.CharField(max_length=50, blank=True, null=True, verbose_name="ULR Number")
+    report_number = models.CharField(max_length=50, blank=True, null=True, verbose_name="Test Report Number")
+    sample_type = models.CharField(max_length=50, default="WATER", verbose_name="Sample Type")
+    quantity_received = models.CharField(max_length=50, blank=True, null=True, verbose_name="Quantity Received")
+    sampling_procedure = models.CharField(max_length=100, blank=True, null=True, verbose_name="Sampling Procedure")
+    sampling_location = models.CharField(max_length=100, blank=True, null=True, verbose_name="Location of Sampling")
+    deviations = models.TextField(blank=True, null=True, verbose_name="Any Deviation from Test Methods")
+    test_commenced_on = models.DateField(null=True, blank=True, verbose_name="Test Commenced On")
+    test_completed_on = models.DateField(null=True, blank=True, verbose_name="Test Completed On")
+
+    # Fields for signatories
+    reviewed_by = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True, blank=True, related_name='reviewed_samples', verbose_name="Reviewed By")
+    lab_manager = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True, blank=True, related_name='managed_samples', verbose_name="Lab Manager")
+    food_analyst = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True, blank=True, related_name='analyzed_samples', verbose_name="Food Analyst")
 
     def __str__(self):
         return self.display_id if self.display_id else str(self.sample_id)
@@ -287,7 +302,11 @@ class TestParameter(models.Model):
     max_permissible_limit = models.DecimalField(max_digits=10, decimal_places=3, null=True, blank=True)
     category = models.CharField(max_length=100, blank=True, null=True)
     parent = models.ForeignKey('self', null=True, blank=True, on_delete=models.CASCADE, related_name='children')
-    # descriptive_limit = models.CharField(max_length=255, blank=True, null=True, help_text="For text-based limits like 'Absent'") # Removed commented out field
+    
+    # New fields for professional PDF report
+    group = models.CharField(max_length=100, blank=True, null=True, verbose_name="Group")
+    discipline = models.CharField(max_length=100, blank=True, null=True, verbose_name="Discipline")
+    fssai_limit = models.CharField(max_length=100, blank=True, null=True, verbose_name="FSSAI Limit")
 
 
     def __str__(self):

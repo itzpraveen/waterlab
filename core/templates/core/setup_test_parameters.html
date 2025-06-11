@@ -115,17 +115,27 @@
                                 <th>Min Limit</th>
                                 <th>Max Limit</th>
                                 <th>Standard Method</th>
+                                <th>Group</th>
+                                <th>Discipline</th>
+                                <th>FSSAI Limit</th>
+                                <th>Category</th>
+                                <th>Parent</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {% for param in existing_params %}
+                            {% for param in parameters %}
                                 <tr>
                                     <td style="font-weight: 500;">{{ param.name }}</td>
                                     <td>{{ param.unit }}</td>
                                     <td>{{ param.min_permissible_limit|default:"-" }}</td>
                                     <td>{{ param.max_permissible_limit|default:"-" }}</td>
                                     <td>{{ param.standard_method|default:"-" }}</td>
+                                    <td>{{ param.group|default:"-" }}</td>
+                                    <td>{{ param.discipline|default:"-" }}</td>
+                                    <td>{{ param.fssai_limit|default:"-" }}</td>
+                                    <td>{{ param.category|default:"-" }}</td>
+                                    <td>{{ param.parent.name|default:"-" }}</td>
                                     <td>
                                         <a href="{% url 'core:test_parameter_edit' pk=param.pk %}" class="btn-small waves-effect waves-light orange darken-1 tooltipped" data-position="top" data-tooltip="Edit {{ param.name }}">
                                             <i class="material-icons tiny">edit</i>

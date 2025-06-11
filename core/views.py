@@ -849,377 +849,203 @@ def download_sample_report_view(request, pk):
 
     import os
     from django.conf import settings
-    from reportlab.lib.utils import ImageReader
     from reportlab.lib import colors
     from reportlab.lib.pagesizes import A4
     from reportlab.lib.units import mm
+    from reportlab.platypus import BaseDocTemplate, Frame, PageTemplate, Table, TableStyle, Paragraph, Spacer, Image
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
+    from reportlab.lib.utils import ImageReader
 
     buffer = BytesIO()
-    
-    # Enhanced color scheme matching CSS variables
-    primary_color = colors.HexColor("#00796B")  # Biofix Teal from CSS
-    secondary_color = colors.HexColor("#004D40")  # Darker teal
-    accent_color = colors.HexColor("#E0F2F1")  # Light teal accent
-    success_color = colors.HexColor("#388E3C")  # Green for normal values
-    warning_color = colors.HexColor("#FFA000")  # Orange for warnings
-    error_color = colors.HexColor("#D32F2F")  # Red for out-of-limit values
-    text_color = colors.HexColor("#212121")  # Dark text
-    light_gray = colors.HexColor("#F5F5F5")
-    medium_gray = colors.HexColor("#E0E0E0")
-    
-    # Create canvas with enhanced styling
-    p = canvas.Canvas(buffer, pagesize=A4)
-    p.setTitle(f"Water Quality Test Report - {sample.sample_id}")
-    
-    # Page dimensions
-    page_width, page_height = A4
-    left_margin = 25 * mm
-    right_margin = page_width - 25 * mm
-    top_margin = page_height - 25 * mm
-    bottom_margin = 25 * mm
-    content_width = right_margin - left_margin
-    
-    # Start with header
-    y_position = top_margin
-    
-    # Header background
-    header_height = 35 * mm # Further Increased header height for more space
-    p.setFillColor(accent_color)
-    p.rect(left_margin - 10*mm, y_position - header_height, content_width + 20*mm, header_height, stroke=0, fill=1)
-    
-    # Logo
-    logo_width_final = 0
-    logo_path = os.path.join(settings.BASE_DIR, 'static', 'images', 'biofix_logo.png')
-    if os.path.exists(logo_path):
-        try:
-            logo = ImageReader(logo_path)
-            img_width, img_height = logo.getSize()
-            aspect_ratio = img_height / img_width
+
+    class ReportDocTemplate(BaseDocTemplate):
+        def __init__(self, filename, **kwargs):
+            super().__init__(filename, **kwargs)
+            self.addPageTemplates([
+                PageTemplate(id='ReportPage',
+                             frames=[Frame(self.leftMargin, self.bottomMargin, self.width, self.height, id='main_frame')],
+                             onPage=self.header,
+                             onPageEnd=self.footer)
+            ])
+
+        def header(self, canvas, doc):
+            canvas.saveState()
+            styles = getSampleStyleSheet()
             
-            logo_max_height = 22 * mm 
-            logo_final_height = logo_max_height
-            logo_width_final = logo_final_height / aspect_ratio
+            # Logo
+            logo_path = os.path.join(settings.BASE_DIR, 'static', 'images', 'biofix_logo.png')
+            if os.path.exists(logo_path):
+                logo = ImageReader(logo_path)
+                canvas.drawImage(logo, doc.leftMargin, doc.height + 10*mm, width=40*mm, height=15*mm, preserveAspectRatio=True)
 
-            if logo_width_final > 50 * mm: # Max width for logo
-                logo_width_final = 50 * mm
-                logo_final_height = logo_width_final * aspect_ratio
-
-            p.drawImage(logo, left_margin, y_position - (header_height + logo_final_height)/2 , # Centered vertically
-                       width=logo_width_final, height=logo_final_height, mask='auto')
-        except Exception as e:
-            print(f"Logo error: {e}")
-
-    # Text block to the right of the logo
-    text_block_x_start = left_margin + logo_width_final + 5*mm # Start text after logo + padding
-    
-    # Company Name
-    # p.setFillColor(primary_color)
-    # p.setFont("Helvetica-Bold", 18) 
-    # company_name = "BIOFIX RESEARCH INSTITUTE"
-    # p.drawString(text_block_x_start, y_position - 7*mm, company_name) # Y adjusted
-    
-    # Sub-details
-    # p.setFont("Helvetica", 9) 
-    # p.drawString(text_block_x_start, y_position - 15*mm, "Water Quality Testing Laboratory") # Y adjusted for spacing
-    # p.drawString(text_block_x_start, y_position - 20*mm, "Kerala, India | ISO 17025 Accredited") # Y adjusted for spacing
-
-    # Report Title (below company details, aligned right of text block)
-    p.setFillColor(secondary_color)
-    p.setFont("Helvetica-Bold", 16) 
-    report_title_text = "WATER QUALITY TEST REPORT"
-    report_title_width = p.stringWidth(report_title_text, "Helvetica-Bold", 16)
-    p.drawString(right_margin - report_title_width, y_position - 28*mm, report_title_text) # Y adjusted for spacing
-    
-    y_position -= (header_height + 5*mm) # Space after header (uses new header_height)
-    
-    # Sample Information Section
-    p.setFillColor(primary_color)
-    p.rect(left_margin, y_position - 8*mm, content_width, 8*mm, stroke=0, fill=1)
-    p.setFillColor(colors.white)
-    p.setFont("Helvetica-Bold", 12)
-    p.drawString(left_margin + 3*mm, y_position - 6*mm, "SAMPLE INFORMATION")
-    
-    y_position -= 15*mm # Increased space after title bar
-    
-    # Information in two columns
-    p.setFillColor(text_color)
-    
-    left_col_label_x = left_margin + 3*mm
-    left_col_value_x = left_col_label_x + 32*mm # Start of value for left column
-    right_col_label_x = left_margin + content_width/2 + 5*mm
-    right_col_value_x = right_col_label_x + 32*mm # Start of value for right column
-    
-    # Define available width for values (important for paragraph wrapping)
-    left_col_value_width = (content_width/2) - (left_col_value_x - left_col_label_x) - 5*mm # Max width for left value
-    right_col_value_width = (content_width/2) - (right_col_value_x - right_col_label_x) - 5*mm # Max width for right value
-
-    line_spacing = 7*mm # Increased line spacing to accommodate potential wrapping
-    
-    from reportlab.platypus import Paragraph
-    from reportlab.lib.styles import getSampleStyleSheet
-    value_style = getSampleStyleSheet()['Normal']
-    value_style.fontName = 'Helvetica'
-    value_style.fontSize = 10
-    value_style.leading = 11 # Line height within paragraph
-
-    # Row 1: Sample ID & Sample Source
-    current_y = y_position
-
-    p.setFont("Helvetica-Bold", 10)
-    p.drawString(left_col_label_x, current_y, "Sample ID:")
-    # Use the new display_id field
-    sample_id_to_display = sample.display_id if sample.display_id else str(sample.sample_id)
-    sample_id_paragraph = Paragraph(sample_id_to_display, value_style)
-    w_id, h_id = sample_id_paragraph.wrapOn(p, left_col_value_width, line_spacing * 2) # Allow wrapping up to 2 lines height
-    sample_id_paragraph.drawOn(p, left_col_value_x, current_y - (h_id - value_style.fontSize/2 - 1*mm) ) # Adjust Y for paragraph
-
-    p.setFont("Helvetica-Bold", 10)
-    p.drawString(right_col_label_x, current_y, "Sample Source:")
-    p.setFont("Helvetica", 10)
-    p.drawString(right_col_value_x, current_y, sample.get_sample_source_display())
-    
-    # Determine max height used by this row (primarily by Sample ID if it wraps)
-    row1_height = max(h_id if 'h_id' in locals() else line_spacing, line_spacing)
-    y_position -= row1_height
-
-    # Row 2: Customer Name & Received Date
-    current_y = y_position 
-    p.setFont("Helvetica-Bold", 10)
-    p.drawString(left_col_label_x, current_y, "Customer Name:")
-    p.setFont("Helvetica", 10)
-    p.drawString(left_col_value_x, current_y, sample.customer.name)
-
-    p.setFont("Helvetica-Bold", 10)
-    p.drawString(right_col_label_x, current_y, "Received Date:")
-    p.setFont("Helvetica", 10)
-    p.drawString(right_col_value_x, current_y, sample.date_received_at_lab.strftime('%d %B %Y, %H:%M') if sample.date_received_at_lab else 'N/A')
-    y_position -= line_spacing
-
-    # Row 3: Collection Date & Report Date
-    current_y = y_position
-    p.setFont("Helvetica-Bold", 10)
-    p.drawString(left_col_label_x, current_y, "Collection Date:")
-    p.setFont("Helvetica", 10)
-    p.drawString(left_col_value_x, current_y, sample.collection_datetime.strftime('%d %B %Y, %H:%M'))
-
-    p.setFont("Helvetica-Bold", 10)
-    p.drawString(right_col_label_x, current_y, "Report Date:")
-    p.setFont("Helvetica", 10)
-    p.drawString(right_col_value_x, current_y, timezone.now().strftime('%d %B %Y'))
-    y_position -= line_spacing
-    
-    y_position -= 5*mm # Extra padding after the section
-    
-    # Test Results Section
-    p.setFillColor(primary_color)
-    p.rect(left_margin, y_position - 8*mm, content_width, 8*mm, stroke=0, fill=1)
-    p.setFillColor(colors.white)
-    p.setFont("Helvetica-Bold", 12)
-    p.drawString(left_margin + 3*mm, y_position - 6*mm, "TEST RESULTS")
-    
-    y_position -= 12*mm
-    
-    # Table headers
-    headers = ["Parameter", "Result", "Unit", "Permissible Limits", "Status"]
-    col_widths = [50*mm, 25*mm, 30*mm, 40*mm, 20*mm]
-    row_height = 8*mm
-    
-    # Header row
-    p.setFillColor(medium_gray)
-    p.rect(left_margin, y_position - row_height, content_width, row_height, stroke=1, fill=1)
-    
-    p.setFillColor(text_color)
-    p.setFont("Helvetica-Bold", 10)
-    
-    x_pos = left_margin
-    for i, header in enumerate(headers):
-        p.drawString(x_pos + 2*mm, y_position - 5.5*mm, header) # Adjusted for vertical centering
-        x_pos += col_widths[i]
-    
-    y_position -= row_height
-    
-    # Data rows
-    results_data = sample.results.all().select_related('parameter')
-    for i, result in enumerate(results_data):
-        # Check if we need a new page
-        if y_position < bottom_margin + 50*mm:
-            p.showPage()
-            y_position = top_margin - 50*mm
+            # Company Details
+            header_text = """
+            <b>Biofix Laboratory</b><br/>
+            123 Science Avenue, Research City, 12345<br/>
+            Phone: (123) 456-7890 | Email: contact@biofixlab.com
+            """
+            p = Paragraph(header_text, styles['Normal'])
+            p.wrapOn(canvas, doc.width - 60*mm, doc.topMargin)
+            p.drawOn(canvas, doc.leftMargin + 50*mm, doc.height + 10*mm)
             
-            # Redraw table header on new page
-            p.setFillColor(primary_color)
-            p.rect(left_margin, y_position - 8*mm, content_width, 8*mm, stroke=0, fill=1)
-            p.setFillColor(colors.white)
-            p.setFont("Helvetica-Bold", 12)
-            p.drawString(left_margin + 3*mm, y_position - 6*mm, "TEST RESULTS (Continued)")
-            y_position -= 12*mm
-            
-            # Table headers
-            p.setFillColor(medium_gray)
-            p.rect(left_margin, y_position - row_height, content_width, row_height, stroke=1, fill=1)
-            p.setFillColor(text_color)
-            p.setFont("Helvetica-Bold", 10)
-            x_pos = left_margin
-            for j, header in enumerate(headers):
-                p.drawString(x_pos + 2*mm, y_position - 6*mm, header)
-                x_pos += col_widths[j]
-            y_position -= row_height
-        
-        # Alternating row colors
-        row_color = colors.white if i % 2 == 0 else light_gray
-        p.setFillColor(row_color)
-        p.rect(left_margin, y_position - row_height, content_width, row_height, stroke=1, fill=1) # Changed stroke from 0.5 to 1
-        
-        # Check if result is within limits
-        is_within_limits = result.is_within_limits()
-        
-        p.setFillColor(text_color)
-        p.setFont("Helvetica", 9)
-        
-        x_pos = left_margin
-        
-        # Parameter name
-        p.drawString(x_pos + 2*mm, y_position - 5.2*mm, result.parameter.name) # Adjusted for vertical centering
-        x_pos += col_widths[0]
-        
-        # Result value (colored based on limits)
-        if not is_within_limits:
-            p.setFillColor(error_color)
-            p.setFont("Helvetica-Bold", 9)
-        else:
-            p.setFillColor(success_color)
-        
-        p.drawString(x_pos + 2*mm, y_position - 5.2*mm, str(result.result_value)) # Adjusted for vertical centering
-        x_pos += col_widths[1]
-        
-        # Reset color and font
-        p.setFillColor(text_color)
-        p.setFont("Helvetica", 9)
-        
-        # Unit
-        p.drawString(x_pos + 2*mm, y_position - 5.2*mm, result.parameter.unit or "") # Adjusted for vertical centering
-        x_pos += col_widths[2]
-        
-        # Limits
-        min_limit = result.parameter.min_permissible_limit
-        max_limit = result.parameter.max_permissible_limit
-        if min_limit is not None and max_limit is not None:
-            limit_text = f"{min_limit} - {max_limit}"
-        elif min_limit is not None:
-            limit_text = f"≥ {min_limit}"
-        elif max_limit is not None:
-            limit_text = f"≤ {max_limit}"
-        else:
-            limit_text = "Not specified"
-        
-        p.drawString(x_pos + 2*mm, y_position - 5.2*mm, limit_text) # Adjusted for vertical centering
-        x_pos += col_widths[3]
-        
-        # Status indicator
-        if is_within_limits:
-            p.setFillColor(success_color)
-            status_text = "✓ PASS"
-        else:
-            p.setFillColor(error_color)
-            status_text = "✗ FAIL"
-        
-        p.setFont("Helvetica-Bold", 8)
-        p.drawString(x_pos + 2*mm, y_position - 5.2*mm, status_text) # Adjusted for vertical centering
-        
-        y_position -= row_height
-    
-    # Consultant review section if available and has meaningful content
-    if hasattr(sample, 'review') and sample.review and sample.review.status == 'APPROVED':
-        review = sample.review
-        
-        meaningful_comments = review.comments and review.comments.strip() and review.comments.strip().lower() not in ['f', 'd', 'n/a', '-', '.', 'nil']
-        meaningful_recommendations = review.recommendations and review.recommendations.strip() and review.recommendations.strip().lower() not in ['f', 'd', 'n/a', '-', '.', 'nil']
+            canvas.restoreState()
 
-        if meaningful_comments or meaningful_recommendations:
-            # Proceed to show section
-            y_position -= 10*mm
+        def footer(self, canvas, doc):
+            canvas.saveState()
+            styles = getSampleStyleSheet()
             
-            # Section header
-            p.setFillColor(primary_color)
-            p.rect(left_margin, y_position - 8*mm, content_width, 8*mm, stroke=0, fill=1)
-            p.setFillColor(colors.white)
-            p.setFont("Helvetica-Bold", 12)
-            p.drawString(left_margin + 3*mm, y_position - 6*mm, "CONSULTANT'S REMARKS")
+            footer_text = f"Page {doc.page} | Report ID: {sample.display_id}"
+            p = Paragraph(footer_text, styles['Normal'])
+            p.wrapOn(canvas, doc.width, doc.bottomMargin)
+            p.drawOn(canvas, doc.leftMargin, 10*mm)
             
-            y_position -= 12*mm
-            
-            p.setFillColor(text_color)
-            p.setFont("Helvetica", 10)
-            
-            style = None # Initialize style variable
-            if meaningful_comments:
-                p.setFont("Helvetica-Bold", 10)
-                p.drawString(left_margin + 3*mm, y_position, "Comments:")
-                y_position -= 5*mm
-                p.setFont("Helvetica", 10)
-                
-                from reportlab.platypus import Paragraph # Import here to avoid error if not used
-                from reportlab.lib.styles import getSampleStyleSheet
-                if not style: # Ensure style is initialized only once if needed for both
-                    style = getSampleStyleSheet()['Normal']
-                    style.fontName = 'Helvetica'
-                    style.fontSize = 10
-                    style.leading = 12 
-                
-                comment_paragraph = Paragraph(review.comments.strip(), style)
-                comment_width, comment_height = comment_paragraph.wrapOn(p, content_width - 6*mm, 50*mm) 
-                comment_paragraph.drawOn(p, left_margin + 3*mm, y_position - comment_height)
-                y_position -= (comment_height + 3*mm) 
-            
-            if meaningful_recommendations:
-                p.setFont("Helvetica-Bold", 10)
-                p.drawString(left_margin + 3*mm, y_position, "Recommendations:")
-                y_position -= 5*mm
-                p.setFont("Helvetica", 10)
+            canvas.restoreState()
 
-                if not style: # Ensure style is initialized if not done by comments
-                    from reportlab.platypus import Paragraph
-                    from reportlab.lib.styles import getSampleStyleSheet
-                    style = getSampleStyleSheet()['Normal']
-                    style.fontName = 'Helvetica'
-                    style.fontSize = 10
-                    style.leading = 12
+    doc = ReportDocTemplate(buffer, pagesize=A4,
+                            rightMargin=20*mm, leftMargin=20*mm,
+                            topMargin=30*mm, bottomMargin=20*mm)
+    
+    styles = getSampleStyleSheet()
+    styles.add(ParagraphStyle(name='Center', alignment=TA_CENTER))
+    styles.add(ParagraphStyle(name='Right', alignment=TA_RIGHT))
+    styles.add(ParagraphStyle(name='Left', alignment=TA_LEFT))
+    styles.add(ParagraphStyle(name='ReportTitle', parent=styles['h1'], alignment=TA_CENTER, spaceAfter=12))
+    styles.add(ParagraphStyle(name='SectionTitle', parent=styles['h2'], spaceAfter=6))
+    styles.add(ParagraphStyle(name='TableHead', parent=styles['Normal'], fontName='Helvetica-Bold', alignment=TA_CENTER))
 
-                recommendation_paragraph = Paragraph(review.recommendations.strip(), style)
-                rec_width, rec_height = recommendation_paragraph.wrapOn(p, content_width - 6*mm, 50*mm)
-                recommendation_paragraph.drawOn(p, left_margin + 3*mm, y_position - rec_height)
-                y_position -= (rec_height + 3*mm)
-        # If no meaningful content, the 'else' for 'if meaningful_comments or meaningful_recommendations:' is implicitly to do nothing further for this section.
+    elements = []
     
-    # Footer with signature section
-    y_position -= 15*mm
+    # Define colors from application theme
+    primary_color = colors.HexColor('#4a90e2') # A nice blue
+    secondary_color = colors.HexColor('#50e3c2') # A teal/green color
+    text_color = colors.HexColor('#333333')
     
-    # Signature line
-    p.setFillColor(text_color)
-    p.setFont("Helvetica", 10)
-    p.drawRightString(right_margin, y_position, "Authorized Signatory")
-    p.line(right_margin - 50*mm, y_position - 2*mm, right_margin, y_position - 2*mm)
+    # Update styles with theme colors
+    styles['ReportTitle'].textColor = primary_color
+    styles['SectionTitle'].textColor = primary_color
+    styles['h3'].textColor = secondary_color
+    styles['Normal'].textColor = text_color
+
+
+    # Header
+    elements.append(Spacer(1, 15*mm))
+    elements.append(Paragraph("TEST REPORT", styles['ReportTitle']))
+
+    # Part A: Particulars of Sample Submitted
+    elements.append(Paragraph("PART - A: PARTICULARS OF SAMPLE SUBMITTED", styles['SectionTitle']))
+
+    part_a_data = [
+        [Paragraph('*Sample Described by customer as', styles['Normal']), ':', Paragraph(sample.sample_type, styles['Normal'])],
+        [Paragraph('*Customer Name', styles['Normal']), ':', Paragraph(sample.customer.name, styles['Normal'])],
+        [Paragraph('*Customer Address', styles['Normal']), ':', Paragraph(sample.customer.address, styles['Normal'])],
+        [Paragraph('Sample Code No', styles['Normal']), ':', Paragraph(sample.display_id, styles['Normal'])],
+        [Paragraph('Sample Type', styles['Normal']), ':', Paragraph(sample.sample_type, styles['Normal'])],
+        [Paragraph('Sample Received Date', styles['Normal']), ':', Paragraph(sample.date_received_at_lab.strftime('%d.%m.%Y') if sample.date_received_at_lab else 'N/A', styles['Normal'])],
+        [Paragraph('Sample Qty. Recd.', styles['Normal']), ':', Paragraph(sample.quantity_received or 'N/A', styles['Normal'])],
+        [Paragraph('Reference to sampling procedure', styles['Normal']), ':', Paragraph(sample.sampling_procedure or 'N/A', styles['Normal'])],
+        [Paragraph('Sample drawn by', styles['Normal']), ':', Paragraph(sample.collected_by, styles['Normal'])],
+        [Paragraph('Date of Sampling', styles['Normal']), ':', Paragraph(sample.collection_datetime.strftime('%d.%m.%Y'), styles['Normal'])],
+        [Paragraph('Location of Sampling', styles['Normal']), ':', Paragraph(sample.sampling_location or 'N/A', styles['Normal'])],
+        [Paragraph('Any Deviation from the Test methods', styles['Normal']), ':', Paragraph(sample.deviations or 'NIL', styles['Normal'])],
+        [Paragraph('Test Commenced On', styles['Normal']), ':', Paragraph(sample.test_commenced_on.strftime('%d.%m.%Y') if sample.test_commenced_on else 'N/A', styles['Normal'])],
+        [Paragraph('Test Completed On', styles['Normal']), ':', Paragraph(sample.test_completed_on.strftime('%d.%m.%Y') if sample.test_completed_on else 'N/A', styles['Normal'])],
+    ]
+    part_a_table = Table(part_a_data, colWidths=[60*mm, 5*mm, 100*mm])
+    part_a_table.setStyle(TableStyle([
+        ('ALIGN', (0,0), (-1,-1), 'LEFT'),
+        ('VALIGN', (0,0), (-1,-1), 'TOP'),
+        ('FONTNAME', (0,0), (0,-1), 'Helvetica-Bold'),
+        ('LEFTPADDING', (0,0), (-1,-1), 0),
+        ('RIGHTPADDING', (0,0), (-1,-1), 0),
+    ]))
+    elements.append(part_a_table)
+    elements.append(Spacer(1, 12))
+
+    # Test Results
+    elements.append(Paragraph("TEST RESULTS", styles['SectionTitle']))
+
+    results = TestResult.objects.filter(sample=sample).select_related('parameter').order_by('parameter__category', 'parameter__name')
     
-    # Final footer
-    p.setFont("Helvetica-Oblique", 8)
-    p.setStrokeColor(medium_gray)
-    p.line(left_margin, bottom_margin + 5*mm, right_margin, bottom_margin + 5*mm)
-    p.drawString(left_margin, bottom_margin, f"Report Generated: {timezone.now().strftime('%d %B %Y, %H:%M:%S')}")
-    p.drawRightString(right_margin, bottom_margin, f"Page {p.getPageNumber()}")
+    from itertools import groupby
+    grouped_results = groupby(results, key=lambda x: x.parameter.category or "Uncategorized")
+
+    for category, group in grouped_results:
+        elements.append(Paragraph(f"<b>{category}</b>", styles['h3']))
+        elements.append(Spacer(1, 4))
+        
+        table_data = [
+            [Paragraph(h, styles['TableHead']) for h in ["S.No", "Test Parameters", "Test Method", "Result", "Unit", "Requirement as per FSSAI", "Acceptable Limit"]]
+        ]
+        
+        for i, result in enumerate(group, 1):
+            unit_display = result.parameter.unit
+            result_display = result.result_value
+
+            # Handle cases where the unit might be a qualitative result
+            if unit_display and unit_display.isalpha() and len(unit_display) > 3:
+                result_display = unit_display
+                unit_display = ''
+
+            table_data.append([
+                i,
+                Paragraph(result.parameter.name, styles['Normal']),
+                Paragraph(result.parameter.standard_method or 'N/A', styles['Normal']),
+                result_display,
+                unit_display,
+                Paragraph(result.parameter.fssai_limit or 'N/A', styles['Normal']),
+                f"{result.parameter.min_permissible_limit or ''} - {result.parameter.max_permissible_limit or ''}"
+            ])
+            
+        results_table = Table(table_data, colWidths=[10*mm, 40*mm, 30*mm, 20*mm, 15*mm, 30*mm, 30*mm], repeatRows=1)
+        results_table.setStyle(TableStyle([
+            ('BACKGROUND', (0,0), (-1,0), primary_color),
+            ('TEXTCOLOR', (0,0), (-1,0), colors.whitesmoke),
+            ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+            ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+            ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+            ('BOTTOMPADDING', (0,0), (-1,0), 8),
+            ('TOPPADDING', (0,0), (-1,0), 8),
+            ('GRID', (0,0), (-1,-1), 1, colors.HexColor('#cccccc')),
+            ('BACKGROUND', (0,1), (-1,-1), colors.HexColor('#f0f8ff')),
+        ]))
+        elements.append(results_table)
+        elements.append(Spacer(1, 12))
+
+    # Remarks
+    elements.append(Paragraph("Remarks:", styles['h3']))
+    elements.append(Paragraph("The above sample complies with Requirement as per FSSAI Drinking Water 2.10.9 complies to IS 10500: 2012 (Acceptable Limit) Amendment No:4 Drinking Water Specification for above tested parameter.", styles['Normal']))
+    elements.append(Spacer(1, 12))
     
-    p.showPage()
-    p.save()
+    elements.append(Paragraph("********** End of Report**********", styles['Center']))
+    elements.append(Spacer(1, 24))
+
+    # Signatories
+    signatory_data = [
+        [
+            Paragraph(f"<b>{sample.food_analyst.get_full_name() if sample.food_analyst else 'N/A'}</b><br/>Food Analyst", styles['Center']),
+            Paragraph(f"<b>{sample.reviewed_by.get_full_name() if sample.reviewed_by else 'N/A'}</b><br/>Deputy Technical Manager – Biological", styles['Center']),
+            Paragraph(f"<b>{sample.lab_manager.get_full_name() if sample.lab_manager else 'N/A'}</b><br/>Technical Manager – Chemical", styles['Center']),
+        ]
+    ]
+    signatory_table = Table(signatory_data, colWidths=[55*mm, 55*mm, 55*mm])
+    signatory_table.setStyle(TableStyle([
+        ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+        ('VALIGN', (0,0), (-1,-1), 'TOP'),
+    ]))
+    elements.append(signatory_table)
+
+    doc.build(elements)
 
     buffer.seek(0)
-    response = FileResponse(buffer, as_attachment=True, filename=f'WaterQualityReport_{sample.sample_id}.pdf')
+    response = FileResponse(buffer, as_attachment=True, filename=f'WaterQualityReport_{sample.display_id}.pdf')
     
     if sample.current_status == 'REPORT_APPROVED':
         try:
             sample.update_status('REPORT_SENT', request.user)
-            messages.info(request, f"Report for sample {sample.sample_id} downloaded and status updated to 'Report Sent'.")
+            messages.info(request, f"Report for sample {sample.display_id} downloaded and status updated to 'Report Sent'.")
         except Exception as e:
             messages.warning(request, f"Report downloaded, but failed to update sample status: {str(e)}")
-            # Log this error for admin attention
 
     return response
 
@@ -1295,7 +1121,7 @@ def setup_test_parameters(request):
             messages.error(request, "Error in form submission. Please check the details.")
 
     context = {
-        'parameters': parameters,
+        'existing_params': parameters,
         'form': form,
         'page_title': 'Setup Test Parameters' # Example title for the template
     }
