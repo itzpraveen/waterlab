@@ -88,18 +88,30 @@
                                 {% endif %}
                             </div>
 
-                            {% if test_param_data.parameter.min_permissible_limit is not None or test_param_data.parameter.max_permissible_limit is not None %}
+                            {% if test_param_data.parameter.unit %}
                             <div class="card-panel teal lighten-5" style="padding: 10px; margin-bottom:15px;">
-                                <strong class="teal-text text-darken-3">Permissible Range:</strong>
-                                <span class="chip teal white-text">
-                                    {% if test_param_data.parameter.min_permissible_limit is not None %}{{ test_param_data.parameter.min_permissible_limit }}{% endif %}
-                                    {% if test_param_data.parameter.min_permissible_limit is not None and test_param_data.parameter.max_permissible_limit is not None %} - {% endif %}
-                                    {% if test_param_data.parameter.max_permissible_limit is not None %}{{ test_param_data.parameter.max_permissible_limit }}{% endif %}
-                                    {{ test_param_data.parameter.unit }}
-                                </span>
+                                <strong class="teal-text text-darken-3">Acceptable Limit:</strong>
+                                {% if test_param_data.parameter.min_permissible_limit is not None and test_param_data.parameter.max_permissible_limit is not None %}
+                                    <span class="chip teal white-text">{{ test_param_data.parameter.min_permissible_limit }} - {{ test_param_data.parameter.max_permissible_limit }} {{ test_param_data.parameter.unit }}</span>
+                                {% elif test_param_data.parameter.max_permissible_limit is not None %}
+                                    <span class="chip teal white-text">< {{ test_param_data.parameter.max_permissible_limit }} {{ test_param_data.parameter.unit }}</span>
+                                {% elif test_param_data.parameter.min_permissible_limit is not None %}
+                                    <span class="chip teal white-text">> {{ test_param_data.parameter.min_permissible_limit }} {{ test_param_data.parameter.unit }}</span>
+                                {% else %}
+                                    <span class="chip teal white-text">{{ test_param_data.parameter.unit }}</span>
+                                {% endif %}
                             </div>
                             {% endif %}
-                            
+
+                            {% if test_param_data.parameter.unit == 'Agreeable' or test_param_data.parameter.unit == 'Colourless' or test_param_data.parameter.unit == 'Absent/ml' %}
+                            <div style="margin-bottom: 10px;">
+                                <button type="button" class="btn-small waves-effect waves-light blue lighten-1 autofill-btn" data-target="{{ test_param_data.form.result_value.id_for_label }}" data-value="{{ test_param_data.parameter.unit }}">{{ test_param_data.parameter.unit }}</button>
+                                {% if test_param_data.parameter.unit == 'Absent/ml' %}
+                                <button type="button" class="btn-small waves-effect waves-light green lighten-1 autofill-btn" data-target="{{ test_param_data.form.result_value.id_for_label }}" data-value="Present">Present</button>
+                                {% endif %}
+                            </div>
+                            {% endif %}
+
                             <div class="row" style="margin-bottom:0;">
                                 <div class="input-field col s12 m6">
                                     {{ test_param_data.form.result_value }}
@@ -163,6 +175,20 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Re-initialize labels if form fields have values (e.g., on edit or after validation error)
     M.updateTextFields();
+
+    // Handle autofill buttons
+    const autofillButtons = document.querySelectorAll('.autofill-btn');
+    autofillButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const targetId = this.dataset.target;
+            const value = this.dataset.value;
+            const targetInput = document.getElementById(targetId);
+            if (targetInput) {
+                targetInput.value = value;
+                M.updateTextFields(); // Update Materialize label
+            }
+        });
+    });
 
     // Basic client-side validation hint (server-side is primary)
     const form = document.querySelector('form');
