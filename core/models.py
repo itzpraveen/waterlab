@@ -160,7 +160,12 @@ class Sample(models.Model):
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name='samples')
     collection_datetime = models.DateTimeField()
     sample_source = models.CharField(max_length=50, choices=SAMPLE_SOURCE_CHOICES)
-    collected_by = models.CharField(max_length=255) # Could be customer or lab personnel
+    COLLECTED_BY_CHOICES = [
+        ('CUSTOMER', 'Customer'),
+        ('LABORATORY_PERSON', 'Laboratory Person'),
+        ('GOVERNMENT_DEPT', 'Government Dept'),
+    ]
+    collected_by = models.CharField(max_length=255, choices=COLLECTED_BY_CHOICES, default='CUSTOMER')
     referred_by = models.CharField(max_length=255, blank=True, null=True)
     tests_requested = models.ManyToManyField('TestParameter', blank=True, related_name='samples')
     date_received_at_lab = models.DateTimeField(null=True, blank=True)
