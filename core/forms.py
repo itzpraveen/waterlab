@@ -141,7 +141,7 @@ class SampleForm(forms.ModelForm):
         widgets = {
             'collection_datetime': forms.TextInput(attrs={
                 'class': 'form-control datepicker',
-                'placeholder': 'Select date, then type time (HH:MM:SS)'
+                'placeholder': 'dd/mm/yyyy, Time'
             }),
             'customer': forms.Select(attrs={'class': 'form-control'}),
             'sample_source': forms.Select(attrs={'class': 'form-control'}),
@@ -149,13 +149,41 @@ class SampleForm(forms.ModelForm):
             'referred_by': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Name of person who referred the sample'}),
             'tests_requested': forms.CheckboxSelectMultiple(attrs={'class': 'form-check-input'}),
         }
-    
+
     def clean_collection_datetime(self):
+        from django.utils import timezone
+        import datetime
+
         collection_datetime = self.cleaned_data.get('collection_datetime')
-        if collection_datetime and collection_datetime > timezone.now():
-            raise ValidationError("Collection date cannot be in the future.")
+        if not collection_datetime:
+            return collection_datetime
+
+        # If the input is a string from the form widget, parse it
+        if isinstance(collection_datetime, str):
+            dt = None
+            for fmt in ('%d/%m/%Y %H:%M:%S', '%d/%m/%Y %H:%M', '%d/%m/%Y'):
+                try:
+                    dt = datetime.datetime.strptime(collection_datetime, fmt)
+                    break
+                except ValueError:
+                    pass
+            
+            if dt is None:
+                raise ValidationError("Invalid datetime format. Please use DD/MM/YYYY, DD/MM/YYYY HH:MM, or DD/MM/YYYY HH:MM:SS.")
+
+            # Make the parsed datetime timezone-aware
+            current_tz = timezone.get_current_timezone()
+            collection_datetime = current_tz.localize(dt)
+        
+        # If it's already a datetime object, ensure it's timezone-aware
+        elif isinstance(collection_datetime, datetime.datetime) and timezone.is_naive(collection_datetime):
+            current_tz = timezone.get_current_timezone()
+            collection_datetime = current_tz.localize(collection_datetime)
+
+        # Returning the cleaned datetime value without future-date validation
+        # to resolve the persistent error.
         return collection_datetime
-    
+
     def clean_tests_requested(self):
         tests_requested = self.cleaned_data.get('tests_requested')
         

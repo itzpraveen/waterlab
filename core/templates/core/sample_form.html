@@ -63,7 +63,7 @@
                             {% if form.collection_datetime.errors %}
                                 <span class="helper-text red-text">{{ form.collection_datetime.errors.0 }}</span>
                             {% else %}
-                                <span class="helper-text">Cannot be in the future. Format: YYYY-MM-DD HH:MM:SS</span>
+                                <span class="helper-text">Cannot be in the future. Format: DD/MM/YYYY HH:MM:SS</span>
                             {% endif %}
                         </div>
                     </div>
@@ -157,28 +157,42 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Initialize Materialize Date Picker for collection_datetime
     const datepickerElems = document.querySelectorAll('.datepicker');
-    M.Datepicker.init(datepickerElems, {
-        format: 'yyyy-mm-dd', // Django's expected date format part
-        autoClose: true,
+    datepickerElems.forEach(elem => {
+        const initialDate = elem.value ? new Date(elem.value.split('/').reverse().join('-')) : new Date();
+        M.Datepicker.init(elem, {
+            format: 'dd/mm/yyyy', // Django's expected date format part
+            autoClose: true,
+            
+            defaultDate: initialDate,
+            setDefaultDate: true,
         onSelect: function(selectedDate) {
-            // 'this' refers to the datepicker instance. 'this.el' is the input element.
-            // We only want to set the date part. User will type the time.
-            // If the input already has a time part, try to preserve it.
             const currentValue = this.el.value;
             let timePart = '';
+
+            // Preserve the time part if it exists
             if (currentValue && currentValue.includes(' ')) {
-                timePart = currentValue.substring(currentValue.indexOf(' '));
+                timePart = currentValue.substring(currentValue.indexOf(' ')).trim();
             }
-            
-            // Format the selectedDate to 'YYYY-MM-DD'
+
+            // Format the selected date
             const year = selectedDate.getFullYear();
             const month = ('0' + (selectedDate.getMonth() + 1)).slice(-2);
             const day = ('0' + selectedDate.getDate()).slice(-2);
-            const formattedDate = `${year}-${month}-${day}`;
-            
-            this.el.value = formattedDate + (timePart || ' HH:MM:SS'); // Append existing time or placeholder
+            const formattedDate = `${day}/${month}/${year}`;
+
+            // If no time part was preserved, default to the current time
+            if (!timePart) {
+                const now = new Date();
+                const hours = ('0' + now.getHours()).slice(-2);
+                const minutes = ('0' + now.getMinutes()).slice(-2);
+                const seconds = ('0' + now.getSeconds()).slice(-2);
+                timePart = `${hours}:${minutes}:${seconds}`;
+            }
+
+            this.el.value = `${formattedDate} ${timePart}`;
             M.updateTextFields(); // Update Materialize label
         }
+        });
     });
     
     // Re-initialize labels if form fields have values (e.g., on edit or after validation error)

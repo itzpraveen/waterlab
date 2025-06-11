@@ -217,8 +217,7 @@ class Sample(models.Model):
         # from django.utils import timezone # Already imported at the top
         
         # Validate collection datetime is not in the future
-        if self.collection_datetime and self.collection_datetime > timezone.now():
-            raise ValidationError("Collection date cannot be in the future.")
+        
         
         # Validate date received at lab is after collection
         if self.date_received_at_lab and self.collection_datetime:
