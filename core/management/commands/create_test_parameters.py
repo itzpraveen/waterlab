@@ -1,392 +1,150 @@
 from django.core.management.base import BaseCommand
-from core.models import TestParameter
+from core.models import TestParameter, TestResult
+import re
 
 class Command(BaseCommand):
-    help = 'Create standard water test parameters'
+    help = 'Create standard water test parameters based on the analysis report'
 
     def handle(self, *args, **options):
+        self.stdout.write(self.style.WARNING('Deleting all existing test results...'))
+        TestResult.objects.all().delete()
+        self.stdout.write(self.style.SUCCESS('All existing test results have been deleted.'))
+
+        self.stdout.write(self.style.WARNING('Deleting all existing test parameters...'))
         TestParameter.objects.all().delete()
-        
+        self.stdout.write(self.style.SUCCESS('All existing test parameters have been deleted.'))
+
+        # Create parent categories
         physical_params = TestParameter.objects.create(name='Physical Parameters', category='A')
         chemical_params = TestParameter.objects.create(name='Chemical Parameters', category='B')
         bacteriological_params = TestParameter.objects.create(name='Bacteriological Parameters', category='C')
 
-        test_parameters = [
-            {
-                'name': 'Odour',
-                'unit': 'Agreeable',
-                'standard_method': 'IS 3025 (Part 05)',
-                'parent': physical_params,
-            },
-            {
-                'name': 'Colour',
-                'unit': 'Colourless',
-                'standard_method': 'IS 3025 (Part 04)',
-                'parent': physical_params,
-            },
-            {
-                'name': 'Taste',
-                'unit': 'Agreeable',
-                'standard_method': 'IS 3025 (Part 08)',
-                'parent': physical_params,
-            },
-            {
-                'name': 'Temperature',
-                'unit': '°C',
-                'standard_method': 'Thermometry',
-                'parent': physical_params,
-            },
-            {
-                'name': 'pH',
-                'unit': 'pH units',
-                'standard_method': 'IS 3025 (Part11)',
-                'min_permissible_limit': 6.5,
-                'max_permissible_limit': 8.5,
-                'parent': physical_params,
-            },
-            {
-                'name': 'Turbidity',
-                'unit': 'NTU',
-                'standard_method': 'IS 3025 (Part 10)',
-                'max_permissible_limit': 5,
-                'parent': physical_params,
-            },
-            {
-                'name': 'Total Dissolved Solids (TDS)',
-                'unit': 'ppm',
-                'standard_method': 'IS 3025 (Part 16)',
-                'max_permissible_limit': 500.57,
-                'parent': physical_params,
-            },
-            {
-                'name': 'Electrical Conductivity(EC)',
-                'unit': 'µS/cm',
-                'standard_method': 'IS 3025 (Part 11)',
-                'max_permissible_limit': 800,
-                'parent': physical_params,
-            },
-            {
-                'name': 'Oxidation Reduction Potential(ORP)',
-                'unit': 'mv',
-                'standard_method': 'In-house Standardized Method (ISM)',
-                'parent': physical_params,
-            },
-            {
-                'name': 'Sedimentation',
-                'unit': '',
-                'standard_method': 'Filtration Method',
-                'parent': physical_params,
-            },
-            {
-                'name': 'Total Suspended Solids',
-                'unit': 'mg/l',
-                'standard_method': 'IS 3025',
-                'parent': physical_params,
-            },
-            {
-                'name': 'Acidity',
-                'unit': 'mg/L',
-                'standard_method': 'IS 3025',
-                'parent': chemical_params,
-            },
-            {
-                'name': 'Total Hardness',
-                'unit': 'ppm',
-                'standard_method': 'IS 3025',
-                'max_permissible_limit': 200.22,
-                'parent': chemical_params,
-            },
-            {
-                'name': 'Hardness as CaCO3',
-                'unit': 'mg/L',
-                'standard_method': 'IS 3025 (Part 21)',
-                'max_permissible_limit': 200,
-                'parent': chemical_params,
-            },
-            {
-                'name': 'Chloride (as Cl)',
-                'unit': 'mg/L',
-                'standard_method': 'IS 3025 (Part 32)',
-                'max_permissible_limit': 250,
-                'parent': chemical_params,
-            },
-            {
-                'name': 'Fluoride (as F)',
-                'unit': 'ppm',
-                'standard_method': 'IS 3025 (Part 60)',
-                'max_permissible_limit': 1.2,
-                'parent': chemical_params,
-            },
-            {
-                'name': 'Iron (as Fe)',
-                'unit': 'ppm',
-                'standard_method': 'IS 3025 (Part 53)',
-                'max_permissible_limit': 0.3,
-                'parent': chemical_params,
-            },
-            {
-                'name': 'Nitrate (as NO3-)',
-                'unit': 'ppm',
-                'standard_method': 'IS 3025 (Part 34)',
-                'max_permissible_limit': 45,
-                'parent': chemical_params,
-            },
-            {
-                'name': 'Residual Free Chlorine',
-                'unit': 'mg/l',
-                'standard_method': 'Iodometric Methods Ref: IS 3025(Part – 26)',
-                'max_permissible_limit': 0.2,
-                'parent': chemical_params,
-            },
-            {
-                'name': 'Barium',
-                'unit': 'mg/l',
-                'standard_method': 'Volumetric Ref:IS13428AnnexF',
-                'max_permissible_limit': 0.7,
-                'parent': chemical_params,
-            },
-            {
-                'name': 'Copper',
-                'unit': 'mg/l',
-                'standard_method': 'Neocuproine Ref: IS 3025(Part42)',
-                'max_permissible_limit': 0.05,
-                'parent': chemical_params,
-            },
-            {
-                'name': 'Manganese',
-                'unit': 'mg/l',
-                'standard_method': 'Colour comparison Ref: IS 3025(Part – 59)',
-                'max_permissible_limit': 0.1,
-                'parent': chemical_params,
-            },
-            {
-                'name': 'Nitrite',
-                'unit': 'Mg/l',
-                'standard_method': 'Spectrometric Ref: IS 3025(Part – 34)',
-                'max_permissible_limit': 0.02,
-                'parent': chemical_params,
-            },
-            {
-                'name': 'Aluminium',
-                'unit': 'Mg/l',
-                'standard_method': 'Eriochrome Cyanine R Dye Method Ref: IS 3025(Part – 55)',
-                'max_permissible_limit': 0.03,
-                'parent': chemical_params,
-            },
-            {
-                'name': 'Calcium',
-                'unit': 'mg/l',
-                'standard_method': 'EDTAMethod Ref: IS 3025(Part – 40)',
-                'max_permissible_limit': 75,
-                'parent': chemical_params,
-            },
-            {
-                'name': 'Magnesium',
-                'unit': 'mg/L',
-                'standard_method': 'Volumetric Ref: IS 3025(Part – 46)',
-                'max_permissible_limit': 30,
-                'parent': chemical_params,
-            },
-            {
-                'name': 'Sulphate (as SO4)',
-                'unit': 'mg/L',
-                'standard_method': 'IS 3025 (Part 24)',
-                'max_permissible_limit': 200,
-                'parent': chemical_params,
-            },
-            {
-                'name': 'Sulphide (as H2S)',
-                'unit': 'mg/L',
-                'standard_method': 'IS 3025 (Part 29)',
-                'max_permissible_limit': 0.05,
-                'parent': chemical_params,
-            },
-            {
-                'name': 'Phosphate (as PO4)',
-                'unit': 'mg/L',
-                'standard_method': 'EPA 365.1',
-                'max_permissible_limit': 0.05,
-                'parent': chemical_params,
-            },
-            {
-                'name': 'Ammonia',
-                'unit': 'mg/L',
-                'standard_method': 'IS 3025 (Part 34)',
-                'max_permissible_limit': 0.03,
-                'parent': chemical_params,
-            },
-            {
-                'name': 'Chromium(as Cr)',
-                'unit': 'mg/L',
-                'standard_method': 'IS 3025 (Part 52)',
-                'max_permissible_limit': 0.05,
-                'parent': chemical_params,
-            },
-            {
-                'name': 'Total Plate Count/ Total Microbial Load',
-                'unit': 'cfu/ml',
-                'standard_method': 'IS 5402:2012',
-                'parent': bacteriological_params,
-            },
-            {
-                'name': 'Total coliforms',
-                'unit': 'Absent/ml',
-                'standard_method': 'IS 15185:2016',
-                'parent': bacteriological_params,
-            },
-            {
-                'name': 'Fecal coliforms: E. coli',
-                'unit': 'Absent/ml',
-                'standard_method': 'IS 1622:1981',
-                'parent': bacteriological_params,
-            },
-            {
-                'name': 'Enterobacter',
-                'unit': 'Absent/ml',
-                'standard_method': 'IS 15186:2002',
-                'parent': bacteriological_params,
-            },
-            {
-                'name': 'Klebsiella sp.',
-                'unit': 'Absent/ml',
-                'standard_method': 'Culture Characteristics',
-                'parent': bacteriological_params,
-            },
-            {
-                'name': 'Salmonella sp.',
-                'unit': 'Absent/ml',
-                'standard_method': 'IS15187:2002',
-                'parent': bacteriological_params,
-            },
-            {
-                'name': 'Shigella sp.',
-                'unit': 'Absent/ml',
-                'standard_method': 'Culture Characteristics',
-                'parent': bacteriological_params,
-            },
-            {
-                'name': 'Chromobacterium violaceum',
-                'unit': 'Absent/ml',
-                'standard_method': 'Culture characteristics',
-                'parent': bacteriological_params,
-            },
-            {
-                'name': 'Serratia sp.',
-                'unit': 'Absent/ml',
-                'standard_method': 'Culture characteristics',
-                'parent': bacteriological_params,
-            },
-            {
-                'name': 'Flavobacterium sp.',
-                'unit': 'Absent/ml',
-                'standard_method': 'Culture characteristics',
-                'parent': bacteriological_params,
-            },
-            {
-                'name': 'Staphylococcus aureus',
-                'unit': 'Absent/ml',
-                'standard_method': 'IS 5887:1976 Part II',
-                'parent': bacteriological_params,
-            },
-            {
-                'name': 'Proteus sp.',
-                'unit': 'Absent/ml',
-                'standard_method': 'Culture Characteristics',
-                'parent': bacteriological_params,
-            },
-            {
-                'name': 'Pseudomonas sp.',
-                'unit': 'Absent/ml',
-                'standard_method': 'Culture Characteristics',
-                'parent': bacteriological_params,
-            },
-            {
-                'name': 'Bacillus sp.',
-                'unit': 'Absent/ml',
-                'standard_method': 'Culture Characteristics',
-                'parent': bacteriological_params,
-            },
-            {
-                'name': 'Vibrio sp.',
-                'unit': 'Absent/ml',
-                'standard_method': 'Culture Characteristics',
-                'parent': bacteriological_params,
-            },
-            {
-                'name': 'Iron oxidizing bacteria',
-                'unit': 'Absent/ml',
-                'standard_method': 'Culture Characteristics',
-                'parent': bacteriological_params,
-            },
-            {
-                'name': 'Actinomycetes',
-                'unit': 'Absent/ml',
-                'standard_method': 'Culture Characteristics',
-                'parent': bacteriological_params,
-            },
-            {
-                'name': 'Aspergillus sp.',
-                'unit': 'Absent/ml',
-                'standard_method': 'Culture Characteristics',
-                'parent': bacteriological_params,
-            },
-            {
-                'name': 'Yeast',
-                'unit': 'Absent/ml',
-                'standard_method': 'Culture Characteristics',
-                'parent': bacteriological_params,
-            },
-            {
-                'name': 'Entamoeba sp.',
-                'unit': 'Absent/ml',
-                'standard_method': 'Microscopy',
-                'parent': bacteriological_params,
-            },
-            {
-                'name': 'Giardia sp.',
-                'unit': 'Absent/ml',
-                'standard_method': 'Microscopy',
-                'parent': bacteriological_params,
-            },
-            {
-                'name': 'Algae/ Microscopic Phytoplankton',
-                'unit': 'Absent/ml',
-                'standard_method': 'Microscopy',
-                'parent': bacteriological_params,
-            },
-        ]
-        
-        created_count = 0
-        updated_count = 0
-        
-        for param_data in test_parameters:
-            parameter, created = TestParameter.objects.get_or_create(
-                name=param_data['name'],
-                defaults=param_data
-            )
+        # Sub-categories for Bacteriological Parameters
+        pigment_producing = TestParameter.objects.create(name='Pigment producing bacteria', parent=bacteriological_params)
+        other_pathogenic = TestParameter.objects.create(name='Other pathogenic bacteria', parent=bacteriological_params)
+        fungal_contamination = TestParameter.objects.create(name='Fungal contamination', parent=bacteriological_params)
+        protozoa = TestParameter.objects.create(name='Protozoa', parent=bacteriological_params)
+
+        test_parameters_data = [
+            # Physical Parameters
+            {'name': 'Odour', 'method': 'IS 3025 (Part 05)', 'limit': 'Agreeable', 'parent': physical_params},
+            {'name': 'Colour', 'method': 'IS 3025 (Part 04)', 'limit': 'Colourless', 'parent': physical_params},
+            {'name': 'Taste', 'method': 'IS 3025 (Part 08)', 'limit': 'Agreeable', 'parent': physical_params},
+            {'name': 'Temperature', 'method': 'Thermometry', 'limit': '-', 'unit': '°C', 'parent': physical_params},
+            {'name': 'pH', 'method': 'IS 3025 (Part11)', 'limit': '6.5 to 8.5', 'parent': physical_params},
+            {'name': 'Turbidity', 'method': 'IS 3025 (Part 10)', 'limit': '<5 NTU', 'parent': physical_params},
+            {'name': 'Total Dissolved Solids (TDS)', 'method': 'IS 3025 (Part 16)', 'limit': '500.57 ppm', 'parent': physical_params},
+            {'name': 'Electrical Conductivity(EC)', 'method': 'IS 3025 (Part 16)', 'limit': '800 µS/cm', 'parent': physical_params},
+            {'name': 'Oxidation Reduction Potential(ORP)', 'method': 'IS 3025 (Part 11)', 'limit': '< 0', 'unit': 'mv', 'parent': physical_params},
+            {'name': 'Sedimentation', 'method': 'In-house Standardized Method (ISM)', 'limit': '--', 'parent': physical_params},
+            {'name': 'Total Suspended Solids', 'method': 'Filtration Method', 'limit': '--', 'unit': 'mg/l', 'parent': physical_params},
+
+            # Chemical Parameters
+            {'name': 'Acidity', 'method': 'IS 3025', 'limit': '--', 'unit': 'mg/L', 'parent': chemical_params},
+            {'name': 'Total Hardness', 'method': 'IS 3025', 'limit': '200.22 ppm', 'parent': chemical_params},
+            {'name': 'Hardness as CaCO3', 'method': 'IS 3025 (Part 21)', 'limit': '200 mg/l', 'parent': chemical_params},
+            {'name': 'Chloride (as Cl)', 'method': 'IS 3025 (Part 32)', 'limit': '250 mg/L', 'parent': chemical_params},
+            {'name': 'Fluoride (as F)', 'method': 'IS 3025 (Part 60)', 'limit': '1.2 ppm', 'parent': chemical_params},
+            {'name': 'Iron (as Fe)', 'method': 'IS 3025 (Part 53)', 'limit': '0.3 ppm', 'parent': chemical_params},
+            {'name': 'Nitrate (as NO₃-)', 'method': 'IS 3025 (Part 34)', 'limit': '45 ppm', 'parent': chemical_params},
+            {'name': 'Residual Free Chlorine', 'method': 'Iodometric Methods Ref: IS 3025(Part – 26)', 'limit': '0.2 mg/l', 'parent': chemical_params},
+            {'name': 'Barium', 'method': 'Volumetric Ref:IS13428AnnexF', 'limit': '0.7 mg/l', 'parent': chemical_params},
+            {'name': 'Copper', 'method': 'Neocuproine Ref: IS 3025(Part42)', 'limit': '0.05 mg/l', 'parent': chemical_params},
+            {'name': 'Manganese', 'method': 'Colour comparison Ref: IS 3025(Part – 59)', 'limit': '0.1 mg/l', 'parent': chemical_params},
+            {'name': 'Nitrite', 'method': 'Spectrometric Ref: IS 3025(Part – 34)', 'limit': '0.02 mg/l', 'parent': chemical_params},
+            {'name': 'Aluminium', 'method': 'Eriochrome Cyanine R Dye Method Ref: IS 3025(Part – 55)', 'limit': '0.03 mg/l', 'parent': chemical_params},
+            {'name': 'Calcium', 'method': 'EDTAMethod Ref: IS 3025(Part – 40)', 'limit': '75 mg/l', 'parent': chemical_params},
+            {'name': 'Magnesium', 'method': 'Volumetric Ref: IS 3025(Part – 46)', 'limit': '30 mg/L', 'parent': chemical_params},
+            {'name': 'Sulphate (as SO₄)', 'method': 'IS 3025 (Part 24)', 'limit': '200 mg/L', 'parent': chemical_params},
+            {'name': 'Sulphide (as H₂S)', 'method': 'IS 3025 (Part 29)', 'limit': '0.05 mg/L', 'parent': chemical_params},
+            {'name': 'Phosphate (as PO₄)', 'method': 'EPA 365.1', 'limit': '0.05 mg/L', 'parent': chemical_params},
+            {'name': 'Ammonia', 'method': 'IS 3025 (Part 34)', 'limit': '0.03 mg/L', 'parent': chemical_params},
+            {'name': 'Chromium(as Cr)', 'method': 'IS 3025 (Part 52)', 'limit': '0.05 mg/L', 'parent': chemical_params},
+
+            # Bacteriological Parameters
+            {'name': 'Total Plate Count/ Total Microbial Load', 'method': 'IS 5402:2012', 'limit': '20°C - <100 cfu/ml, 37°C - <20 cfu/ml', 'parent': bacteriological_params},
+            {'name': 'Total coliforms', 'method': 'IS 15185:2016', 'limit': 'Absent/ml', 'parent': bacteriological_params},
+            {'name': 'Fecal coliforms: E. coli', 'method': 'IS 1622:1981', 'limit': 'Absent/ml', 'parent': bacteriological_params},
+            {'name': 'Enterobacter', 'method': 'IS 15186:2002', 'limit': 'Absent/ml', 'parent': bacteriological_params},
+            {'name': 'Klebsiella sp.', 'method': 'Culture Characteristics', 'limit': 'Absent/ml', 'parent': bacteriological_params},
+            {'name': 'Salmonella sp.', 'method': 'IS15187:2002', 'limit': 'Absent/ml', 'parent': bacteriological_params},
+            {'name': 'Shigella sp.', 'method': 'Culture Characteristics', 'limit': 'Absent/ml', 'parent': bacteriological_params},
             
+            # Pigment producing bacteria
+            {'name': 'Chromobacterium violaceum', 'method': 'Culture characteristics', 'limit': 'Absent/ml', 'parent': pigment_producing},
+            {'name': 'Serratia sp.', 'method': 'Culture characteristics', 'limit': 'Absent/ml', 'parent': pigment_producing},
+            {'name': 'Flavobacterium sp.', 'method': 'Culture characteristics', 'limit': 'Absent/ml', 'parent': pigment_producing},
+
+            # Other pathogenic bacteria
+            {'name': 'Staphylococcus aureus', 'method': 'IS 5887:1976 Part II', 'limit': 'Absent/ml', 'parent': other_pathogenic},
+            {'name': 'Proteus sp.', 'method': 'Culture Characteristics', 'limit': 'Absent/ml', 'parent': other_pathogenic},
+            {'name': 'Pseudomonas sp.', 'method': 'Culture Characteristics', 'limit': 'Absent/ml', 'parent': other_pathogenic},
+            {'name': 'Bacillus sp.', 'method': 'Culture Characteristics', 'limit': 'Absent/ml', 'parent': other_pathogenic},
+            {'name': 'Vibrio sp.', 'method': 'Culture Characteristics', 'limit': 'Absent/ml', 'parent': other_pathogenic},
+            {'name': 'Iron oxidizing bacteria', 'method': 'Culture Characteristics', 'limit': 'Absent/ml', 'parent': other_pathogenic},
+            {'name': 'Actinomycetes', 'method': 'Culture Characteristics', 'limit': 'Absent/ml', 'parent': other_pathogenic},
+
+            # Fungal contamination
+            {'name': 'Aspergillus sp.', 'method': 'Culture Characteristics', 'limit': 'Absent/ml', 'parent': fungal_contamination},
+            {'name': 'Yeast', 'method': 'Culture Characteristics', 'limit': 'Absent/ml', 'parent': fungal_contamination},
+
+            # Protozoa
+            {'name': 'Entamoeba sp.', 'method': 'Microscopy', 'limit': 'Absent/ml', 'parent': protozoa},
+            {'name': 'Giardia sp.', 'method': 'Microscopy', 'limit': 'Absent/ml', 'parent': protozoa},
+            {'name': 'Algae/ Microscopic Phytoplankton', 'method': 'Microscopy', 'limit': 'Absent/ml', 'parent': protozoa},
+        ]
+
+        created_count = 0
+        for param_data in test_parameters_data:
+            defaults = {
+                'standard_method': param_data['method'],
+                'parent': param_data.get('parent'),
+            }
+
+            limit_str = param_data['limit']
+            unit = param_data.get('unit', '')
+            min_limit = None
+            max_limit = None
+
+            # Regex to parse limit string
+            range_match = re.match(r'([\d\.]+) to ([\d\.]+)', limit_str)
+            less_than_match = re.match(r'<([\d\.]+)', limit_str)
+            numeric_match = re.match(r'([\d\.]+)', limit_str)
+
+            if range_match:
+                min_limit = float(range_match.group(1))
+                max_limit = float(range_match.group(2))
+                unit_search = re.search(r'[a-zA-Z/]+', limit_str.split('to')[-1])
+                if unit_search:
+                    unit = unit_search.group(0)
+            elif less_than_match:
+                max_limit = float(less_than_match.group(1))
+                unit_search = re.search(r'[a-zA-Z/µS]+.*', limit_str)
+                if unit_search:
+                    unit = unit_search.group(0).strip()
+            elif numeric_match and any(char.isdigit() for char in limit_str):
+                max_limit = float(numeric_match.group(1))
+                unit_search = re.search(r'[a-zA-Z/µS]+.*', limit_str)
+                if unit_search:
+                    unit = unit_search.group(0).strip()
+
+            if not unit and 'Absent/ml' in limit_str:
+                unit = 'Absent/ml'
+            
+            if 'Agreeable' in limit_str or 'Colourless' in limit_str:
+                unit = limit_str
+
+            defaults['unit'] = unit
+            defaults['min_permissible_limit'] = min_limit
+            defaults['max_permissible_limit'] = max_limit
+
+            parameter, created = TestParameter.objects.update_or_create(
+                name=param_data['name'],
+                defaults=defaults
+            )
+
             if created:
                 created_count += 1
-                self.stdout.write(
-                    self.style.SUCCESS(f'✅ Created parameter: {parameter.name}')
-                )
-            else:
-                # Update existing parameter
-                for key, value in param_data.items():
-                    if key != 'name':
-                        setattr(parameter, key, value)
-                parameter.save()
-                updated_count += 1
-                self.stdout.write(
-                    self.style.WARNING(f'🔄 Updated parameter: {parameter.name}')
-                )
+                self.stdout.write(self.style.SUCCESS(f'✅ Created parameter: {parameter.name}'))
         
-        self.stdout.write(
-            self.style.SUCCESS(f'\n🧪 Test parameters setup complete!')
-        )
-        self.stdout.write(f'📊 Created: {created_count} parameters')
-        self.stdout.write(f'🔄 Updated: {updated_count} parameters')
-        
-        self.stdout.write(
-            self.style.SUCCESS('\n💡 Test parameters are ready for use in sample testing!')
-        )
+        self.stdout.write(self.style.SUCCESS(f'\n🧪 Test parameters setup complete! Created {created_count} new parameters.'))
