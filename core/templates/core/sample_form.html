@@ -91,6 +91,84 @@
 
                     <div class="row">
                         <div class="col s12">
+                            <h6 style="font-weight: 500; color: var(--primary-color-dark);">Report Details</h6>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="input-field col s12 m6">
+                            {{ form.ulr_number }}
+                            <label for="{{ form.ulr_number.id_for_label }}">ULR Number</label>
+                        </div>
+                        <div class="input-field col s12 m6">
+                            {{ form.report_number }}
+                            <label for="{{ form.report_number.id_for_label }}">Report Number</label>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="input-field col s12 m6">
+                            {{ form.sample_type }}
+                            <label for="{{ form.sample_type.id_for_label }}">Sample Type</label>
+                        </div>
+                        <div class="input-field col s12 m6">
+                            {{ form.quantity_received }}
+                            <label for="{{ form.quantity_received.id_for_label }}">Quantity Received</label>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="input-field col s12 m6">
+                            {{ form.sampling_procedure }}
+                            <label for="{{ form.sampling_procedure.id_for_label }}">Sampling Procedure</label>
+                        </div>
+                        <div class="input-field col s12 m6">
+                            {{ form.sampling_location }}
+                            <label for="{{ form.sampling_location.id_for_label }}">Sampling Location</label>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="input-field col s12">
+                            {{ form.deviations }}
+                            <label for="{{ form.deviations.id_for_label }}">Deviations from Test Methods</label>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="input-field col s12 m6">
+                            {{ form.test_commenced_on }}
+                            <label for="{{ form.test_commenced_on.id_for_label }}">Test Commenced On</label>
+                        </div>
+                        <div class="input-field col s12 m6">
+                            {{ form.test_completed_on }}
+                            <label for="{{ form.test_completed_on.id_for_label }}">Test Completed On</label>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col s12">
+                            <h6 style="font-weight: 500; color: var(--primary-color-dark);">Signatories</h6>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="input-field col s12 m4">
+                            {{ form.reviewed_by }}
+                            <label for="{{ form.reviewed_by.id_for_label }}">Reviewed By</label>
+                        </div>
+                        <div class="input-field col s12 m4">
+                            {{ form.lab_manager }}
+                            <label for="{{ form.lab_manager.id_for_label }}">Lab Manager</label>
+                        </div>
+                        <div class="input-field col s12 m4">
+                            {{ form.food_analyst }}
+                            <label for="{{ form.food_analyst.id_for_label }}">Food Analyst</label>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col s12">
                             <h6 style="font-weight: 500; color: var(--primary-color-dark);">Tests Requested <span class="red-text">*</span></h6>
                             {% if form.tests_requested.help_text %}
                                 <div class="card-panel alert alert-info" style="padding: 10px; margin-bottom:15px;">{{ form.tests_requested.help_text }}</div>
