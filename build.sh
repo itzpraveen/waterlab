@@ -19,3 +19,6 @@ python manage.py fix_admin_role
 
 # Create admin user automatically (if not exists)
 python manage.py create_admin
+
+# Create test parameters
+python manage.py create_test_parameters
