@@ -199,12 +199,21 @@ class SampleForm(forms.ModelForm):
 class TestResultEntryForm(forms.Form):
     result_value = forms.CharField(
         required=True,
-        widget=forms.TextInput(attrs={'class': 'form-control'}) # Materialize uses 'validate' not 'form-control'
+        widget=forms.TextInput(attrs={'class': 'form-control'})
     )
     observation = forms.CharField(
         required=False,
-        widget=forms.Textarea(attrs={'class': 'materialize-textarea', 'rows': 2}) # Materialize specific class
+        widget=forms.Textarea(attrs={'class': 'materialize-textarea', 'rows': 2})
     )
+
+    def __init__(self, *args, **kwargs):
+        parameter = kwargs.pop('parameter', None)
+        super().__init__(*args, **kwargs)
+        if parameter:
+            self.fields['result_value'].widget.attrs.update({
+                'data-min-limit': parameter.min_permissible_limit,
+                'data-max-limit': parameter.max_permissible_limit,
+            })
 
 class TestParameterForm(forms.ModelForm):
     class Meta:

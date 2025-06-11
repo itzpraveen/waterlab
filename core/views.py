@@ -723,7 +723,7 @@ def test_result_entry(request, sample_id):
             initial_data = {}
         
         form_data[test_param_model.parameter_id] = {
-            'form': TestResultEntryForm(prefix=form_prefix, initial=initial_data),
+            'form': TestResultEntryForm(prefix=form_prefix, initial=initial_data, parameter=test_param_model),
             'parameter': test_param_model,
             'existing_result': existing_result if 'existing_result' in locals() else None
         }
