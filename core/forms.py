@@ -148,7 +148,7 @@ class SampleForm(forms.ModelForm):
             }),
             'customer': forms.Select(attrs={'class': 'form-control'}),
             'sample_source': forms.Select(attrs={'class': 'form-control'}),
-            'collected_by': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Name of person who collected the sample'}),
+            'collected_by': forms.Select(attrs={'class': 'form-control'}),
             'referred_by': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Name of person who referred the sample'}),
             'tests_requested': forms.CheckboxSelectMultiple(attrs={'class': 'form-check-input'}),
             'ulr_number': forms.TextInput(attrs={'class': 'form-control'}),
