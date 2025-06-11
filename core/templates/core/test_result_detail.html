@@ -1,0 +1,73 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Test Results for {{ sample.display_id }} - Water Lab LIMS{% endblock %}
+
+{% block breadcrumbs %}
+<div class="col s12 breadcrumb-container">
+    <nav>
+        <div class="nav-wrapper">
+            <a href="{% url 'core:home' %}" class="breadcrumb">Home</a>
+            <a href="{% url 'core:test_result_list' %}" class="breadcrumb">Test Results</a>
+            <span class="breadcrumb active">Sample {{ sample.display_id }}</span>
+        </div>
+    </nav>
+</div>
+{% endblock breadcrumbs %}
+
+{% block content %}
+<div class="row">
+    <div class="col s12">
+        <div class="card">
+            <div class="card-content">
+                <span class="card-title">Test Results for Sample ID: {{ sample.display_id }}</span>
+                <p><strong>Customer:</strong> {{ sample.customer.name }}</p>
+                <p><strong>Collection Date:</strong> {{ sample.collection_datetime|date:"M d, Y H:i" }}</p>
+            </div>
+            <div class="card-action">
+                <a href="{% url 'core:sample_detail' pk=sample.pk %}">View Sample Details</a>
+                <a href="{% url 'core:download_sample_report' pk=sample.pk %}" class="btn waves-effect waves-light"><i class="material-icons left">download</i>Download Report</a>
+            </div>
+        </div>
+
+        {% regroup results by parameter.category as results_by_category %}
+        <div class="table-container">
+            <table class="responsive-table highlight striped">
+                <thead>
+                    <tr>
+                        <th>S.No</th>
+                        <th>Test Parameters</th>
+                        <th>Test Method</th>
+                        <th>Result</th>
+                        <th>Unit</th>
+                        <th>Acceptable Limit as per IS 10500 : 2012</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for category in results_by_category %}
+                    <tr>
+                        <td colspan="6" style="background-color: #f0f0f0;"><strong>Table - {{ category.grouper }}</strong></td>
+                    </tr>
+                    {% for result in category.list %}
+                    <tr>
+                        <td>{{ forloop.counter }}</td>
+                        <td>{{ result.parameter.name }}</td>
+                        <td>{{ result.parameter.method }}</td>
+                        <td>{{ result.result_value }}</td>
+                        <td>{{ result.parameter.unit }}</td>
+                        <td>
+                            {% if result.parameter.max_permissible_limit and not result.parameter.min_permissible_limit %}
+                                Max {{ result.parameter.max_permissible_limit }}
+                            {% else %}
+                                {{ result.parameter.min_permissible_limit|default:"" }} - {{ result.parameter.max_permissible_limit|default:"" }}
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

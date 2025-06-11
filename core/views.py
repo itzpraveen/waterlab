@@ -451,30 +451,38 @@ class AuditTrailView(AdminRequiredMixin, ListView):
 from django.db.models import Max
 
 class TestResultListView(LoginRequiredMixin, ListView):
-    model = Sample # Changed model to Sample
+    model = Sample
     template_name = 'core/test_result_list.html'
-    context_object_name = 'samples_with_results' # Changed to match template
+    context_object_name = 'samples_with_results'
     paginate_by = 20
 
     def get_queryset(self):
-        # Get samples that have at least one test result
-        # Annotate with the date of the latest test result for sorting
         queryset = Sample.objects.annotate(
             latest_test_date=Max('results__test_date')
         ).filter(
-            results__isnull=False # Ensure there's at least one related TestResult
+            results__isnull=False
         ).select_related(
-            'customer' # Optimize customer fetching
+            'customer'
         ).prefetch_related(
-            'results', # Optimize fetching of related results for counts
-            'tests_requested' # Optimize fetching of tests_requested for counts
-        ).distinct().order_by('-latest_test_date', '-collection_datetime') # Order by most recent results first
+            'results',
+            'tests_requested'
+        ).distinct().order_by('-latest_test_date', '-collection_datetime')
         
         return queryset
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['page_title'] = 'Samples with Test Results' # Updated title to be more descriptive
+        context['page_title'] = 'Samples with Test Results'
+        return context
+
+class TestResultDetailView(LoginRequiredMixin, DetailView):
+    model = Sample
+    template_name = 'core/test_result_detail.html'
+    context_object_name = 'sample'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['results'] = TestResult.objects.filter(sample=self.object).select_related('parameter').order_by('parameter__category', 'parameter__name')
         return context
 
 class CustomerListView(ListView):
@@ -640,6 +648,7 @@ def test_result_entry(request, sample_id):
                     if form.is_valid():
                         result_value = form.cleaned_data['result_value']
                         observation = form.cleaned_data['observation']
+                        remarks = form.cleaned_data.get('remarks')
 
                         if result_value and result_value.strip(): # Ensure result_value is not just whitespace
                             test_result, created = TestResult.objects.get_or_create(
@@ -648,6 +657,7 @@ def test_result_entry(request, sample_id):
                                 defaults={
                                     'result_value': result_value.strip(),
                                     'observation': observation,
+                                    'remarks': remarks,
                                     'technician': request.user
                                 }
                             )
@@ -656,9 +666,10 @@ def test_result_entry(request, sample_id):
                                 test_result.full_clean()
                                 results_entered_count += 1
                             else:
-                                old_values = {'result_value': test_result.result_value, 'observation': test_result.observation}
+                                old_values = {'result_value': test_result.result_value, 'observation': test_result.observation, 'remarks': test_result.remarks}
                                 test_result.result_value = result_value.strip()
                                 test_result.observation = observation
+                                test_result.remarks = remarks
                                 test_result.full_clean()
                                 test_result.save()
                                 AuditTrail.log_change(user=request.user, action='UPDATE', instance=test_result, old_values=old_values, new_values=form.cleaned_data, request=request)
@@ -717,15 +728,17 @@ def test_result_entry(request, sample_id):
             existing_result = TestResult.objects.get(sample=sample, parameter=test_param_model)
             initial_data = {
                 'result_value': existing_result.result_value,
-                'observation': existing_result.observation
+                'observation': existing_result.observation,
+                'remarks': existing_result.remarks
             }
         except TestResult.DoesNotExist:
             initial_data = {}
+            existing_result = None
         
         form_data[test_param_model.parameter_id] = {
             'form': TestResultEntryForm(prefix=form_prefix, initial=initial_data, parameter=test_param_model),
             'parameter': test_param_model,
-            'existing_result': existing_result if 'existing_result' in locals() else None
+            'existing_result': existing_result
         }
         
         # Clear existing_result for next iteration
@@ -971,11 +984,11 @@ def download_sample_report_view(request, pk):
     grouped_results = groupby(results, key=lambda x: x.parameter.category or "Uncategorized")
 
     for category, group in grouped_results:
-        elements.append(Paragraph(f"<b>{category}</b>", styles['h3']))
+        elements.append(Paragraph(f"<b>Table - {category}</b>", styles['h3']))
         elements.append(Spacer(1, 4))
         
         table_data = [
-            [Paragraph(h, styles['TableHead']) for h in ["S.No", "Test Parameters", "Test Method", "Result", "Unit", "Requirement as per FSSAI", "Acceptable Limit"]]
+            [Paragraph(h, styles['TableHead']) for h in ["S.No", "Test Parameters", "Test Method", "Result", "Unit", "Acceptable Limit as per IS 10500 : 2012"]]
         ]
         
         for i, result in enumerate(group, 1):
@@ -987,17 +1000,20 @@ def download_sample_report_view(request, pk):
                 result_display = unit_display
                 unit_display = ''
 
+            limit = f"{result.parameter.min_permissible_limit or ''} - {result.parameter.max_permissible_limit or ''}"
+            if result.parameter.max_permissible_limit and not result.parameter.min_permissible_limit:
+                limit = f"Max {result.parameter.max_permissible_limit}"
+
             table_data.append([
                 i,
                 Paragraph(result.parameter.name, styles['Normal']),
-                Paragraph(result.parameter.standard_method or 'N/A', styles['Normal']),
+                Paragraph(result.parameter.method or 'N/A', styles['Normal']),
                 result_display,
                 unit_display,
-                Paragraph(result.parameter.fssai_limit or 'N/A', styles['Normal']),
-                f"{result.parameter.min_permissible_limit or ''} - {result.parameter.max_permissible_limit or ''}"
+                Paragraph(limit, styles['Normal']),
             ])
             
-        results_table = Table(table_data, colWidths=[10*mm, 40*mm, 30*mm, 20*mm, 15*mm, 30*mm, 30*mm], repeatRows=1)
+        results_table = Table(table_data, colWidths=[10*mm, 40*mm, 40*mm, 25*mm, 20*mm, 40*mm], repeatRows=1)
         results_table.setStyle(TableStyle([
             ('BACKGROUND', (0,0), (-1,0), primary_color),
             ('TEXTCOLOR', (0,0), (-1,0), colors.whitesmoke),

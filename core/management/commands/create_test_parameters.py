@@ -97,7 +97,7 @@ class Command(BaseCommand):
         created_count = 0
         for param_data in test_parameters_data:
             defaults = {
-                'standard_method': param_data['method'],
+                'method': param_data['method'],
                 'parent': param_data.get('parent'),
             }
 
@@ -133,6 +133,9 @@ class Command(BaseCommand):
             
             if 'Agreeable' in limit_str or 'Colourless' in limit_str:
                 unit = limit_str
+
+            if param_data['name'] == 'pH':
+                unit = 'pH'
 
             defaults['unit'] = unit
             defaults['min_permissible_limit'] = min_limit
