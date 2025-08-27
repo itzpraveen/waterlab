@@ -81,8 +81,9 @@ WSGI_APPLICATION = 'waterlab.wsgi.application'
 # Render provides DATABASE_URL environment variable
 database_url = os.environ.get('DATABASE_URL')
 if database_url:
+    # Enable persistent connections for better performance
     DATABASES = {
-        'default': dj_database_url.parse(database_url)
+        'default': dj_database_url.parse(database_url, conn_max_age=600)
     }
 else:
     # Fallback to SQLite for local testing
@@ -125,12 +126,12 @@ STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'static'),
 ]
 
-# Configure WhiteNoise for static files (compatible version)
+# Configure WhiteNoise for static files (hashed filenames + gzip/brotli)
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
-# Additional static files settings for production
-WHITENOISE_USE_FINDERS = True
-WHITENOISE_AUTOREFRESH = True
+# Production-friendly WhiteNoise flags
+WHITENOISE_USE_FINDERS = DEBUG  # Only use finders during development
+WHITENOISE_AUTOREFRESH = DEBUG  # Disable auto-refresh when DEBUG=False
 
 # Media files
 MEDIA_URL = '/media/'
@@ -216,3 +217,27 @@ WATERLAB_SETTINGS = {
     'MAX_SAMPLES_PER_BATCH': 50,
     'BACKUP_RETENTION_DAYS': 365,
 }
+
+# --- Caching (Redis if available, else in-memory) ---
+REDIS_URL = os.environ.get('REDIS_URL') or os.environ.get('REDISCLOUD_URL')
+if REDIS_URL:
+    CACHES = {
+        'default': {
+            'BACKEND': 'django_redis.cache.RedisCache',
+            'LOCATION': REDIS_URL,
+            'OPTIONS': {
+                'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+                'COMPRESSOR': 'django_redis.compressors.zlib.ZlibCompressor',
+            },
+            'TIMEOUT': 60 * 10,  # 10 minutes default
+        }
+    }
+    SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db'
+else:
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+            'LOCATION': 'waterlab-locmem-cache',
+            'TIMEOUT': 60 * 5,
+        }
+    }

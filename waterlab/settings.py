@@ -195,6 +195,30 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+# Caching: prefer Redis (if REDIS_URL is set), otherwise LocMem for dev
+REDIS_URL = config('REDIS_URL', default=None)
+if REDIS_URL:
+    CACHES = {
+        'default': {
+            'BACKEND': 'django_redis.cache.RedisCache',
+            'LOCATION': REDIS_URL,
+            'OPTIONS': {
+                'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+                'COMPRESSOR': 'django_redis.compressors.zlib.ZlibCompressor',
+            },
+            'TIMEOUT': 300,
+        }
+    }
+    SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db'
+else:
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+            'LOCATION': 'waterlab-locmem-cache',
+            'TIMEOUT': 300,
+        }
+    }
+
 # Email Configuration
 # Defaults to console output if not set in .env, suitable for development.
 EMAIL_BACKEND = config('EMAIL_BACKEND', default='django.core.mail.backends.console.EmailBackend')

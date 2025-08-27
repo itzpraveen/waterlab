@@ -116,6 +116,13 @@ class Customer(models.Model):
     # Keep old address field for backward compatibility
     address = models.TextField(blank=True, null=True, help_text="Complete address (auto-populated)")
 
+    class Meta:
+        indexes = [
+            models.Index(fields=["name"], name="customer_name_idx"),
+            models.Index(fields=["phone"], name="customer_phone_idx"),
+        ]
+        ordering = ["name"]
+
     def save(self, *args, **kwargs):
         # Auto-populate the address field from detailed components
         address_parts = []
@@ -186,6 +193,12 @@ class Sample(models.Model):
     reviewed_by = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True, blank=True, related_name='reviewed_samples', verbose_name="Reviewed By")
     lab_manager = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True, blank=True, related_name='managed_samples', verbose_name="Lab Manager")
     food_analyst = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True, blank=True, related_name='analyzed_samples', verbose_name="Food Analyst")
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["current_status"], name="sample_status_idx"),
+            models.Index(fields=["collection_datetime"], name="sample_collected_at_idx"),
+        ]
 
     def __str__(self):
         return self.display_id if self.display_id else str(self.sample_id)
