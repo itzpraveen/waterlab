@@ -36,8 +36,32 @@ DEBUG = config('DEBUG', default=False, cast=bool)
 # Expects a comma-separated string, e.g., "localhost,127.0.0.1,mydomain.com"
 # Defaults to common local development hosts if not set.
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='127.0.0.1,localhost', cast=Csv())
-if DEBUG and '*' not in ALLOWED_HOSTS: # Add '*' in DEBUG mode if not already broadly defined
+if DEBUG and '*' not in ALLOWED_HOSTS:  # Add '*' in DEBUG mode if not already broadly defined
     ALLOWED_HOSTS.append('*')
+
+# Make it safe on Render even if this settings module is used.
+# Render typically sets RENDER_EXTERNAL_HOSTNAME and runs behind a proxy.
+RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
+if RENDER_EXTERNAL_HOSTNAME and RENDER_EXTERNAL_HOSTNAME not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
+if '.onrender.com' not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append('.onrender.com')
+
+# CSRF trusted origins for Render domains
+_csrf_trusted = [f"https://{RENDER_EXTERNAL_HOSTNAME}"] if RENDER_EXTERNAL_HOSTNAME else []
+_csrf_trusted.append('https://*.onrender.com')
+CSRF_TRUSTED_ORIGINS = list(set((_csrf_trusted + [
+    # Common local/testing origins (kept minimal)
+    'http://localhost',
+    'http://127.0.0.1',
+    'http://localhost:8000',
+    'http://127.0.0.1:8000',
+])))
+
+# Honor X-Forwarded-Proto on Render
+if not DEBUG:
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    SECURE_SSL_REDIRECT = True
 
 
 # Application definition
