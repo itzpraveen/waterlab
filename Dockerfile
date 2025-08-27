@@ -31,6 +31,10 @@ RUN mkdir -p logs staticfiles media
 # Note: runtime can also collect if COLLECTSTATIC_ON_START=1
 RUN python manage.py collectstatic --noinput --settings=waterlab.settings_production
 
+# Copy entrypoint and set executable before switching user
+COPY entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
+
 # Create non-root user
 RUN adduser --disabled-password --gecos '' appuser
 RUN chown -R appuser:appuser /app
@@ -43,8 +47,5 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
     CMD sh -c 'curl -f http://localhost:${PORT:-8000}/health/ || exit 1'
 
-# Entrypoint: run migrations and start Gunicorn on $PORT
-COPY entrypoint.sh /app/entrypoint.sh
-RUN chmod +x /app/entrypoint.sh
-
+# Start script (runs migrations, creates admin, then starts Gunicorn)
 CMD ["/app/entrypoint.sh"]
