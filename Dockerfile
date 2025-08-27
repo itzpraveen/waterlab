@@ -27,7 +27,8 @@ COPY . .
 # Create directories for logs and static files
 RUN mkdir -p logs staticfiles media
 
-# Collect static files
+# Collect static files during build (using production settings)
+# Note: runtime can also collect if COLLECTSTATIC_ON_START=1
 RUN python manage.py collectstatic --noinput --settings=waterlab.settings_production
 
 # Create non-root user
@@ -40,7 +41,10 @@ EXPOSE 8000
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8000/health/ || exit 1
+    CMD sh -c 'curl -f http://localhost:${PORT:-8000}/health/ || exit 1'
 
-# Run gunicorn
-CMD ["gunicorn", "waterlab.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "3", "--timeout", "120", "--access-logfile", "-", "--error-logfile", "-"]
+# Entrypoint: run migrations and start Gunicorn on $PORT
+COPY entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
+
+CMD ["/app/entrypoint.sh"]
