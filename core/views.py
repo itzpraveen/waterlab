@@ -542,10 +542,23 @@ class CustomerUpdateView(AuditMixin, FrontDeskRequiredMixin, UpdateView):
         context['is_edit'] = True
         return context
 
-class SampleListView(LoginRequiredMixin, ListView): # Added LoginRequiredMixin
+class SampleListView(LoginRequiredMixin, ListView):  # Added LoginRequiredMixin
     model = Sample
     template_name = 'core/sample_list.html'
     context_object_name = 'samples'
+    paginate_by = 25
+
+    def get_queryset(self):
+        qs = (
+            Sample.objects
+            .select_related('customer')
+            .prefetch_related('tests_requested')
+            .order_by('-collection_datetime')
+        )
+        status = self.request.GET.get('status')
+        if status:
+            qs = qs.filter(current_status=status)
+        return qs
 
 class SampleDetailView(DetailView): # New DetailView for Sample
     model = Sample

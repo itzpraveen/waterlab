@@ -5,6 +5,9 @@ set -e
 PORT=${PORT:-8000}
 WEB_CONCURRENCY=${WEB_CONCURRENCY:-3}
 WEB_TIMEOUT=${WEB_TIMEOUT:-120}
+MAX_REQUESTS=${MAX_REQUESTS:-1000}
+MAX_REQUESTS_JITTER=${MAX_REQUESTS_JITTER:-100}
+KEEP_ALIVE=${KEEP_ALIVE:-5}
 
 echo "Applying database migrations..."
 python manage.py migrate --noinput
@@ -24,6 +27,9 @@ exec gunicorn waterlab.wsgi:application \
   --bind 0.0.0.0:${PORT} \
   --workers ${WEB_CONCURRENCY} \
   --timeout ${WEB_TIMEOUT} \
+  --max-requests ${MAX_REQUESTS} \
+  --max-requests-jitter ${MAX_REQUESTS_JITTER} \
+  --keep-alive ${KEEP_ALIVE} \
+  --worker-tmp-dir /dev/shm \
   --access-logfile - \
   --error-logfile -
-

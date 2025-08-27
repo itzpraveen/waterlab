@@ -4,6 +4,7 @@ Django==5.2.1
 psycopg[binary,pool]>=3.1.0 # Using psycopg v3 for better compatibility
 gunicorn==21.2.0
 whitenoise==6.6.0
+brotli==1.1.0
 dj-database-url>=2.1.0
 python-decouple==3.8
 redis==5.0.1
