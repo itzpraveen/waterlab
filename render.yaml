@@ -5,7 +5,7 @@ services:
     env: python
     plan: free
     buildCommand: "./build.sh"
-    startCommand: "gunicorn waterlab.wsgi:application"
+    startCommand: "python manage.py migrate --noinput && gunicorn waterlab.wsgi:application"
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0

@@ -15,10 +15,13 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path, include # Added include
+from django.urls import path, include  # Added include
+from django.views.generic import RedirectView
 # from django.contrib.auth.views import LogoutView # Not used directly here
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    # Serve service worker from root by redirecting to static asset
+    path('sw.js', RedirectView.as_view(url='/static/sw.js', permanent=True)),
     path('', include('core.urls', namespace='core')),
 ]
