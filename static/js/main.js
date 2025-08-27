@@ -15,6 +15,7 @@ const WaterLab = {
 
     init: function() {
         this.log("Initializing WaterLab JS...");
+        this.initTheme();
         this.initMaterializeComponents();
         this.initSmoothScroll();
         this.initPageTransitions();
@@ -22,6 +23,7 @@ const WaterLab = {
         this.initTableEnhancements();
         this.initAccessibilityImprovements();
         this.initAlerts();
+        this.initMessageToasts();
         this.initServiceWorker(); // PWA feature
         
         // Defer address dropdown initialization slightly to ensure Materialize components are fully ready
@@ -29,6 +31,43 @@ const WaterLab = {
             this.initAddressDropdowns();
         }, 0);
         this.log("WaterLab JS Initialized (core init complete, address dropdowns deferred).");
+    },
+
+    // --- Theme (Light/Dark) ---
+    initTheme: function() {
+        try {
+            const stored = localStorage.getItem('wl-theme');
+            const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+            const theme = stored || (prefersDark ? 'dark' : 'light');
+            this.applyTheme(theme);
+
+            // Toggle buttons (can exist in multiple menus)
+            document.querySelectorAll('.theme-toggle').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const current = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+                    const next = current === 'dark' ? 'light' : 'dark';
+                    this.applyTheme(next);
+                    try { localStorage.setItem('wl-theme', next); } catch(_) {}
+                });
+            });
+        } catch (e) {
+            this.log('Theme init error:', e);
+        }
+    },
+
+    applyTheme: function(theme) {
+        if (theme === 'dark') {
+            document.documentElement.setAttribute('data-theme', 'dark');
+        } else {
+            document.documentElement.removeAttribute('data-theme');
+        }
+        // Update icon state
+        const isDark = theme === 'dark';
+        document.querySelectorAll('.theme-icon').forEach(icon => {
+            icon.textContent = isDark ? 'light_mode' : 'dark_mode';
+        });
+        this.log('Theme applied:', theme);
     },
 
     // --- Start: Kerala Address Dropdown Logic ---
@@ -732,6 +771,31 @@ const WaterLab = {
         }
     },
     
+    // Convert Django messages to Materialize toasts
+    initMessageToasts: function() {
+        const container = document.querySelector('.messages-container');
+        if (!container) return;
+        const typeToClass = (type) => {
+            switch ((type || '').toLowerCase()) {
+                case 'success': return 'green darken-1';
+                case 'warning': return 'amber darken-2 black-text';
+                case 'error':
+                case 'danger': return 'red darken-2';
+                case 'info': return 'blue darken-2';
+                default: return '';
+            }
+        };
+        container.querySelectorAll('.alert').forEach(alert => {
+            const classes = alert.className.split(/\s+/);
+            const typeClass = classes.find(c => c.startsWith('alert-')) || '';
+            const type = typeClass.replace('alert-', '');
+            const html = alert.textContent.trim();
+            if (html) {
+                M.toast({ html, classes: typeToClass(type) });
+            }
+        });
+    },
+
     initAlerts: function() {
         // Auto-dismiss alerts
         document.querySelectorAll('.alert[data-auto-dismiss]').forEach(alert => {

@@ -104,6 +104,46 @@
   --border-color: #e0e0e0;
 }
 
+/* ======= DARK THEME (opt‑in via data-theme="dark") ======= */
+html[data-theme="dark"] {
+  /* Base colors */
+  --background-color: #121417;
+  --surface-color: #1c1f24;
+  --text-color-dark: #e5e7eb; /* Light text */
+  --text-color-medium: #a1a1aa;
+  --text-color-light: #9ca3af;
+  --border-color: #2a2f36;
+
+  /* Keep brand colors but tweak emphasis where needed */
+  --primary-color: #0ea5a3; /* Slightly brighter in dark */
+  --primary-color-dark: #0b7f7e;
+  --primary-color-light: #08373a;
+
+  /* Feedback colors retain hue; contrast handled by surfaces */
+  --error-color: #ef4444;
+  --warning-color: #f59e0b;
+  --info-color: #3b82f6;
+  --success-color: #22c55e;
+}
+
+/* Elevation adjustments for dark theme */
+html[data-theme="dark"] .card,
+html[data-theme="dark"] .card-panel {
+  background-color: var(--surface-color);
+  border-color: var(--border-color);
+}
+
+html[data-theme="dark"] .card .card-header,
+html[data-theme="dark"] .card .card-footer {
+  background-color: rgba(255, 255, 255, 0.03);
+}
+
+/* Footer respects theme variables */
+html[data-theme="dark"] .page-footer {
+  background-color: var(--primary-color) !important;
+}
+
+
 /* ======= BASE STYLES ======= */
 html {
   box-sizing: border-box;
