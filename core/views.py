@@ -1120,34 +1120,57 @@ def sample_status_update(request, sample_id):
     return redirect('core:sample_detail', pk=sample.sample_id)
 
 @login_required
-@admin_required # Or specific role required for managing test parameters
+@admin_required  # Or specific role required for managing test parameters
 def setup_test_parameters(request):
-    # Placeholder for test parameter setup view
-    # This view would typically allow admins to create, update, or list TestParameter objects.
-    # It might involve a ModelForm for TestParameter.
-    
-    # Example: List existing parameters and provide a form to add new ones.
+    """Admin view to seed and manage TestParameter records.
+
+    The page shows a one-click action to create a standard set of parameters.
+    Previously, the POST tried to validate an empty TestParameterForm which
+    resulted in a generic "Error in form submission" message. Here we detect
+    the seed action explicitly and create parameters programmatically
+    (skipping any that already exist by name).
+    """
+
+    # List existing parameters and show a form for manual add/edit
     parameters = TestParameter.objects.all().order_by('name')
-    form = TestParameterForm() # Assuming TestParameterForm is defined and imported
+    form = TestParameterForm()
 
     if request.method == 'POST':
-        form = TestParameterForm(request.POST)
-        if form.is_valid():
+        # If the POST is from the "Create Standard Parameters" button, it won't
+        # include model fields. Detect that and seed defaults instead of
+        # attempting to validate an empty form.
+        action = request.POST.get('action')
+        if action == 'create_standard' or not any(request.POST.get(k) for k in ['name', 'unit']):
             try:
-                with transaction.atomic():
-                    parameter = form.save()
-                    AuditTrail.log_change(user=request.user, action='CREATE', instance=parameter, request=request)
-                    messages.success(request, f"Test parameter '{parameter.name}' created successfully.")
-                    return redirect('core:setup_test_parameters') # Redirect to the same page to show the new list
+                from core.services.parameters import seed_standard_parameters
+                created_count, skipped = seed_standard_parameters(user=request.user)
+                messages.success(
+                    request,
+                    f"Standard parameters processed. Created {created_count} new parameter(s); {skipped} existing."
+                )
+                return redirect('core:setup_test_parameters')
             except Exception as e:
-                messages.error(request, f"Error creating test parameter: {str(e)}")
+                messages.error(request, f"Error creating standard parameters: {str(e)}")
         else:
-            messages.error(request, "Error in form submission. Please check the details.")
+            # Manual single-parameter creation via form
+            form = TestParameterForm(request.POST)
+            if form.is_valid():
+                try:
+                    with transaction.atomic():
+                        parameter = form.save()
+                        AuditTrail.log_change(user=request.user, action='CREATE', instance=parameter, request=request)
+                        messages.success(request, f"Test parameter '{parameter.name}' created successfully.")
+                        return redirect('core:setup_test_parameters')
+                except Exception as e:
+                    messages.error(request, f"Error creating test parameter: {str(e)}")
+            else:
+                messages.error(request, "Error in form submission. Please check the details.")
 
     context = {
         'existing_params': parameters,
+        'parameters': parameters,
         'form': form,
-        'page_title': 'Setup Test Parameters' # Example title for the template
+        'page_title': 'Setup Test Parameters',
     }
     return render(request, 'core/setup_test_parameters.html', context)
 

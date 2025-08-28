@@ -173,6 +173,9 @@ DATETIME_INPUT_FORMATS = [
     '%Y-%m-%d',
 ]
 
+# Auto-seed standard parameters after migrations when DB is empty
+AUTO_SEED_PARAMETERS = True
+
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
