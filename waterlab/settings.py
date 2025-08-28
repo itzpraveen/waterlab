@@ -84,6 +84,9 @@ LOGIN_URL = 'core:login_selector' # Changed to use the named URL for login selec
 LOGIN_REDIRECT_URL = 'core:dashboard' # Changed to use named URL for consistency
 LOGOUT_REDIRECT_URL = 'core:login_selector' # Changed to redirect to login selector after logout
 
+# Debug endpoints gate (never enable in production)
+ALLOW_DEBUG_ENDPOINTS = config('ALLOW_DEBUG_ENDPOINTS', default=False, cast=bool)
+
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware', # Added for static files in production

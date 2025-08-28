@@ -1,4 +1,5 @@
 from django.urls import path
+from django.conf import settings
 from .views import (
     CustomerListView, 
     SampleListView, 
@@ -44,11 +45,19 @@ app_name = 'core'
 urlpatterns = [
     # Health check for deployment monitoring
     path('health/', health_check, name='health_check'),
-    path('debug-admin/', debug_admin, name='debug_admin'),
-    path('create-admin/', create_admin_web, name='create_admin_web'),
-    path('debug/', debug_view, name='debug_view'),
-    path('form-test/', form_test, name='form_test'),
-    path('fix-admin-role/', fix_admin_role_web, name='fix_admin_role_web'),
+]
+
+# Debug/diagnostic endpoints — gated for safety
+if settings.DEBUG and getattr(settings, 'ALLOW_DEBUG_ENDPOINTS', False):
+    urlpatterns += [
+        path('debug-admin/', debug_admin, name='debug_admin'),
+        path('create-admin/', create_admin_web, name='create_admin_web'),
+        path('debug/', debug_view, name='debug_view'),
+        path('form-test/', form_test, name='form_test'),
+        path('fix-admin-role/', fix_admin_role_web, name='fix_admin_role_web'),
+    ]
+
+urlpatterns += [
     
     # Professional Authentication URLs
     path('', login_selector, name='home'),

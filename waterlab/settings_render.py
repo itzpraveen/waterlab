@@ -128,6 +128,9 @@ DATETIME_INPUT_FORMATS = [
 # Seed standard parameters automatically when the DB is empty
 AUTO_SEED_PARAMETERS = True
 
+# Never expose debug endpoints in Render
+ALLOW_DEBUG_ENDPOINTS = False
+
 # Static files configuration for Render
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
@@ -167,6 +170,10 @@ CSRF_TRUSTED_ORIGINS = [
     'https://waterlab-lims.onrender.com',
 ]
 CSRF_COOKIE_SAMESITE = 'Lax'
+
+# Additional security headers
+X_FRAME_OPTIONS = 'DENY'
+SECURE_REFERRER_POLICY = 'same-origin'
 
 # Logging configuration
 LOGGING = {

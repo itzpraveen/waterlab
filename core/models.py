@@ -1,4 +1,6 @@
 from django.db import models
+from django.db.models import UniqueConstraint
+from django.db.models.functions import Lower
 import uuid
 from django.core.validators import RegexValidator
 from django.core.exceptions import ValidationError
@@ -104,7 +106,7 @@ class Customer(models.Model):
     village_town_city = models.CharField(max_length=100, verbose_name="Village / Town") # Made required
     panchayat_municipality = models.CharField(max_length=100, blank=True, default='', verbose_name="Panchayat / Municipality / Corporation")
     taluk = models.CharField(max_length=100, blank=True, default='', verbose_name="Taluk")
-    district = models.CharField(max_length=50, choices=KERALA_DISTRICTS, blank=False, null=False, default='thiruvananthapuram', verbose_name="District") # Made required
+    district = models.CharField(max_length=50, choices=KERALA_DISTRICTS, blank=False, null=False, default='Thiruvananthapuram', verbose_name="District") # Made required
     pincode = models.CharField(
         max_length=6,
         verbose_name="PIN Code",
@@ -334,6 +336,11 @@ class TestParameter(models.Model):
 
     def __str__(self):
         return f"{self.name} ({self.unit})"
+
+    class Meta:
+        constraints = [
+            UniqueConstraint(Lower('name'), name='uq_testparameter_name_ci'),
+        ]
 
     def clean(self):
         from django.core.exceptions import ValidationError

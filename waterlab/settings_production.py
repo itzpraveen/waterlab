@@ -144,7 +144,7 @@ if not DEBUG:
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_SECONDS = 31536000
     SECURE_REDIRECT_EXEMPT = []
-    SECURE_SSL_REDIRECT = False  # Set to True if using HTTPS
+    SECURE_SSL_REDIRECT = True  # Enforce HTTPS behind proxy
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
     USE_TZ = True
 
@@ -157,15 +157,22 @@ DATETIME_INPUT_FORMATS = [
 # Seed standard parameters automatically when the DB is empty
 AUTO_SEED_PARAMETERS = True
 
+# Do not expose debug endpoints in production
+ALLOW_DEBUG_ENDPOINTS = False
+
 # Session Security
-SESSION_COOKIE_SECURE = False  # Set to True if using HTTPS
+SESSION_COOKIE_SECURE = True  # Set to True if using HTTPS
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_AGE = 3600  # 1 hour
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 
 # CSRF Protection
-CSRF_COOKIE_SECURE = False  # Set to True if using HTTPS
+CSRF_COOKIE_SECURE = True  # Set to True if using HTTPS
 CSRF_COOKIE_HTTPONLY = True
+
+# Additional security headers
+X_FRAME_OPTIONS = 'DENY'
+SECURE_REFERRER_POLICY = 'same-origin'
 
 # Logging Configuration
 LOGGING = {
