@@ -156,16 +156,16 @@ DATETIME_INPUT_FORMATS = [
 
 # Seed standard parameters automatically when the DB is empty
 AUTO_SEED_PARAMETERS = True
-    
-    # Session Security
-    SESSION_COOKIE_SECURE = False  # Set to True if using HTTPS
-    SESSION_COOKIE_HTTPONLY = True
-    SESSION_COOKIE_AGE = 3600  # 1 hour
-    SESSION_EXPIRE_AT_BROWSER_CLOSE = True
-    
-    # CSRF Protection
-    CSRF_COOKIE_SECURE = False  # Set to True if using HTTPS
-    CSRF_COOKIE_HTTPONLY = True
+
+# Session Security
+SESSION_COOKIE_SECURE = False  # Set to True if using HTTPS
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_AGE = 3600  # 1 hour
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+
+# CSRF Protection
+CSRF_COOKIE_SECURE = False  # Set to True if using HTTPS
+CSRF_COOKIE_HTTPONLY = True
 
 # Logging Configuration
 LOGGING = {
