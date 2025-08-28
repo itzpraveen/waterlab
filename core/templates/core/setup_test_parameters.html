@@ -91,7 +91,7 @@
                 </a>
                 <form method="post" style="display: inline;">
                     {% csrf_token %}
-                    <button type="submit" class="btn waves-effect waves-light" style="background-color: var(--primary-color);">
+                    <button type="submit" name="action" value="create_standard" class="btn waves-effect waves-light" style="background-color: var(--primary-color);">
                         <i class="material-icons left">playlist_add_check</i>Create Standard Parameters
                     </button>
                 </form>
@@ -130,7 +130,7 @@
                                     <td>{{ param.unit }}</td>
                                     <td>{{ param.min_permissible_limit|default:"-" }}</td>
                                     <td>{{ param.max_permissible_limit|default:"-" }}</td>
-                                    <td>{{ param.standard_method|default:"-" }}</td>
+                                    <td>{{ param.method|default:"-" }}</td>
                                     <td>{{ param.group|default:"-" }}</td>
                                     <td>{{ param.discipline|default:"-" }}</td>
                                     <td>{{ param.fssai_limit|default:"-" }}</td>

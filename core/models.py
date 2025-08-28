@@ -6,6 +6,7 @@ from django.core.exceptions import ValidationError
 from django.conf import settings # Recommended way to import User model
 from django.contrib.auth.models import AbstractUser
 from django.utils import timezone
+from datetime import timedelta
 
 # Validator for Kerala PIN Codes
 def validate_kerala_pincode(value):
@@ -229,7 +230,12 @@ class Sample(models.Model):
         from django.core.exceptions import ValidationError
         # from django.utils import timezone # Already imported at the top
         
-        # Validate collection datetime is not in the future
+        # Validate collection datetime is not unreasonably in the future
+        if self.collection_datetime:
+            now = timezone.now()
+            # Allow small clock skew between client and server
+            if self.collection_datetime > now + timedelta(minutes=5):
+                raise ValidationError("Collection date/time cannot be in the future.")
         
         
         # Validate date received at lab is after collection
@@ -328,6 +334,19 @@ class TestParameter(models.Model):
 
     def __str__(self):
         return f"{self.name} ({self.unit})"
+
+    def clean(self):
+        from django.core.exceptions import ValidationError
+        # Ensure numeric limits are consistent when both are provided
+        if self.min_permissible_limit is not None and self.max_permissible_limit is not None:
+            if self.min_permissible_limit > self.max_permissible_limit:
+                raise ValidationError("Minimum permissible limit cannot exceed maximum permissible limit.")
+        # Enforce case-insensitive uniqueness on name at application level
+        qs = TestParameter.objects.filter(name__iexact=self.name)
+        if self.pk:
+            qs = qs.exclude(pk=self.pk)
+        if qs.exists():
+            raise ValidationError({"name": "A parameter with this name already exists (case-insensitive)."})
 
 class TestResult(models.Model):
     result_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

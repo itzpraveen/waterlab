@@ -119,6 +119,15 @@ TIME_ZONE = 'Asia/Kolkata'  # Indian Standard Time
 USE_I18N = True
 USE_TZ = True
 
+# Accept common day-first and ISO datetime inputs across environments
+DATETIME_INPUT_FORMATS = [
+    '%d/%m/%Y %H:%M:%S', '%d/%m/%Y %H:%M', '%d/%m/%Y',
+    '%Y-%m-%d %H:%M:%S', '%Y-%m-%d %H:%M', '%Y-%m-%d',
+]
+
+# Seed standard parameters automatically when the DB is empty
+AUTO_SEED_PARAMETERS = True
+
 # Static files configuration for Render
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')

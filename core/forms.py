@@ -133,16 +133,21 @@ class CustomerForm(forms.ModelForm):
         return cleaned_data
 
 class SampleForm(forms.ModelForm):
+    # Accept formats configured in settings for consistency across the app
+    from django.conf import settings as _settings
+    collection_datetime = forms.DateTimeField(
+        input_formats=getattr(_settings, 'DATETIME_INPUT_FORMATS', None),
+        widget=forms.TextInput(attrs={
+            'class': 'form-control datepicker',
+            'placeholder': 'dd/mm/yyyy HH:MM[:SS]'
+        })
+    )
     class Meta:
         model = Sample
         fields = [
             'customer', 'collection_datetime', 'sample_source', 'collected_by', 'referred_by', 'tests_requested'
         ]
         widgets = {
-            'collection_datetime': forms.TextInput(attrs={
-                'class': 'form-control datepicker',
-                'placeholder': 'dd/mm/yyyy, Time'
-            }),
             'customer': forms.Select(attrs={'class': 'form-control'}),
             'sample_source': forms.Select(attrs={'class': 'form-control'}),
             'collected_by': forms.Select(attrs={'class': 'form-control'}),
@@ -274,6 +279,14 @@ class TestParameterForm(forms.ModelForm):
             'min_permissible_limit': 'Leave blank if no minimum limit.',
             'max_permissible_limit': 'Leave blank if no maximum limit.',
         }
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        # Enforce model-level validations for consistency
+        instance.full_clean()
+        if commit:
+            instance.save()
+        return instance
 
 class CustomPasswordChangeForm(PasswordChangeForm):
     def __init__(self, *args, **kwargs):

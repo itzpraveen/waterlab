@@ -147,6 +147,15 @@ if not DEBUG:
     SECURE_SSL_REDIRECT = False  # Set to True if using HTTPS
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
     USE_TZ = True
+
+# Accept common day-first and ISO datetime inputs across environments
+DATETIME_INPUT_FORMATS = [
+    '%d/%m/%Y %H:%M:%S', '%d/%m/%Y %H:%M', '%d/%m/%Y',
+    '%Y-%m-%d %H:%M:%S', '%Y-%m-%d %H:%M', '%Y-%m-%d',
+]
+
+# Seed standard parameters automatically when the DB is empty
+AUTO_SEED_PARAMETERS = True
     
     # Session Security
     SESSION_COOKIE_SECURE = False  # Set to True if using HTTPS
