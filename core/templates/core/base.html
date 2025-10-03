@@ -159,7 +159,6 @@
                 {% if user.is_admin %}
                 <li><a href="{% url 'core:setup_test_parameters' %}" class="waves-effect {% if 'setup_test_parameters' == request.resolver_match.url_name %}active{% endif %}"><i class="material-icons">tune</i>Test Setup</a></li>
                 <li><a href="{% url 'core:audit_trail' %}" class="waves-effect {% if 'audit_trail' == request.resolver_match.url_name %}active{% endif %}"><i class="material-icons">history</i>Audit Trail</a></li>
-                <li><a href="{% url 'core:consultant_review_list' %}" class="waves-effect {% if 'consultant_review_list' == request.resolver_match.url_name %}active{% endif %}"><i class="material-icons">fact_check</i>Consultant Review</a></li>
                 {% endif %}
                 <li class="nav-section"><span class="subheader">Quick Actions</span></li>
                 {% if user.is_frontdesk or user.is_admin %}
