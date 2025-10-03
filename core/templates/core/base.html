@@ -32,9 +32,9 @@
 
     {% block extra_css %}{% endblock %}
 </head>
-<body>
+<body class="app-body">
     <a href="#main-content" class="skip-link">Skip to content</a>
-    <div id="page-preloader" class="page-preloader no-print">
+    <div id="page-preloader" class="page-preloader no-print" role="status" aria-live="polite">
         <div class="preloader-wrapper big active">
             <div class="spinner-layer spinner-blue-only">
                 <div class="circle-clipper left">
@@ -49,136 +49,194 @@
         <p>Loading WaterLab LIMS...</p>
     </div>
 
-    <header class="no-print">
-        <nav>
-            <div class="nav-wrapper">
-                <a href="{% if user.is_authenticated %}{% url 'core:dashboard' %}{% else %}{% url 'core:home' %}{% endif %}" class="brand-logo" style="display: flex; align-items: center;">
-                    <img src="{% static 'images/biofix_logo.png' %}" alt="Biofix Research Institute Logo" style="height: 40px; width: auto; margin-right: 10px; vertical-align: middle;">
-                    <span class="logo-text" style="vertical-align: middle;">WaterLab LIMS</span>
-                </a>
-                {% if user.is_authenticated %}
-                <a href="#" data-target="mobile-nav" class="sidenav-trigger"><i class="material-icons">menu</i></a>
-                <ul class="right hide-on-med-and-down">
-                    <li>
-                        <a href="#" class="waves-effect waves-light theme-toggle" aria-label="Toggle theme">
-                            <i class="material-icons left theme-icon">dark_mode</i>
-                            Theme
+    <div class="app-shell">
+        <header class="app-header no-print">
+            <nav class="primary-nav">
+                <div class="nav-wrapper">
+                    <div class="nav-brand">
+                        <a href="{% if user.is_authenticated %}{% url 'core:dashboard' %}{% else %}{% url 'core:home' %}{% endif %}" class="brand-logo" aria-label="WaterLab home">
+                            <img src="{% static 'images/biofix_logo.png' %}" alt="Biofix Research Institute" class="brand-mark">
+                            <span class="logo-text">WaterLab LIMS</span>
                         </a>
-                    </li>
-                    <li><a href="{% url 'core:dashboard' %}" class="waves-effect waves-light {% if 'dashboard' in request.resolver_match.url_name %}active{% endif %}">
-                        <i class="material-icons left">dashboard</i>Dashboard
-                    </a></li>
-                    {% if user.is_frontdesk or user.is_admin %}
-                    <li><a href="{% url 'core:customer_list' %}" class="waves-effect waves-light {% if 'customer_list' == request.resolver_match.url_name or 'customer_detail' == request.resolver_match.url_name or 'customer_form' == request.resolver_match.url_name %}active{% endif %}">
-                        <i class="material-icons left">people</i>Customers
-                    </a></li>
-                    {% endif %}
-                    <li><a href="{% url 'core:sample_list' %}" class="waves-effect waves-light {% if 'sample_list' == request.resolver_match.url_name or 'sample_detail' == request.resolver_match.url_name or 'sample_form' == request.resolver_match.url_name %}active{% endif %}">
-                        <i class="material-icons left">opacity</i>Samples
-                    </a></li>
-                    {% if user.is_lab_technician or user.is_admin %}
-                    <li><a href="{% url 'core:test_result_list' %}" class="waves-effect waves-light {% if 'test_result_list' == request.resolver_match.url_name or 'test_result_entry' == request.resolver_match.url_name %}active{% endif %}">
-                        <i class="material-icons left">list_alt</i>Results
-                    </a></li>
-                    {% endif %}
-                    {% if user.is_admin %}
-                     <li><a href="{% url 'core:setup_test_parameters' %}" class="waves-effect waves-light {% if 'setup_test_parameters' == request.resolver_match.url_name %}active{% endif %}">
-                        <i class="material-icons left">biotech</i>Parameters
-                    </a></li>
-                    <li><a href="{% url 'admin:index' %}" target="_blank" class="waves-effect waves-light">
-                        <i class="material-icons left">settings_applications</i>Sys Admin
-                    </a></li>
-                    {% endif %}
-                    <li>
-                        <a class="dropdown-trigger waves-effect waves-light" href="#!" data-target="user-dropdown">
-                            {% if user.role %}<span class="role-badge {{ user.role }}">{{ user.get_role_display }}</span>{% endif %}
-                            {{ user.first_name|default:user.username }}
-                            <i class="material-icons right">arrow_drop_down</i>
+                        {% if user.is_authenticated %}
+                        <a href="#" data-target="mobile-nav" class="sidenav-trigger" aria-label="Toggle navigation">
+                            <i class="material-icons">menu</i>
                         </a>
-                    </li>
-                </ul>
-                {% else %}
-                <ul class="right">
-                    <li><a href="{% url 'core:login_selector' %}" class="waves-effect waves-light btn"><i class="material-icons left">login</i>Login</a></li>
-                </ul>
-                {% endif %}
-            </div>
-        </nav>
+                        {% endif %}
+                    </div>
 
-        {% if user.is_authenticated %}
-        <!-- Sidenav Structure -->
-        <ul id="mobile-nav" class="sidenav">
-            <li>
-                <div class="user-view">
-                    <div class="background"></div>
-                    <a href="#!user"><span class="white-text name">{{ user.first_name|default:user.username }}</span></a>
-                    <a href="#!email"><span class="white-text email"><span class="role-badge {{ user.role }}">{{ user.get_role_display }}</span></span></a>
+                    {% if user.is_authenticated %}
+                    <ul class="nav-links hide-on-med-and-down" role="menubar">
+                        <li role="none">
+                            <a href="{% url 'core:dashboard' %}" role="menuitem" class="nav-link {% if 'dashboard' in request.resolver_match.url_name %}active{% endif %}">
+                                <i class="material-icons left" aria-hidden="true">dashboard</i>
+                                Dashboard
+                            </a>
+                        </li>
+                        {% if user.is_frontdesk or user.is_admin %}
+                        <li role="none">
+                            <a href="{% url 'core:customer_list' %}" role="menuitem" class="nav-link {% if 'customer_list' == request.resolver_match.url_name or 'customer_detail' == request.resolver_match.url_name or 'customer_form' == request.resolver_match.url_name %}active{% endif %}">
+                                <i class="material-icons left" aria-hidden="true">people</i>
+                                Customers
+                            </a>
+                        </li>
+                        {% endif %}
+                        <li role="none">
+                            <a href="{% url 'core:sample_list' %}" role="menuitem" class="nav-link {% if 'sample_list' == request.resolver_match.url_name or 'sample_detail' == request.resolver_match.url_name or 'sample_form' == request.resolver_match.url_name %}active{% endif %}">
+                                <i class="material-icons left" aria-hidden="true">opacity</i>
+                                Samples
+                            </a>
+                        </li>
+                        {% if user.is_lab_technician or user.is_admin %}
+                        <li role="none">
+                            <a href="{% url 'core:test_result_list' %}" role="menuitem" class="nav-link {% if 'test_result_list' == request.resolver_match.url_name or 'test_result_entry' == request.resolver_match.url_name %}active{% endif %}">
+                                <i class="material-icons left" aria-hidden="true">list_alt</i>
+                                Results
+                            </a>
+                        </li>
+                        {% endif %}
+                        {% if user.is_admin %}
+                        <li role="none">
+                            <a href="{% url 'core:setup_test_parameters' %}" role="menuitem" class="nav-link {% if 'setup_test_parameters' == request.resolver_match.url_name %}active{% endif %}">
+                                <i class="material-icons left" aria-hidden="true">tune</i>
+                                Test Setup
+                            </a>
+                        </li>
+                        <li role="none">
+                            <a href="{% url 'core:audit_trail' %}" role="menuitem" class="nav-link {% if 'audit_trail' == request.resolver_match.url_name %}active{% endif %}">
+                                <i class="material-icons left" aria-hidden="true">history</i>
+                                Audit Trail
+                            </a>
+                        </li>
+                        {% endif %}
+                    </ul>
+
+                    <div class="nav-actions">
+                        <button type="button" class="btn-icon theme-toggle" aria-label="Toggle theme">
+                            <i class="material-icons theme-icon" aria-hidden="true">dark_mode</i>
+                        </button>
+                        <div class="nav-divider hide-on-med-and-down" aria-hidden="true"></div>
+                        <span class="nav-user hide-on-small-only">
+                            <span class="user-name">{{ user.get_short_name|default:user.username }}</span>
+                            {% if user.role %}<span class="user-role">{{ user.get_role_display }}</span>{% endif %}
+                        </span>
+                        <a class="dropdown-trigger nav-avatar waves-effect" href="#" data-target="user-dropdown" aria-haspopup="true" aria-expanded="false" aria-label="User menu">
+                            <span class="avatar-circle" aria-hidden="true">{{ user.get_short_name|default:user.username|first|upper }}</span>
+                            <i class="material-icons" aria-hidden="true">expand_more</i>
+                        </a>
+                    </div>
+                    {% else %}
+                    <div class="nav-actions">
+                        <a href="{% url 'core:login_selector' %}" class="btn btn-small waves-effect waves-light">
+                            <i class="material-icons left" aria-hidden="true">login</i>Login
+                        </a>
+                    </div>
+                    {% endif %}
                 </div>
-            </li>
-            <li><a href="#" class="waves-effect theme-toggle"><i class="material-icons theme-icon">dark_mode</i>Toggle Theme</a></li>
-            <li><a href="{% url 'core:dashboard' %}" class="waves-effect {% if 'dashboard' in request.resolver_match.url_name %}active{% endif %}"><i class="material-icons">dashboard</i>Dashboard</a></li>
-            {% if user.is_frontdesk or user.is_admin %}
-            <li><a href="{% url 'core:customer_list' %}" class="waves-effect {% if 'customer_list' == request.resolver_match.url_name or 'customer_detail' == request.resolver_match.url_name or 'customer_form' == request.resolver_match.url_name %}active{% endif %}"><i class="material-icons">people</i>Customers</a></li>
-            {% endif %}
-            <li><a href="{% url 'core:sample_list' %}" class="waves-effect {% if 'sample_list' == request.resolver_match.url_name or 'sample_detail' == request.resolver_match.url_name or 'sample_form' == request.resolver_match.url_name %}active{% endif %}"><i class="material-icons">opacity</i>Samples</a></li>
-            {% if user.is_lab_technician or user.is_admin %}
-            <li><a href="{% url 'core:test_result_list' %}" class="waves-effect {% if 'test_result_list' == request.resolver_match.url_name or 'test_result_entry' == request.resolver_match.url_name %}active{% endif %}"><i class="material-icons">list_alt</i>Results</a></li>
-            {% endif %}
-            {% if user.is_admin %}
-             <li><a href="{% url 'core:setup_test_parameters' %}" class="waves-effect waves-light {% if 'setup_test_parameters' == request.resolver_match.url_name %}active{% endif %}"><i class="material-icons">biotech</i>Parameters</a></li>
-            <li><a href="{% url 'admin:index' %}" target="_blank" class="waves-effect"><i class="material-icons">settings_applications</i>Sys Admin</a></li>
-            {% endif %}
-            <li><div class="divider"></div></li>
-            <li><a class="subheader">Account</a></li>
-            <li><a href="{% url 'core:password_change' %}" class="waves-effect"><i class="material-icons">lock_outline</i>Change Password</a></li>
-            <li>
-                <form id="logout-form-sidenav" method="post" action="{% url 'core:logout' %}" style="display: none;">{% csrf_token %}</form>
-                <a href="#" class="waves-effect" onclick="document.getElementById('logout-form-sidenav').submit(); return false;"><i class="material-icons">exit_to_app</i>Logout</a>
-            </li>
-        </ul>
+            </nav>
 
-        <!-- User Dropdown Structure -->
-        <ul id="user-dropdown" class="dropdown-content">
-            <li><a href="{% url 'core:password_change' %}"><i class="material-icons left">lock_outline</i>Change Password</a></li>
-            <li class="divider" tabindex="-1"></li>
-            <li>
-                <form id="logout-form-dropdown" method="post" action="{% url 'core:logout' %}" style="display: none;">{% csrf_token %}</form>
-                <a href="#" onclick="document.getElementById('logout-form-dropdown').submit(); return false;" class="flex items-center"><i class="material-icons left">exit_to_app</i>Logout</a>
-            </li>
-        </ul>
-        {% endif %}
-    </header>
+            {% if user.is_authenticated %}
+            <ul class="sidenav" id="mobile-nav">
+                <li class="sidenav-user">
+                    <div class="user-meta">
+                        <span class="avatar-circle" aria-hidden="true">{{ user.get_short_name|default:user.username|first|upper }}</span>
+                        <div>
+                            <p class="user-name">{{ user.get_full_name|default:user.username }}</p>
+                            <p class="user-role">{{ user.get_role_display|default:"WaterLab User" }}</p>
+                            {% if user.email %}<p class="user-email">{{ user.email }}</p>{% endif %}
+                        </div>
+                    </div>
+                    <div class="divider"></div>
+                </li>
+                <li><a href="{% url 'core:dashboard' %}" class="waves-effect {% if 'dashboard' in request.resolver_match.url_name %}active{% endif %}"><i class="material-icons">dashboard</i>Dashboard</a></li>
+                {% if user.is_frontdesk or user.is_admin %}
+                <li><a href="{% url 'core:customer_list' %}" class="waves-effect {% if 'customer_list' == request.resolver_match.url_name or 'customer_detail' == request.resolver_match.url_name or 'customer_form' == request.resolver_match.url_name %}active{% endif %}"><i class="material-icons">people</i>Customers</a></li>
+                {% endif %}
+                <li><a href="{% url 'core:sample_list' %}" class="waves-effect {% if 'sample_list' == request.resolver_match.url_name or 'sample_detail' == request.resolver_match.url_name or 'sample_form' == request.resolver_match.url_name %}active{% endif %}"><i class="material-icons">opacity</i>Samples</a></li>
+                {% if user.is_lab_technician or user.is_admin %}
+                <li><a href="{% url 'core:test_result_list' %}" class="waves-effect {% if 'test_result_list' == request.resolver_match.url_name or 'test_result_entry' == request.resolver_match.url_name %}active{% endif %}"><i class="material-icons">list_alt</i>Results</a></li>
+                {% endif %}
+                {% if user.is_admin %}
+                <li><a href="{% url 'core:setup_test_parameters' %}" class="waves-effect {% if 'setup_test_parameters' == request.resolver_match.url_name %}active{% endif %}"><i class="material-icons">tune</i>Test Setup</a></li>
+                <li><a href="{% url 'core:audit_trail' %}" class="waves-effect {% if 'audit_trail' == request.resolver_match.url_name %}active{% endif %}"><i class="material-icons">history</i>Audit Trail</a></li>
+                <li><a href="{% url 'core:consultant_review_list' %}" class="waves-effect {% if 'consultant_review_list' == request.resolver_match.url_name %}active{% endif %}"><i class="material-icons">fact_check</i>Consultant Review</a></li>
+                {% endif %}
+                <li class="nav-section"><span class="subheader">Quick Actions</span></li>
+                {% if user.is_frontdesk or user.is_admin %}
+                <li><a href="{% url 'core:customer_add' %}" class="waves-effect"><i class="material-icons">person_add</i>Add Customer</a></li>
+                <li><a href="{% url 'core:sample_add' %}" class="waves-effect"><i class="material-icons">note_add</i>Register Sample</a></li>
+                {% endif %}
+                {% if user.is_lab_technician or user.is_admin %}
+                <li><a href="{% url 'core:test_result_entry' %}" class="waves-effect"><i class="material-icons">edit_note</i>Enter Results</a></li>
+                {% endif %}
+                <li class="nav-section"><span class="subheader">Account</span></li>
+                <li><a href="#" class="waves-effect theme-toggle"><i class="material-icons">dark_mode</i>Theme</a></li>
+                <li><a href="{% url 'core:password_change' %}" class="waves-effect"><i class="material-icons">lock_outline</i>Change Password</a></li>
+                <li>
+                    <form id="logout-form-sidenav" method="post" action="{% url 'core:logout' %}" style="display: none;">{% csrf_token %}</form>
+                    <a href="#" class="waves-effect" onclick="document.getElementById('logout-form-sidenav').submit(); return false;"><i class="material-icons">exit_to_app</i>Logout</a>
+                </li>
+                {% if user.is_admin %}
+                <li><div class="divider"></div></li>
+                <li><a href="{% url 'admin:index' %}" target="_blank" class="waves-effect"><i class="material-icons">settings_applications</i>Sys Admin</a></li>
+                {% endif %}
+            </ul>
+
+            <ul id="user-dropdown" class="dropdown-content">
+                <li><a href="{% url 'core:password_change' %}"><i class="material-icons left">lock_outline</i>Change Password</a></li>
+                <li class="divider" tabindex="-1"></li>
+                <li>
+                    <form id="logout-form-dropdown" method="post" action="{% url 'core:logout' %}" style="display: none;">{% csrf_token %}</form>
+                    <a href="#" onclick="document.getElementById('logout-form-dropdown').submit(); return false;" class="flex items-center"><i class="material-icons left">exit_to_app</i>Logout</a>
+                </li>
+            </ul>
+            {% endif %}
+        </header>
+
 
     <!-- Main Content -->
     <main id="main-content" class="site-content fade-in-up">
-        <div class="container">
-            <!-- Breadcrumbs -->
-            {% block breadcrumbs %}
-            <div class="breadcrumb-container col s12 no-print">
-                <nav>
-                    <div class="nav-wrapper">
-                        <!-- Breadcrumb items will be populated by child templates -->
-                    </div>
-                </nav>
-            </div>
-            {% endblock breadcrumbs %}
+        <div class="container page-container">
+            {% block page_header %}
+                {% block breadcrumbs %}
+                <div class="breadcrumb-container col s12 no-print">
+                    <nav>
+                        <div class="nav-wrapper">
+                            <!-- Breadcrumb items will be populated by child templates -->
+                        </div>
+                    </nav>
+                </div>
+                {% endblock breadcrumbs %}
+            {% endblock page_header %}
 
-            <!-- Alert Messages -->
             {% if messages %}
-                <div class="messages-container no-print">
+                <div class="messages-container no-print" role="region" aria-live="polite">
                 {% for message in messages %}
-                    <div class="card-panel alert alert-{{ message.tags | lower }}" role="alert" aria-live="polite">
-                        {{ message }}
-                        <button type="button" class="close-alert" aria-label="Close alert">&times;</button>
+                    {% with message.tags|default:'' as tags %}
+                    <div class="alert-card alert-{{ tags|lower }}">
+                        <div class="alert-icon" aria-hidden="true">
+                            {% if 'success' in tags %}
+                                <i class="material-icons">check_circle</i>
+                            {% elif 'warning' in tags %}
+                                <i class="material-icons">warning</i>
+                            {% elif 'error' in tags or 'danger' in tags %}
+                                <i class="material-icons">error</i>
+                            {% else %}
+                                <i class="material-icons">info</i>
+                            {% endif %}
+                        </div>
+                        <div class="alert-content">{{ message }}</div>
+                        <button type="button" class="alert-close" aria-label="Dismiss alert">
+                            <i class="material-icons" aria-hidden="true">close</i>
+                        </button>
                     </div>
+                    {% endwith %}
                 {% endfor %}
                 </div>
             {% endif %}
 
-            <!-- Page Content -->
             <div class="page-content">
-                {% block content %}
-                {% endblock %}
+                {% block content %}{% endblock %}
             </div>
         </div>
     </main>
@@ -186,32 +244,61 @@
     <!-- Footer -->
     <footer class="page-footer no-print">
         <div class="container">
+            <div class="footer-logo">
+                <img src="{% static 'images/biofix_logo.png' %}" alt="Biofix Research Institute">
+                <span>WaterLab LIMS</span>
+            </div>
             <div class="row">
-                <div class="col l6 s12">
-                    <h5 class="white-text">WaterLab LIMS by Biofix</h5>
-                    <p class="white-text text-lighten-2">Modern Laboratory Information Management System for water testing facilities.</p>
+                <div class="col l5 m12 s12">
+                    <h5>Empowering Water Quality Laboratories</h5>
+                    <p>Streamline sampling, testing, and reporting workflows with an interface built for busy lab teams and stakeholders.</p>
+                    <div class="footer-meta">
+                        <i class="material-icons" aria-hidden="true">place</i>
+                        <span>Kerala, India</span>
+                    </div>
+                    <div class="footer-meta">
+                        <i class="material-icons" aria-hidden="true">email</i>
+                        <span><a href="mailto:support@biofix.in">support@biofix.in</a></span>
+                    </div>
+                    <div class="footer-cta">
+                        <a class="btn waves-effect waves-light" href="mailto:support@biofix.in">
+                            <i class="material-icons left" aria-hidden="true">support_agent</i>Talk to Support
+                        </a>
+                    </div>
                 </div>
-                <div class="col l4 offset-l2 s12">
-                    <h5 class="white-text">Quick Links</h5>
+                <div class="col l3 m6 s12">
+                    <h5>Quick Links</h5>
                     <ul>
-                        <li><a class="white-text text-lighten-2" href="{% url 'core:home' %}">Home</a></li>
+                        <li><a href="{% url 'core:home' %}">Home</a></li>
                         {% if user.is_authenticated %}
-                        <li><a class="white-text text-lighten-2" href="{% url 'core:dashboard' %}">Dashboard</a></li>
-                        <li><a class="white-text text-lighten-2" href="#" onclick="document.getElementById('logout-form-dropdown').submit(); return false;">Logout</a></li>
+                        <li><a href="{% url 'core:dashboard' %}">Dashboard</a></li>
+                        <li><a href="{% url 'core:sample_list' %}">Samples</a></li>
+                        <li><a href="#" onclick="document.getElementById('logout-form-dropdown').submit(); return false;">Logout</a></li>
                         {% else %}
-                        <li><a class="white-text text-lighten-2" href="{% url 'core:login_selector' %}">Login</a></li>
+                        <li><a href="{% url 'core:login_selector' %}">Login</a></li>
+                        <li><a href="mailto:support@biofix.in">Need Help?</a></li>
                         {% endif %}
                     </ul>
                 </div>
+                <div class="col l3 m6 s12">
+                    <h5>Resources</h5>
+                    <ul>
+                        <li><a href="{% url 'core:test_result_list' %}">Results Workflow</a></li>
+                        <li><a href="{% url 'core:audit_trail' %}">Audit Tracking</a></li>
+                        <li><a href="{% url 'core:setup_test_parameters' %}">Parameter Library</a></li>
+                        <li><a href="https://biofix.in" target="_blank" rel="noopener">Biofix Research Institute</a></li>
+                    </ul>
+                </div>
             </div>
-        </div>
-        <div class="footer-copyright">
-            <div class="container">
-            &copy; {% now "Y" %} Water Testing Lab LIMS by Biofix - Kerala, India.
-            <span class="right hide-on-small-only">Built with Django & Materialize</span>
+            <div class="footer-divider"></div>
+            <div class="footer-copy">
+                <span>&copy; {% now "Y" %} WaterLab LIMS by Biofix. All rights reserved.</span>
+                <span><i class="material-icons" aria-hidden="true">water_drop</i>Built with Django & Materialize</span>
             </div>
         </div>
     </footer>
+
+    </div> <!-- /.app-shell -->
 
     <!-- Materialize JavaScript -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>

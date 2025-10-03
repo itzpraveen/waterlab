@@ -3,41 +3,33 @@
 
 {% block title %}Sample Management - Water Lab LIMS{% endblock %}
 
-{% block breadcrumbs %}
-<div class="col s12 breadcrumb-container">
-    <nav>
-        <div class="nav-wrapper">
-            <a href="{% url 'core:home' %}" class="breadcrumb">Home</a>
-            <span class="breadcrumb active">Sample Management</span>
-        </div>
-    </nav>
+{% block page_header %}
+<div class="page-header">
+    <div class="page-heading">
+        <h1 class="page-title">Sample Management</h1>
+        <p class="page-subtitle">Track each sample's journey from intake to report approval with powerful search and status filters.</p>
+    </div>
+    <div class="page-actions">
+        {% if user.is_frontdesk or user.is_admin %}
+        <a href="{% url 'core:sample_add' %}" class="btn waves-effect waves-light">
+            <i class="material-icons left" aria-hidden="true">add_task</i>
+            New Sample
+        </a>
+        {% endif %}
+    </div>
 </div>
-{% endblock breadcrumbs %}
+{% endblock %}
 
 {% block content %}
-<div class="card fade-in-up">
-    <div class="card-content">
-        <div class="row mb-3">
-            <div class="col s12 m8 l9 flex items-center">
-                <i class="material-icons h1-icon mr-2 text-primary" style="font-size: 2.8rem;">science</i>
-                <h1 class="h2 mb-0">Sample Management</h1>
-            </div>
-            <div class="col s12 m4 l3 flex items-center justify-end mt-2 mt-m-0">
-                {% if user.is_frontdesk or user.is_admin %}
-                    <a href="{% url 'core:sample_add' %}" class="btn waves-effect waves-light w-100 w-m-auto"><i class="material-icons left">add_task</i>New Sample</a>
-                {% endif %}
-            </div>
-        </div>
-        <p class="text-muted mb-4">Track and manage all water samples registered in the system.</p>
-
-        <!-- Search and Filter -->
-        <div class="row mb-4">
-            <div class="input-field col s12 m6 l4">
+<div class="page-section fade-in-up">
+    <div class="page-toolbar">
+        <div class="toolbar-group">
+            <div class="input-field compact-input">
                 <i class="material-icons prefix">search</i>
-                <input type="text" id="sample-search" placeholder="Search by ID, Customer, Source..." data-search="#sample-table">
+                <input type="text" id="sample-search" placeholder="Search by ID, customer, or source" data-search="#sample-table">
                 <label for="sample-search">Search Samples</label>
             </div>
-            <div class="input-field col s12 m6 l4">
+            <div class="input-field compact-input">
                 <i class="material-icons prefix">filter_list</i>
                 <select id="status-filter">
                     <option value="" selected>All Statuses</option>
@@ -49,127 +41,117 @@
                     <option value="REPORT_APPROVED">Report Approved</option>
                     <option value="REPORT_SENT">Report Sent</option>
                 </select>
-                <label>Filter by Status</label>
+                <label for="status-filter">Filter by Status</label>
             </div>
         </div>
-        
-        <div id="loading-indicator" style="display: none;" class="center-align p-5">
-            <div class="preloader-wrapper active">
-                <div class="spinner-layer spinner-blue-only">
-                    <div class="circle-clipper left">
-                        <div class="circle"></div>
-                    </div><div class="gap-patch">
-                        <div class="circle"></div>
-                    </div><div class="circle-clipper right">
-                        <div class="circle"></div>
-                    </div>
-                </div>
-            </div>
-            <p class="mt-3 text-muted">Loading samples...</p>
+        <div class="toolbar-spacer"></div>
+        <div class="toolbar-group text-muted">
+            <span class="chip soft">{{ samples|length }} active sample{{ samples|length|pluralize }}</span>
         </div>
+    </div>
 
-        <div id="sample-list-container">
-            <div class="table-responsive mobile-table-card" id="sample-table-wrapper"{% if not samples %} style="display: none;"{% endif %}> {# Removed fade-in class #}
-                {% if samples %}
-                <table class="highlight responsive-table" id="sample-table">
-                    <thead>
-                        <tr>
-                            <th>Sample ID</th>
-                            <th>Customer</th>
-                            <th>Collection Date</th>
-                            <th>Source</th>
-                            <th class="text-center">Tests</th>
-                            <th>Status</th>
-                            <th class="text-center">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for sample in samples %}
-                        <tr data-status="{{ sample.current_status }}">
-                            <td data-label="Sample ID">
-                                <a href="{% url 'core:sample_detail' pk=sample.sample_id %}" class="text-primary font-weight-medium">
-                                    <code>{{ sample.sample_id|truncatechars:12 }}</code>
-                                </a>
-                            </td>
-                            <td data-label="Customer">
-                                <a href="{% url 'core:customer_detail' pk=sample.customer.customer_id %}" class="text-primary">
-                                    {{ sample.customer.name }}
-                                </a>
-                                <br>
-                                <small class="text-muted">{{ sample.customer.phone }}</small>
-                            </td>
-                            <td data-label="Collection Date">
-                                {{ sample.collection_datetime|date:"M d, Y" }}
-                                <br>
-                                <small class="text-muted">{{ sample.collection_datetime|time:"H:i" }}</small>
-                            </td>
-                            <td data-label="Source">
-                                <span class="chip bg-primary-light">{{ sample.get_sample_source_display }}</span>
-                            </td>
-                            <td data-label="Tests" class="text-center">
-                                <span class="chip grey lighten-2 black-text">
-                                    {{ sample.tests_requested.count }}
-                                </span>
-                            </td>
-                            <td data-label="Status">
-                                {% if sample.current_status == 'REPORT_APPROVED' or sample.current_status == 'REPORT_SENT' %}
-                                    <span class="chip bg-success">{{ sample.get_current_status_display }}</span>
-                                {% elif sample.current_status == 'RESULTS_ENTERED' or sample.current_status == 'REVIEW_PENDING' %}
-                                    <span class="chip bg-warning">{{ sample.get_current_status_display }}</span>
-                                {% elif sample.current_status == 'TESTING_IN_PROGRESS' %}
-                                    <span class="chip bg-info">{{ sample.get_current_status_display }}</span>
-                                {% else %}
-                                    <span class="chip bg-danger">{{ sample.get_current_status_display }}</span>
-                                {% endif %}
-                            </td>
-                            <td data-label="Actions" class="text-center actions-column">
-                                <div class="btn-group">
-                                    <a href="{% url 'core:sample_detail' pk=sample.sample_id %}" class="btn-floating btn-small waves-effect waves-light tooltipped bg-primary" data-position="top" data-tooltip="View Details">
-                                        <i class="material-icons">visibility</i>
-                                    </a>
-                                    
-                                    {% if user.is_lab_technician or user.is_admin %}
-                                        {% if sample.current_status in 'SENT_TO_LAB,TESTING_IN_PROGRESS,RESULTS_ENTERED' %}
-                                            <a href="{% url 'core:test_result_entry' sample_id=sample.sample_id %}" class="btn-floating btn-small waves-effect waves-light tooltipped bg-success" data-position="top" data-tooltip="Enter Results">
-                                                <i class="material-icons">edit_note</i>
-                                            </a>
-                                        {% endif %}
-                                    {% endif %}
-                                    
-                                    {% if user.is_consultant or user.is_admin %}
-                                        {% if sample.current_status in 'RESULTS_ENTERED,REVIEW_PENDING' %}
-                                            <a href="{% url 'core:consultant_review' sample_id=sample.sample_id %}" class="btn-floating btn-small waves-effect waves-light tooltipped bg-info" data-position="top" data-tooltip="Review Sample">
-                                                <i class="material-icons">rate_review</i>
-                                            </a>
-                                        {% endif %}
-                                    {% endif %}
-                                </div>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-                {% endif %} {# End of if samples for table content #}
-            </div> {# End of sample-table-wrapper #}
-            
-            <div id="no-samples-message" class="text-center p-5 fade-in"{% if samples %} style="display: none;"{% endif %}>
-                {% if not samples %}
-                {# This content is shown if Django's samples variable is empty #}
-                <i class="material-icons" style="font-size: 5rem; color: var(--primary-color-light);">flask_outline</i>
-                <h5 class="mt-3" style="color: var(--text-color-medium);">No Samples Found</h5>
-                <p style="color: var(--text-color-light);">There are currently no samples matching your criteria, or no samples have been added yet.</p>
-                {% if user.is_frontdesk or user.is_admin %}
-                    <a href="{% url 'core:sample_add' %}" class="btn waves-effect waves-light mt-3"><i class="material-icons left">add_task</i>Add First Sample</a>
-                {% endif %}
-                {% endif %} {# End of initial content for no-samples-message #}
+    <div id="loading-indicator" class="toolkit-loading" style="display: none;">
+        <div class="preloader-wrapper active">
+            <div class="spinner-layer spinner-blue-only">
+                <div class="circle-clipper left"><div class="circle"></div></div>
+                <div class="gap-patch"><div class="circle"></div></div>
+                <div class="circle-clipper right"><div class="circle"></div></div>
             </div>
+        </div>
+        <p class="mt-3 text-muted">Loading samples...</p>
+    </div>
 
+    <div id="sample-list-container">
+        <div class="table-responsive mobile-table-card" id="sample-table-wrapper"{% if not samples %} style="display:none;"{% endif %}>
             {% if samples %}
-            <div class="text-center text-muted mt-4">
-                <small>Showing {{ samples|length }} sample{{ samples|length|pluralize }}</small>
-            </div>
+            <table class="highlight responsive-table" id="sample-table">
+                <thead>
+                    <tr>
+                        <th>Sample ID</th>
+                        <th>Customer</th>
+                        <th>Collection Date</th>
+                        <th>Source</th>
+                        <th class="text-center">Tests</th>
+                        <th>Status</th>
+                        <th class="text-center">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for sample in samples %}
+                    <tr data-status="{{ sample.current_status }}">
+                        <td data-label="Sample ID">
+                            <a href="{% url 'core:sample_detail' pk=sample.sample_id %}" class="text-primary font-weight-medium">
+                                <code>{{ sample.sample_id|truncatechars:12 }}</code>
+                            </a>
+                        </td>
+                        <td data-label="Customer">
+                            <a href="{% url 'core:customer_detail' pk=sample.customer.customer_id %}" class="text-primary">{{ sample.customer.name }}</a>
+                            <br>
+                            <small class="text-muted">{{ sample.customer.phone }}</small>
+                        </td>
+                        <td data-label="Collection Date">{{ sample.collection_datetime|date:"M d, Y" }}</td>
+                        <td data-label="Source">{{ sample.get_sample_source_display }}</td>
+                        <td class="text-center" data-label="Tests">
+                            <span class="chip soft">{{ sample.tests_requested.count }} test{{ sample.tests_requested.count|pluralize }}</span>
+                        </td>
+                        <td data-label="Status">
+                            {% with status=sample.current_status %}
+                                {% if status in 'REPORT_APPROVED,REPORT_SENT' %}
+                                    <span class="status-pill success">{{ sample.get_current_status_display }}</span>
+                                {% elif status in 'RESULTS_ENTERED,REVIEW_PENDING' %}
+                                    <span class="status-pill warning">{{ sample.get_current_status_display }}</span>
+                                {% elif status in 'TESTING_IN_PROGRESS' %}
+                                    <span class="status-pill info">{{ sample.get_current_status_display }}</span>
+                                {% else %}
+                                    <span class="status-pill">{{ sample.get_current_status_display }}</span>
+                                {% endif %}
+                            {% endwith %}
+                        </td>
+                        <td class="text-center" data-label="Actions">
+                            <div class="btn-group">
+                                <a href="{% url 'core:sample_detail' pk=sample.sample_id %}" class="btn-floating btn-small waves-effect waves-light tooltipped" data-position="top" data-tooltip="View Sample">
+                                    <i class="material-icons">visibility</i>
+                                </a>
+                                {% if user.is_lab_technician or user.is_admin %}
+                                    {% if sample.current_status in 'SENT_TO_LAB,TESTING_IN_PROGRESS,RESULTS_ENTERED' %}
+                                        <a href="{% url 'core:test_result_entry' sample_id=sample.sample_id %}" class="btn-floating btn-small waves-effect waves-light tooltipped" data-position="top" data-tooltip="Enter Results">
+                                            <i class="material-icons">edit_note</i>
+                                        </a>
+                                    {% endif %}
+                                {% endif %}
+                                {% if user.is_consultant or user.is_admin %}
+                                    {% if sample.current_status in 'RESULTS_ENTERED,REVIEW_PENDING' %}
+                                        <a href="{% url 'core:consultant_review' sample_id=sample.sample_id %}" class="btn-floating btn-small waves-effect waves-light tooltipped" data-position="top" data-tooltip="Review Sample">
+                                            <i class="material-icons">rate_review</i>
+                                        </a>
+                                    {% endif %}
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
             {% endif %}
         </div>
+
+        <div id="no-samples-message" class="empty-state"{% if samples %} style="display:none;"{% endif %}>
+            <i class="material-icons" aria-hidden="true">water_drop</i>
+            <h5>No samples found</h5>
+            <p>Start by registering a new sample or adjust your filters to broaden the search.</p>
+            {% if user.is_frontdesk or user.is_admin %}
+            <a href="{% url 'core:sample_add' %}" class="btn waves-effect waves-light">
+                <i class="material-icons left" aria-hidden="true">add_task</i>
+                Add Sample
+            </a>
+            {% endif %}
+        </div>
+
+        {% if samples %}
+        <div class="text-center text-muted mt-4">
+            <small>Showing {{ samples|length }} sample{{ samples|length|pluralize }}</small>
+        </div>
+        {% endif %}
     </div>
 </div>
 {% endblock %}
@@ -177,209 +159,84 @@
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize Materialize Selects for status filter
-    var selectElems = document.querySelectorAll('select');
-    M.FormSelect.init(selectElems);
-
-    // Initialize Materialize tooltips
-    var tooltippedElems = document.querySelectorAll('.tooltipped');
-    M.Tooltip.init(tooltippedElems);
-
     const searchInput = document.getElementById('sample-search');
     const statusFilter = document.getElementById('status-filter');
-    // Note: allRows will now be queried inside filterTableRows
-    // sampleTableBody will be queried inside filterTableRows and the initial setup block
-    const loadingIndicator = document.getElementById('loading-indicator');
-    const sampleListContainer = document.getElementById('sample-list-container');
-    const noSamplesMessage = document.getElementById('no-samples-message'); // Assuming you have this element
+    const sampleTable = document.getElementById('sample-table');
     const sampleTableWrapper = document.getElementById('sample-table-wrapper');
+    const noSamplesMessage = document.getElementById('no-samples-message');
+    const loadingIndicator = document.getElementById('loading-indicator');
 
-    function showLoading(show) {
-        if (loadingIndicator && sampleListContainer) {
-            if (show) {
-                loadingIndicator.style.display = 'block';
-                sampleListContainer.style.display = 'none';
-            } else {
-                loadingIndicator.style.display = 'none';
-                sampleListContainer.style.display = 'block';
-            }
-        }
-    }
-    
-    // Simulate initial loading (remove if backend handles this)
-    // showLoading(true);
-    // setTimeout(() => {
-    //     showLoading(false);
-    //     if (allRows.length === 0 && noSamplesMessage) {
-    //         if(sampleTableWrapper) sampleTableWrapper.style.display = 'none';
-    //         noSamplesMessage.style.display = 'block';
-    //     } else if (noSamplesMessage) {
-    //         if(sampleTableWrapper) sampleTableWrapper.style.display = 'block';
-    //         noSamplesMessage.style.display = 'none';
-    //     }
-    // }, 500); // Simulate network delay
-
-
-    function filterTableRows() {
-        const sampleTableBody = document.querySelector('#sample-table tbody'); // Query fresh inside function
-
-        if (!sampleTableBody) {
-            // This handles cases where the table or tbody might not exist,
-            // e.g., if Django context 'samples' was empty and the table wasn't rendered.
-            if (noSamplesMessage && sampleTableWrapper) {
-                if (sampleTableWrapper) sampleTableWrapper.style.display = 'none';
-                noSamplesMessage.innerHTML = `
-                    <i class="material-icons" style="font-size: 5rem; color: var(--primary-color-light);">flask_outline</i>
-                    <h5 class="mt-3" style="color: var(--text-color-medium);">No Samples Yet</h5>
-                    <p style="color: var(--text-color-light);">Start by adding your first sample to the system.</p>
-                    {% if user.is_frontdesk or user.is_admin %}
-                        <a href="{% url 'core:sample_add' %}" class="btn waves-effect waves-light mt-3"><i class="material-icons left">add_task</i>Add First Sample</a>
-                    {% endif %}
-                `;
-                noSamplesMessage.style.display = 'block';
-            }
-            return;
-        }
-        
-        const currentRows = Array.from(sampleTableBody.querySelectorAll('tr')); // Query rows each time
-        const searchTerm = searchInput.value.toLowerCase();
-        const selectedStatus = statusFilter.value;
-        let visibleRows = 0;
-
-        if (searchTerm === "" && selectedStatus === "") {
-            currentRows.forEach(row => {
-                row.style.display = '';
-            });
-            visibleRows = currentRows.length;
+    const setEmptyState = (state) => {
+        if (!noSamplesMessage) return;
+        if (state === 'search') {
+            noSamplesMessage.innerHTML = `
+                <i class="material-icons" aria-hidden="true">search_off</i>
+                <h5>No samples match your criteria</h5>
+                <p>Try clearing filters or broadening your search terms.</p>
+            `;
         } else {
-            currentRows.forEach(row => {
-                const textContent = row.textContent.toLowerCase();
-                const statusMatches = !selectedStatus || row.getAttribute('data-status') === selectedStatus;
-                const searchMatches = !searchTerm || textContent.includes(searchTerm);
+            noSamplesMessage.innerHTML = `
+                <i class="material-icons" aria-hidden="true">water_drop</i>
+                <h5>No samples found</h5>
+                <p>Start by registering a new sample or adjust your filters.</p>
+                {% if user.is_frontdesk or user.is_admin %}
+                <a href="{% url 'core:sample_add' %}" class="btn waves-effect waves-light">
+                    <i class="material-icons left" aria-hidden="true">add_task</i>
+                    Add Sample
+                </a>
+                {% endif %}
+            `;
+        }
+    };
 
-                if (statusMatches && searchMatches) {
-                    row.style.display = '';
-                    visibleRows++;
-                } else {
-                    row.style.display = 'none';
-                }
-            });
-        }
-        
-        if (noSamplesMessage && sampleTableWrapper) {
-            if (visibleRows > 0) {
-                 sampleTableWrapper.style.display = 'block';
-                 noSamplesMessage.style.display = 'none';
-            } else if (currentRows.length > 0 && visibleRows === 0) {
-                sampleTableWrapper.style.display = 'none';
-                noSamplesMessage.innerHTML = `
-                    <i class="material-icons" style="font-size: 5rem; color: var(--primary-color-light);">search_off</i>
-                    <h5 class="mt-3" style="color: var(--text-color-medium);">No Samples Match Your Search</h5>
-                    <p style="color: var(--text-color-light);">Try adjusting your search terms or filters.</p>
-                `;
-                noSamplesMessage.style.display = 'block';
-            } else if (currentRows.length === 0) {
-                 sampleTableWrapper.style.display = 'none';
-                 noSamplesMessage.innerHTML = `
-                    <i class="material-icons" style="font-size: 5rem; color: var(--primary-color-light);">flask_outline</i>
-                    <h5 class="mt-3" style="color: var(--text-color-medium);">No Samples Yet</h5>
-                    <p style="color: var(--text-color-light);">Start by adding your first sample to the system.</p>
-                    {% if user.is_frontdesk or user.is_admin %}
-                        <a href="{% url 'core:sample_add' %}" class="btn waves-effect waves-light mt-3"><i class="material-icons left">add_task</i>Add First Sample</a>
-                    {% endif %}
-                 `;
-                 noSamplesMessage.style.display = 'block';
+    const filterRows = () => {
+        if (!sampleTable) return;
+        const searchTerm = (searchInput?.value || '').trim().toLowerCase();
+        const statusValue = statusFilter?.value || '';
+        const rows = Array.from(sampleTable.querySelectorAll('tbody tr'));
+        let visibleCount = 0;
+
+        rows.forEach(row => {
+            const matchesSearch = !searchTerm || row.textContent.toLowerCase().includes(searchTerm);
+            const matchesStatus = !statusValue || row.dataset.status === statusValue;
+            const visible = matchesSearch && matchesStatus;
+            row.style.display = visible ? '' : 'none';
+            if (visible) {
+                visibleCount += 1;
             }
+        });
+
+        if (visibleCount === 0) {
+            if (sampleTableWrapper) sampleTableWrapper.style.display = 'none';
+            if (noSamplesMessage) {
+                setEmptyState(searchTerm || statusValue ? 'search' : 'base');
+                noSamplesMessage.style.display = 'block';
+            }
+        } else {
+            if (sampleTableWrapper) sampleTableWrapper.style.display = '';
+            if (noSamplesMessage) noSamplesMessage.style.display = 'none';
         }
-    }
+    };
 
     if (searchInput) {
-        searchInput.addEventListener('keyup', filterTableRows);
+        searchInput.addEventListener('input', WaterLab.debounce(filterRows.bind(WaterLab), WaterLab.config.defaultDebounceTime));
     }
-    
+
     if (statusFilter) {
-        // Delay attaching the event listener and the initial call to filterTableRows
-        // to ensure Materialize Select is fully initialized and its value is stable.
-        setTimeout(function() {
-            statusFilter.addEventListener('change', filterTableRows);
-            // Call filterTableRows once after this delay.
-            // This ensures that if Materialize Select initialization triggered any
-            // intermediate states, our function now sets the view based on stable, final values.
-            // The filterTableRows function is designed to show all rows if filters are empty.
-            filterTableRows();
-        }, 250); // Increased delay to 250ms
-    } else if (searchInput) {
-        // If only search input exists, call filterTableRows once in case it has a default value (unlikely for this app)
-        // or to ensure consistent handling of the noSamplesMessage.
-        filterTableRows();
+        setTimeout(() => {
+            statusFilter.addEventListener('change', filterRows);
+            filterRows();
+        }, 200);
+    } else {
+        filterRows();
     }
-    
-    // Initial setup for "no samples" message if Django rendered an empty list.
-    // This runs once on load. filterTableRows() will manage this message during filtering.
-    const freshSampleTableBodyForInitialCheck = document.querySelector('#sample-table tbody');
-    const initialRows = freshSampleTableBodyForInitialCheck ? Array.from(freshSampleTableBodyForInitialCheck.querySelectorAll('tr')) : [];
-    if (initialRows.length === 0 && noSamplesMessage) { // sampleTableWrapper might not exist if no samples
-        if (sampleTableWrapper) sampleTableWrapper.style.display = 'none';
-        noSamplesMessage.innerHTML = `
-            <i class="material-icons" style="font-size: 5rem; color: var(--primary-color-light);">flask_outline</i>
-            <h5 class="mt-3" style="color: var(--text-color-medium);">No Samples Yet</h5>
-            <p style="color: var(--text-color-light);">Start by adding your first sample to the system.</p>
-            {% if user.is_frontdesk or user.is_admin %}
-                <a href="{% url 'core:sample_add' %}" class="btn waves-effect waves-light mt-3"><i class="material-icons left">add_task</i>Add First Sample</a>
-            {% endif %}
-        `;
-        noSamplesMessage.style.display = 'block';
+
+    if (loadingIndicator) {
+        loadingIndicator.style.display = 'none';
     }
-    // If initialRows.length > 0, Django renders the table visible, and noSamplesMessage hidden.
-    // The delayed call to filterTableRows will then confirm this state or adjust if filters were pre-filled (not applicable here).
+
+    const tooltips = document.querySelectorAll('.tooltipped');
+    M.Tooltip.init(tooltips);
 });
 </script>
-{% endblock %}
-
-{% block extra_css %}
-<style>
-.h1-icon {
-    font-size: 2.8rem; /* Match h1 size or adjust as needed */
-    position: relative;
-    top: -2px; /* Align with text */
-}
-
-.actions-column .btn-group {
-    display: flex;
-    flex-wrap: nowrap; /* Prevent wrapping on mobile card view if too many buttons */
-    justify-content: flex-end; /* Align to right in table cell */
-}
-
-@media (max-width: 768px) { /* Corresponds to mobile-table-card breakpoint */
-    .actions-column .btn-group {
-        justify-content: flex-end; /* Ensure buttons stay on the right in card view */
-        gap: var(--space-xs);
-    }
-    .actions-column .btn-floating.btn-small { /* Ensure buttons are tappable */
-        width: 36px;
-        height: 36px;
-        line-height: 36px;
-    }
-    .actions-column .btn-floating.btn-small i {
-        font-size: 1.2rem;
-        line-height: 36px;
-    }
-}
-
-/* Responsive button width for "New Sample" */
-@media (max-width: 600px) { /* Materialize 's' breakpoint */
-    .w-m-auto {
-        /* On small screens, it's already w-100. This is for medium up. */
-    }
-}
-@media (min-width: 601px) {
-    .w-m-auto {
-        width: auto !important;
-    }
-    .mt-m-0 {
-        margin-top: 0 !important;
-    }
-}
-
-</style>
 {% endblock %}

@@ -17,6 +17,7 @@ const WaterLab = {
         this.log("Initializing WaterLab JS...");
         this.initTheme();
         this.initMaterializeComponents();
+        this.initHeaderEffects();
         this.initSmoothScroll();
         this.initPageTransitions();
         this.initFormEnhancements();
@@ -68,6 +69,54 @@ const WaterLab = {
             icon.textContent = isDark ? 'light_mode' : 'dark_mode';
         });
         this.log('Theme applied:', theme);
+    },
+
+    initHeaderEffects: function() {
+        const nav = document.querySelector('.primary-nav');
+        if (!nav) {
+            return;
+        }
+
+        const mediaPrefersReducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        let lastKnownScrollY = window.scrollY;
+
+        const updateState = () => {
+            const currentY = window.scrollY;
+            if (currentY > 12) {
+                nav.classList.add('is-scrolled');
+            } else {
+                nav.classList.remove('is-scrolled');
+            }
+
+            if (mediaPrefersReducedMotion) {
+                lastKnownScrollY = currentY;
+                return;
+            }
+
+            const allowHide = window.innerWidth > 992;
+            if (!allowHide) {
+                nav.classList.remove('is-hidden');
+            } else if (currentY > lastKnownScrollY && currentY > 160) {
+                nav.classList.add('is-hidden');
+            } else {
+                nav.classList.remove('is-hidden');
+            }
+
+            lastKnownScrollY = currentY;
+        };
+
+        updateState();
+
+        let ticking = false;
+        window.addEventListener('scroll', () => {
+            if (!ticking) {
+                window.requestAnimationFrame(() => {
+                    updateState();
+                    ticking = false;
+                });
+                ticking = true;
+            }
+        }, { passive: true });
     },
 
     // --- Start: Kerala Address Dropdown Logic ---
@@ -775,6 +824,15 @@ const WaterLab = {
     initMessageToasts: function() {
         const container = document.querySelector('.messages-container');
         if (!container) return;
+
+        const alerts = Array.from(container.querySelectorAll('.alert, .alert-card'));
+        if (!alerts.length) return;
+
+        const shouldToast = window.matchMedia && window.matchMedia('(max-width: 600px)').matches;
+        if (!shouldToast) {
+            return; // Keep inline alerts for larger viewports
+        }
+
         const typeToClass = (type) => {
             switch ((type || '').toLowerCase()) {
                 case 'success': return 'green darken-1';
@@ -785,55 +843,63 @@ const WaterLab = {
                 default: return '';
             }
         };
-        container.querySelectorAll('.alert').forEach(alert => {
-            const classes = alert.className.split(/\s+/);
-            const typeClass = classes.find(c => c.startsWith('alert-')) || '';
+
+        alerts.forEach(alert => {
+            const classList = Array.from(alert.classList);
+            const typeClass = classList.find(cls => cls.startsWith('alert-')) || '';
             const type = typeClass.replace('alert-', '');
-            const html = alert.textContent.trim();
-            if (html) {
-                M.toast({ html, classes: typeToClass(type) });
+            const content = alert.querySelector('.alert-content');
+            const messageText = (content ? content.textContent : alert.textContent).trim();
+            if (messageText) {
+                M.toast({ html: messageText, classes: typeToClass(type) });
             }
         });
+
+        container.style.display = 'none';
+        container.setAttribute('aria-hidden', 'true');
     },
 
     initAlerts: function() {
         // Auto-dismiss alerts
-        document.querySelectorAll('.alert[data-auto-dismiss]').forEach(alert => {
+        document.querySelectorAll('.alert[data-auto-dismiss], .alert-card[data-auto-dismiss]').forEach(alert => {
             const dismissTime = parseInt(alert.getAttribute('data-auto-dismiss'), 10);
             if (!isNaN(dismissTime)) {
                 setTimeout(() => this.dismissAlert(alert), dismissTime);
             }
         });
 
-        // Manual close for alerts
-        // Use event delegation for dynamically added alerts
         document.body.addEventListener('click', (event) => {
-            const closeButton = event.target.closest('.alert .close-alert');
-            if (closeButton) {
-                event.preventDefault();
-                this.dismissAlert(closeButton.closest('.alert'));
+            const closeButton = event.target.closest('.alert-close');
+            if (!closeButton) {
+                return;
+            }
+            event.preventDefault();
+            const alertContainer = closeButton.closest('.alert-card, .alert');
+            if (alertContainer) {
+                this.dismissAlert(alertContainer);
             }
         });
     },
 
     dismissAlert: function(alertElement) {
-        if (!alertElement || alertElement.classList.contains('dismissing')) return;
-        
+        if (!alertElement || alertElement.classList.contains('dismissing')) {
+            return;
+        }
+
         alertElement.classList.add('dismissing');
         alertElement.style.transition = 'opacity 0.3s ease, transform 0.3s ease, margin-bottom 0.3s ease, padding-top 0.3s ease, padding-bottom 0.3s ease, max-height 0.3s ease';
         alertElement.style.opacity = '0';
-        alertElement.style.transform = 'scaleY(0.9)';
-        alertElement.style.marginTop = '0'; // For alerts that might have margin-top
+        alertElement.style.transform = 'scaleY(0.92)';
+        alertElement.style.marginTop = '0';
         alertElement.style.marginBottom = '0';
         alertElement.style.paddingTop = '0';
         alertElement.style.paddingBottom = '0';
-        alertElement.style.maxHeight = '0px'; // Animate height collapse
+        alertElement.style.maxHeight = '0px';
         alertElement.style.overflow = 'hidden';
-
 
         setTimeout(() => {
             alertElement.remove();
-        }, 300); // Match transition duration
+        }, 320);
     }
 };
 

@@ -3,87 +3,91 @@
 
 {% block title %}Customers - Water Lab LIMS{% endblock %}
 
-{% block breadcrumbs %}
-<div class="col s12 breadcrumb-container">
-    <nav>
-        <div class="nav-wrapper">
-            <a href="{% url 'core:home' %}" class="breadcrumb">Home</a>
-            <span class="breadcrumb active">Customers</span>
-        </div>
-    </nav>
+{% block page_header %}
+<div class="page-header">
+    <div class="page-heading">
+        <h1 class="page-title">Customer Directory</h1>
+        <p class="page-subtitle">Maintain accurate customer records and create new sample requests in a single view.</p>
+    </div>
+    <div class="page-actions">
+        {% if user.is_frontdesk or user.is_admin %}
+        <a href="{% url 'core:customer_add' %}" class="btn waves-effect waves-light">
+            <i class="material-icons left" aria-hidden="true">person_add</i>
+            Add Customer
+        </a>
+        {% endif %}
+    </div>
 </div>
-{% endblock breadcrumbs %}
+{% endblock %}
 
 {% block content %}
-<div class="card">
-    <div class="card-content">
-        <div class="row" style="margin-bottom: 0;">
-            <div class="col s12 m8">
-                <span class="card-title" style="font-size: 2rem; display: flex; align-items: center;">
-                    <i class="material-icons" style="font-size: 2.5rem; margin-right: 10px;">people</i> Customer Management
-                </span>
-                <p class="grey-text text-darken-1" style="margin-top: -5px; margin-bottom: 15px;">Manage your laboratory customers</p>
-            </div>
-            <div class="col s12 m4 right-align">
-                {% if user.is_frontdesk or user.is_admin %}
-                    <a href="{% url 'core:customer_add' %}" class="btn waves-effect waves-light"><i class="material-icons left">person_add</i>Add Customer</a>
-                {% endif %}
+<div class="page-section fade-in-up">
+    <div class="page-toolbar">
+        <div class="toolbar-group">
+            <div class="input-field compact-input">
+                <i class="material-icons prefix">search</i>
+                <input type="text" id="customer-search" placeholder="Search by name, email, or phone" data-search="#customer-table">
+                <label for="customer-search">Search Customers</label>
             </div>
         </div>
+        <div class="toolbar-spacer"></div>
+        <div class="toolbar-group text-muted">
+            <span class="chip soft">{{ customers|length }} customer{{ customers|length|pluralize }}</span>
+        </div>
+    </div>
 
-        {% if customers %}
-            <!-- Search Box -->
-            <div class="row">
-                <div class="input-field col s12 m6 l4">
-                    <i class="material-icons prefix">search</i>
-                    <input type="text" id="customer-search" class="form-control" placeholder="Search customers..." data-search="#customer-table">
-                    <label for="customer-search">Search</label>
-                </div>
-            </div>
-            
+    <div id="customer-list-container">
+        <div class="table-responsive mobile-table-card" id="customer-table-wrapper"{% if not customers %} style="display:none;"{% endif %}>
+            {% if customers %}
             <table class="highlight responsive-table" id="customer-table">
                 <thead>
                     <tr>
-                        <th data-sort="text">Name</th>
-                        <th data-sort="text">Email</th>
-                        <th data-sort="text">Phone</th>
-                        <th data-sort="text">District</th>
-                        <th data-sort="number" class="center-align">Samples</th>
-                        <th class="center-align">Actions</th>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Phone</th>
+                        <th>District</th>
+                        <th class="text-center">Samples</th>
+                        <th class="text-center">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for customer in customers %}
                     <tr>
-                        <td>
-                            <a href="{% url 'core:customer_detail' pk=customer.customer_id %}">
-                                <strong>{{ customer.name }}</strong>
-                            </a>
+                        <td data-label="Name">
+                            <a href="{% url 'core:customer_detail' pk=customer.customer_id %}" class="text-primary"><strong>{{ customer.name }}</strong></a>
                         </td>
-                        <td>
+                        <td data-label="Email">
+                            {% if customer.email %}
                             <a href="mailto:{{ customer.email }}">{{ customer.email }}</a>
+                            {% else %}
+                            <span class="text-muted">Not provided</span>
+                            {% endif %}
                         </td>
-                        <td>
+                        <td data-label="Phone">
+                            {% if customer.phone %}
                             <a href="tel:{{ customer.phone }}">{{ customer.phone }}</a>
+                            {% else %}
+                            <span class="text-muted">Not provided</span>
+                            {% endif %}
                         </td>
-                        <td>
-                            <span class="chip" style="background-color: var(--primary-color); color: var(--text-on-primary);">{{ customer.get_district_display }}</span>
+                        <td data-label="District">
+                            <span class="chip soft">{{ customer.get_district_display }}</span>
                         </td>
-                        <td class="center-align">
-                            <span class="new badge" style="background-color: var(--primary-color); color: var(--text-on-primary);" data-badge-caption="sample{{ customer.samples.count|pluralize }}">{{ customer.samples.count }}</span>
+                        <td data-label="Samples" class="text-center">
+                            <span class="chip soft">{{ customer.samples.count }} sample{{ customer.samples.count|pluralize }}</span>
                         </td>
-                        <td class="center-align">
-                            <div style="display: flex; justify-content: center; align-items: center; gap: 5px;">
-                                <a href="{% url 'core:customer_detail' pk=customer.customer_id %}" class="btn-floating btn-small waves-effect waves-light tooltipped" style="background-color: var(--primary-color);" data-position="top" data-tooltip="View Details">
+                        <td data-label="Actions" class="text-center">
+                            <div class="btn-group">
+                                <a href="{% url 'core:customer_detail' pk=customer.customer_id %}" class="btn-floating btn-small waves-effect waves-light tooltipped" data-position="top" data-tooltip="View">
                                     <i class="material-icons">visibility</i>
                                 </a>
                                 {% if user.is_frontdesk or user.is_admin %}
-                                    <a href="{% url 'core:customer_edit' pk=customer.customer_id %}" class="btn-floating btn-small waves-effect waves-light tooltipped" style="background-color: var(--warning-color);" data-position="top" data-tooltip="Edit Customer">
-                                        <i class="material-icons">edit</i>
-                                    </a>
-                                    <a href="{% url 'core:sample_add' %}?customer={{ customer.customer_id }}" class="btn-floating btn-small waves-effect waves-light tooltipped" style="background-color: var(--success-color);" data-position="top" data-tooltip="Add Sample">
-                                        <i class="material-icons">colorize</i>
-                                    </a>
+                                <a href="{% url 'core:customer_edit' pk=customer.customer_id %}" class="btn-floating btn-small waves-effect waves-light tooltipped" data-position="top" data-tooltip="Edit">
+                                    <i class="material-icons">edit</i>
+                                </a>
+                                <a href="{% url 'core:sample_add' %}?customer={{ customer.customer_id }}" class="btn-floating btn-small waves-effect waves-light tooltipped" data-position="top" data-tooltip="Register Sample">
+                                    <i class="material-icons">colorize</i>
+                                </a>
                                 {% endif %}
                             </div>
                         </td>
@@ -91,22 +95,20 @@
                     {% endfor %}
                 </tbody>
             </table>
-            
-            <!-- Pagination info -->
-            <div class="center-align grey-text" style="margin-top: 20px;">
-                <small>Showing {{ customers|length }} customer{{ customers|length|pluralize }}</small>
-            </div>
-            
-        {% else %}
-            <div class="center-align" style="padding: 40px 0;">
-                <i class="material-icons" style="font-size: 5rem; color: var(--primary-color-light);">people_outline</i>
-                <h5 style="color: var(--text-color-medium);">No customers yet</h5>
-                <p style="color: var(--text-color-light);">Start by adding your first customer to the system.</p>
-                {% if user.is_frontdesk or user.is_admin %}
-                    <a href="{% url 'core:customer_add' %}" class="btn waves-effect waves-light"><i class="material-icons left">person_add</i>Add First Customer</a> {# Button style from base.html #}
-                {% endif %}
-            </div>
-        {% endif %}
+            {% endif %}
+        </div>
+
+        <div id="no-customers-message" class="empty-state"{% if customers %} style="display:none;"{% endif %}>
+            <i class="material-icons" aria-hidden="true">people_outline</i>
+            <h5>No customers yet</h5>
+            <p>Start by adding your first customer to the system to capture their sample requests.</p>
+            {% if user.is_frontdesk or user.is_admin %}
+            <a href="{% url 'core:customer_add' %}" class="btn waves-effect waves-light">
+                <i class="material-icons left" aria-hidden="true">person_add</i>
+                Add Customer
+            </a>
+            {% endif %}
+        </div>
     </div>
 </div>
 {% endblock %}
@@ -114,32 +116,40 @@
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize Materialize tooltips
-    var tooltippedElems = document.querySelectorAll('.tooltipped');
-    M.Tooltip.init(tooltippedElems);
+    const searchInput = document.getElementById('customer-search');
+    const table = document.getElementById('customer-table');
+    const tableWrapper = document.getElementById('customer-table-wrapper');
+    const emptyState = document.getElementById('no-customers-message');
 
-    // Basic search functionality (case-insensitive)
-    const searchInput = document.querySelector('input[data-search]');
-    if (searchInput) {
-        const tableId = searchInput.getAttribute('data-search');
-        const table = document.querySelector(tableId);
-        if (table) {
-            const tableBody = table.querySelector('tbody');
-            const rows = tableBody.querySelectorAll('tr');
+    const filterRows = () => {
+        if (!table) return;
+        const rows = Array.from(table.querySelectorAll('tbody tr'));
+        const searchTerm = (searchInput?.value || '').trim().toLowerCase();
+        let visible = 0;
 
-            searchInput.addEventListener('keyup', function() {
-                const searchTerm = searchInput.value.toLowerCase();
-                rows.forEach(row => {
-                    const textContent = row.textContent.toLowerCase();
-                    if (textContent.includes(searchTerm)) {
-                        row.style.display = '';
-                    } else {
-                        row.style.display = 'none';
-                    }
-                });
-            });
+        rows.forEach(row => {
+            const matches = !searchTerm || row.textContent.toLowerCase().includes(searchTerm);
+            row.style.display = matches ? '' : 'none';
+            if (matches) visible += 1;
+        });
+
+        if (visible === 0) {
+            if (tableWrapper) tableWrapper.style.display = 'none';
+            if (emptyState) emptyState.style.display = 'block';
+        } else {
+            if (tableWrapper) tableWrapper.style.display = '';
+            if (emptyState) emptyState.style.display = 'none';
         }
+    };
+
+    if (searchInput) {
+        searchInput.addEventListener('input', WaterLab.debounce(filterRows.bind(WaterLab), WaterLab.config.defaultDebounceTime));
     }
+
+    filterRows();
+
+    const tooltips = document.querySelectorAll('.tooltipped');
+    M.Tooltip.init(tooltips);
 });
 </script>
 {% endblock %}

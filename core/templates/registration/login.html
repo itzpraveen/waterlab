@@ -1,78 +1,56 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Water Lab LIMS</title>
-    {% load static %}
-    <link rel="stylesheet" href="{% static 'css/style.css' %}">
-</head>
-<body class="login-body">
-    <div class="login-container">
-        <div class="login-card">
-            <div class="login-header">
-                <h1>🧪 Water Lab LIMS</h1>
-                <p>Laboratory Information Management System</p>
-            </div>
-            
-            <form method="post" class="login-form">
-                {% csrf_token %}
-                
-                {% if form.errors %}
-                    <div class="alert alert-danger">
-                        {% for field, errors in form.errors.items %}
-                            {% for error in errors %}
-                                <p>{{ error }}</p>
-                            {% endfor %}
-                        {% endfor %}
-                    </div>
-                {% endif %}
-                
-                <div class="form-group">
-                    <label for="{{ form.username.id_for_label }}" class="form-label">
-                        👤 Username
-                    </label>
-                    <input type="text" name="{{ form.username.name }}" id="{{ form.username.id_for_label }}" 
-                           class="form-control" placeholder="Enter your username" required
-                           value="{{ form.username.value|default:'' }}">
-                </div>
-                
-                <div class="form-group">
-                    <label for="{{ form.password.id_for_label }}" class="form-label">
-                        🔒 Password
-                    </label>
-                    <input type="password" name="{{ form.password.name }}" id="{{ form.password.id_for_label }}" 
-                           class="form-control" placeholder="Enter your password" required>
-                </div>
-                
-                <button type="submit" class="btn btn-primary btn-full">
-                    🚀 Sign In
-                </button>
-                
-                <div class="login-footer">
-                    <p>Kerala Water Testing Laboratory</p>
-                    <small>Secure access to laboratory management system</small>
-                </div>
-            </form>
-        </div>
-        
-        <div class="login-info">
-            <h3>🔐 Role-Based Access</h3>
-            <div class="role-info">
-                <div class="role-item">
-                    <strong>👨‍💼 Administrator:</strong> Full system access and user management
-                </div>
-                <div class="role-item">
-                    <strong>🧬 Lab Technician:</strong> Test result entry and laboratory operations
-                </div>
-                <div class="role-item">
-                    <strong>📋 Front Desk:</strong> Customer and sample registration
-                </div>
-                <div class="role-item">
-                    <strong>👨‍⚕️ Consultant:</strong> Result review and report approval
-                </div>
-            </div>
-        </div>
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Sign In - Water Lab LIMS{% endblock %}
+
+{% block page_header %}
+<div class="page-header">
+    <div class="page-heading">
+        <h1 class="page-title">Sign in to WaterLab</h1>
+        <p class="page-subtitle">Access dashboards, manage samples, and collaborate with your laboratory team.</p>
     </div>
-</body>
-</html>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="page-section auth-section">
+    <form method="post" class="form-shell" novalidate>
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+        <div class="messages-container" role="region" aria-live="polite">
+            {% for error in form.non_field_errors %}
+            <div class="alert-card alert-error">
+                <div class="alert-icon" aria-hidden="true"><i class="material-icons">error</i></div>
+                <div class="alert-content">{{ error }}</div>
+                <button type="button" class="alert-close" aria-label="Dismiss"><i class="material-icons" aria-hidden="true">close</i></button>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <div class="data-surface">
+            <div class="form-section-title"><i class="material-icons">lock</i>Account Credentials</div>
+            <div class="form-grid">
+                <div class="input-field">
+                    {{ form.username }}
+                    <label for="{{ form.username.id_for_label }}">Username</label>
+                    {% if form.username.errors %}<span class="helper-text red-text">{{ form.username.errors.0 }}</span>{% endif %}
+                </div>
+                <div class="input-field">
+                    {{ form.password }}
+                    <label for="{{ form.password.id_for_label }}">Password</label>
+                    {% if form.password.errors %}<span class="helper-text red-text">{{ form.password.errors.0 }}</span>{% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn waves-effect waves-light">
+                <i class="material-icons left" aria-hidden="true">login</i>
+                Sign In
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

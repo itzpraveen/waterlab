@@ -2,16 +2,41 @@
 
 {% block title %}Dashboard - Water Lab LIMS{% endblock %}
 
-{% block content %}
-<div class="dashboard-header flex justify-between items-center mb-5 fade-in">
-    <h1 class="h1">📊 Dashboard</h1>
-    <div class="user-info flex items-center gap-sm">
-        {% if user.role %}
+{% block page_header %}
+<div class="page-hero-card fade-in">
+    <div class="hero-content">
+        <span class="hero-eyebrow">Overview</span>
+        <h1 class="hero-title">Dashboard</h1>
+        <p class="hero-description">Monitor customer onboarding, sample throughput, and result approvals in a single view.</p>
+        <div class="hero-tags">
+            {% if user.role %}
             <span class="role-badge {{ user.role }}">{{ user.get_role_display }}</span>
+            {% endif %}
+            <span class="chip soft">Active Session</span>
+        </div>
+    </div>
+    <div class="hero-meta">
+        <div class="meta-tile">
+            <span class="meta-label">Signed in as</span>
+            <span class="meta-value">{{ user.get_full_name|default:user.username }}</span>
+            {% if user.email %}<span class="meta-note">{{ user.email }}</span>{% endif %}
+        </div>
+        <div class="meta-tile">
+            <span class="meta-label">Role</span>
+            <span class="meta-value">{% if user.role %}{{ user.get_role_display }}{% else %}Standard User{% endif %}</span>
+            <span class="meta-note">Last login {{ user.last_login|date:"M d, Y H:i"|default:"N/A" }}</span>
+        </div>
+        {% if user.department %}
+        <div class="meta-tile">
+            <span class="meta-label">Department</span>
+            <span class="meta-value">{{ user.department }}</span>
+        </div>
         {% endif %}
-        <span class="font-size-lg">Welcome, {{ user.first_name|default:user.username }}!</span>
     </div>
 </div>
+{% endblock %}
+
+{% block content %}
 
 <!-- Dashboard Stats -->
 <div class="dashboard-stats grid grid-4-col gap-md mb-5">
@@ -34,25 +59,33 @@
 </div>
 
 <!-- Navigation Options / Quick Actions -->
-<div class="dashboard-section mb-5 fade-in-up" style="animation-delay: 0.4s;">
-    <div class="section-header mb-3">
-        <h2 class="section-title">⚡ Quick Actions</h2>
-    </div>
-    <div class="quick-actions">
-        {% if user.is_frontdesk or user.is_admin or user.is_lab_technician or user.is_consultant %}
-        <a href="{% url 'core:customer_list' %}" class="btn waves-effect waves-light"><i class="material-icons left">people</i>View Customers</a>
-        <a href="{% url 'core:sample_list' %}" class="btn waves-effect waves-light"><i class="material-icons left">science</i>View Samples</a>
-        {% endif %}
-        {% if user.is_frontdesk or user.is_admin %}
-            <a href="{% url 'core:customer_add' %}" class="btn btn-outline waves-effect waves-light"><i class="material-icons left">person_add</i>Add Customer</a>
-            <a href="{% url 'core:sample_add' %}" class="btn btn-outline waves-effect waves-light"><i class="material-icons left">note_add</i>Register Sample</a>
-        {% endif %}
-        {% if user.is_lab_technician or user.is_admin %}
-             <a href="{% url 'core:test_result_list' %}" class="btn waves-effect waves-light"><i class="material-icons left">list_alt</i>Enter Results</a>
-        {% endif %}
-        {% if not user.is_authenticated %}
-             <a href="{% url 'core:login_selector' %}" class="btn waves-effect waves-light"><i class="material-icons left">login</i>Login</a>
-        {% endif %}
+<div class="dashboard-section fade-in-up" style="animation-delay: 0.35s;">
+    <div class="card">
+        <div class="card-content">
+            <div class="section-header mb-3">
+                <h2 class="section-title">⚡ Quick Actions</h2>
+            </div>
+            <p class="text-muted mb-3">Jump straight into the workflows you access most often.</p>
+            <div class="quick-actions">
+                {% if user.is_frontdesk or user.is_admin or user.is_lab_technician or user.is_consultant %}
+                <a href="{% url 'core:customer_list' %}" class="btn waves-effect waves-light"><i class="material-icons left">people</i>Customers</a>
+                <a href="{% url 'core:sample_list' %}" class="btn waves-effect waves-light"><i class="material-icons left">science</i>Samples</a>
+                {% endif %}
+                {% if user.is_frontdesk or user.is_admin %}
+                    <a href="{% url 'core:customer_add' %}" class="btn btn-outline waves-effect waves-light"><i class="material-icons left">person_add</i>New Customer</a>
+                    <a href="{% url 'core:sample_add' %}" class="btn btn-outline waves-effect waves-light"><i class="material-icons left">note_add</i>Register Sample</a>
+                {% endif %}
+                {% if user.is_lab_technician or user.is_admin %}
+                    <a href="{% url 'core:test_result_list' %}" class="btn waves-effect waves-light"><i class="material-icons left">list_alt</i>Record Results</a>
+                {% endif %}
+                {% if user.is_admin %}
+                    <a href="{% url 'core:audit_trail' %}" class="btn btn-outline waves-effect waves-light"><i class="material-icons left">history</i>Audit Trail</a>
+                {% endif %}
+                {% if not user.is_authenticated %}
+                    <a href="{% url 'core:login_selector' %}" class="btn waves-effect waves-light"><i class="material-icons left">login</i>Login</a>
+                {% endif %}
+            </div>
+        </div>
     </div>
 </div>
 
@@ -176,10 +209,5 @@
     text-decoration: underline;
 }
 
-/* Ensure role badge in user-info is vertically aligned */
-.dashboard-header .user-info .role-badge {
-    position: relative;
-    top: -1px; /* Minor adjustment for visual alignment */
-}
 </style>
 {% endblock %}

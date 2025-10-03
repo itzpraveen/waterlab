@@ -3,223 +3,200 @@
 
 {% block title %}{% if form.instance.pk %}Edit Sample{% else %}Add New Sample{% endif %} - Water Lab LIMS{% endblock %}
 
-{% block breadcrumbs %}
-<div class="col s12 breadcrumb-container">
-    <nav>
-        <div class="nav-wrapper">
-            <a href="{% url 'core:home' %}" class="breadcrumb">Home</a>
-            <a href="{% url 'core:sample_list' %}" class="breadcrumb">Sample Management</a>
-            <span class="breadcrumb active">{% if form.instance.pk %}Edit Sample{% else %}Add New Sample{% endif %}</span>
-        </div>
-    </nav>
+{% block page_header %}
+<div class="page-header">
+    <div class="page-heading">
+        <h1 class="page-title">{% if form.instance.pk %}Edit Sample{% else %}Register New Sample{% endif %}</h1>
+        <p class="page-subtitle">
+            {% if form.instance.pk %}
+                Update sampling information and requested analyses before results are logged.
+            {% else %}
+                Capture collection details and assign the required laboratory tests.
+            {% endif %}
+        </p>
+    </div>
+    <div class="page-actions">
+        <a href="{% url 'core:sample_list' %}" class="btn-flat waves-effect">
+            <i class="material-icons left" aria-hidden="true">arrow_back</i>
+            Back to Samples
+        </a>
+        {% if form.instance.pk %}
+        <a href="{% url 'core:sample_detail' pk=form.instance.sample_id %}" class="btn-flat waves-effect">
+            <i class="material-icons left" aria-hidden="true">visibility</i>
+            View Sample
+        </a>
+        {% endif %}
+    </div>
 </div>
-{% endblock breadcrumbs %}
+{% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col s12">
-        <div class="card">
-            <div class="card-content">
-                <span class="card-title" style="font-size: 2rem; display: flex; align-items: center; color: var(--primary-color-dark);">
-                    <i class="material-icons" style="font-size: 2.5rem; margin-right: 10px; color: var(--primary-color);">colorize</i>
-                    {% if form.instance.pk %}Edit Sample ID: {{ form.instance.sample_id }}{% else %}Add New Sample{% endif %}
-                </span>
-                <p class="grey-text text-darken-1" style="margin-top: -5px; margin-bottom: 20px;">
-                    {% if form.instance.pk %}Update sample details and test requests.{% else %}Register a new water sample in the system.{% endif %}
-                </p>
+<div class="page-section fade-in-up">
+    <form method="post" novalidate>
+        {% csrf_token %}
 
-                {% if messages %}
-                    {% for message in messages %}
-                        <div class="card-panel alert alert-{{ message.tags|lower }}" role="alert">
-                            {{ message }}
-                        </div>
-                    {% endfor %}
+        {% if form.non_field_errors %}
+        <div class="messages-container" role="region" aria-live="polite">
+            {% for error in form.non_field_errors %}
+            <div class="alert-card alert-error">
+                <div class="alert-icon" aria-hidden="true"><i class="material-icons">error</i></div>
+                <div class="alert-content">{{ error }}</div>
+                <button type="button" class="alert-close" aria-label="Dismiss"><i class="material-icons" aria-hidden="true">close</i></button>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <div class="form-shell">
+            <div class="data-surface">
+                <div class="form-section-title"><i class="material-icons">science</i>Sample Details</div>
+                <div class="form-grid">
+                    <div class="input-field">
+                        {{ form.customer }}
+                        <label for="{{ form.customer.id_for_label }}">Customer <span class="red-text">*</span></label>
+                        {% if form.customer.errors %}<span class="helper-text red-text">{{ form.customer.errors.0 }}</span>{% endif %}
+                    </div>
+                    <div class="input-field">
+                        {{ form.collection_datetime }}
+                        <label for="{{ form.collection_datetime.id_for_label }}">Collection Date &amp; Time <span class="red-text">*</span></label>
+                        {% if form.collection_datetime.errors %}
+                            <span class="helper-text red-text">{{ form.collection_datetime.errors.0 }}</span>
+                        {% else %}
+                            <span class="helper-text">Format: DD/MM/YYYY HH:MM:SS</span>
+                        {% endif %}
+                    </div>
+                    <div class="input-field">
+                        {{ form.sample_source }}
+                        <label for="{{ form.sample_source.id_for_label }}">Sample Source <span class="red-text">*</span></label>
+                        {% if form.sample_source.errors %}<span class="helper-text red-text">{{ form.sample_source.errors.0 }}</span>{% endif %}
+                    </div>
+                    <div class="input-field">
+                        {{ form.collected_by }}
+                        <label for="{{ form.collected_by.id_for_label }}">Collected By <span class="red-text">*</span></label>
+                        {% if form.collected_by.errors %}<span class="helper-text red-text">{{ form.collected_by.errors.0 }}</span>{% endif %}
+                    </div>
+                    <div class="input-field">
+                        {{ form.referred_by }}
+                        <label for="{{ form.referred_by.id_for_label }}">Referred By</label>
+                        {% if form.referred_by.errors %}<span class="helper-text red-text">{{ form.referred_by.errors.0 }}</span>{% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="data-surface">
+                <div class="form-section-title"><i class="material-icons">fact_check</i>Tests Requested</div>
+                {% if form.tests_requested.help_text %}
+                <div class="alert-card alert-info" data-auto-dismiss="8000">
+                    <div class="alert-icon" aria-hidden="true"><i class="material-icons">info</i></div>
+                    <div class="alert-content">{{ form.tests_requested.help_text }}</div>
+                    <button type="button" class="alert-close" aria-label="Dismiss"><i class="material-icons" aria-hidden="true">close</i></button>
+                </div>
                 {% endif %}
-
-                <form method="post" novalidate>
-                    {% csrf_token %}
-                    
-                    {% if form.non_field_errors %}
-                    <div class="row">
-                        <div class="col s12">
-                            {% for error in form.non_field_errors %}
-                            <div class="card-panel alert alert-danger">{{ error }}</div>
+                <div class="checkbox-grid">
+                    {% for group, parameters in form.grouped_parameters.items %}
+                    <div class="checkbox-card">
+                        <label class="group-title">
+                            <input type="checkbox" class="filled-in parent-checkbox" data-group="{{ group.name|slugify }}">
+                            <span>{{ group.name }}</span>
+                        </label>
+                        <div class="checkbox-list">
+                            {% for parameter in parameters %}
+                            <label>
+                                <input type="checkbox" name="{{ form.tests_requested.name }}" value="{{ parameter.pk }}" class="filled-in child-checkbox" data-group="{{ group.name|slugify }}" {% if parameter.pk in form.tests_requested.value %}checked{% endif %}>
+                                <span>{{ parameter.name }}</span>
+                            </label>
                             {% endfor %}
                         </div>
                     </div>
-                    {% endif %}
+                    {% endfor %}
+                </div>
+                {% if form.tests_requested.errors %}
+                <span class="helper-text red-text">{{ form.tests_requested.errors.0 }}</span>
+                {% endif %}
+            </div>
 
-                    <div class="row">
-                        <div class="input-field col s12 m6">
-                            {{ form.customer }}
-                            <label for="{{ form.customer.id_for_label }}">Customer <span class="red-text">*</span></label>
-                            {% if form.customer.errors %}<span class="helper-text red-text">{{ form.customer.errors.0 }}</span>{% endif %}
-                        </div>
-                        <div class="input-field col s12 m6">
-                            {# For DateTimeField, Materialize uses separate date and time pickers #}
-                            {# Assuming form.collection_datetime renders as a single input type="text" initially #}
-                            {{ form.collection_datetime }}
-                            <label for="{{ form.collection_datetime.id_for_label }}">Collection Date & Time <span class="red-text">*</span></label>
-                            {% if form.collection_datetime.errors %}
-                                <span class="helper-text red-text">{{ form.collection_datetime.errors.0 }}</span>
-                            {% else %}
-                                <span class="helper-text">Cannot be in the future. Format: DD/MM/YYYY HH:MM:SS</span>
-                            {% endif %}
-                        </div>
-                    </div>
-                    
-                    <div class="row">
-                        <div class="input-field col s12 m6">
-                            {{ form.sample_source }}
-                            <label for="{{ form.sample_source.id_for_label }}">Sample Source <span class="red-text">*</span></label>
-                            {% if form.sample_source.errors %}<span class="helper-text red-text">{{ form.sample_source.errors.0 }}</span>{% endif %}
-                        </div>
-                        <div class="input-field col s12 m6">
-                            {{ form.collected_by }}
-                            <label for="{{ form.collected_by.id_for_label }}">Collected By <span class="red-text">*</span></label>
-                            {% if form.collected_by.errors %}<span class="helper-text red-text">{{ form.collected_by.errors.0 }}</span>{% endif %}
-                        </div>
-                    </div>
-
-                    <div class="row">
-                        <div class="input-field col s12 m6">
-                            {{ form.referred_by }}
-                            <label for="{{ form.referred_by.id_for_label }}">Referred By</label>
-                            {% if form.referred_by.errors %}<span class="helper-text red-text">{{ form.referred_by.errors.0 }}</span>{% endif %}
-                        </div>
-                    </div>
-
-
-                    <div class="row">
-                        <div class="col s12">
-                            <h6 style="font-weight: 500; color: var(--primary-color-dark);">Tests Requested <span class="red-text">*</span></h6>
-                            {% if form.tests_requested.help_text %}
-                                <div class="card-panel alert alert-info" style="padding: 10px; margin-bottom:15px;">{{ form.tests_requested.help_text }}</div>
-                            {% endif %}
-                        </div>
-                    </div>
-                    <div class="row" style="margin-bottom: 0;">
-                        {% for group, parameters in form.grouped_parameters.items %}
-                            <div class="col s12 m6 l4">
-                                <div class="card-panel" style="padding: 15px;">
-                                    <h6 style="font-weight: 500; color: var(--primary-color-dark);">
-                                        <label>
-                                            <input type="checkbox" class="filled-in parent-checkbox" data-group="{{ group.name|slugify }}">
-                                            <span>{{ group.name }}</span>
-                                        </label>
-                                    </h6>
-                                    <div style="padding-left: 20px;">
-                                        {% for parameter in parameters %}
-                                            <p>
-                                                <label>
-                                                    <input type="checkbox" name="{{ form.tests_requested.name }}" value="{{ parameter.pk }}" class="filled-in child-checkbox" data-group="{{ group.name|slugify }}" {% if parameter.pk in form.tests_requested.value %}checked{% endif %}>
-                                                    <span>{{ parameter.name }}</span>
-                                                </label>
-                                            </p>
-                                        {% endfor %}
-                                    </div>
-                                </div>
-                            </div>
-                        {% endfor %}
-                    </div>
-                     {% if form.tests_requested.errors %}
-                        <div class="row">
-                            <div class="col s12">
-                                <span class="helper-text red-text">{{ form.tests_requested.errors.0 }}</span>
-                            </div>
-                        </div>
-                    {% endif %}
-                    
-                    <div class="row" style="margin-top: 2rem;">
-                        <div class="col s12">
-                            <button type="submit" class="btn waves-effect waves-light">
-                                <i class="material-icons left">save</i>
-                                {% if form.instance.pk %}Update Sample{% else %}Save Sample{% endif %}
-                            </button>
-                            <a href="{% url 'core:sample_list' %}" class="btn-flat waves-effect">
-                                Cancel
-                            </a>
-                        </div>
-                    </div>
-                </form>
+            <div class="form-actions">
+                <a href="{% url 'core:sample_list' %}" class="btn-flat waves-effect">Cancel</a>
+                <button type="submit" class="btn waves-effect waves-light">
+                    <i class="material-icons left" aria-hidden="true">save</i>
+                    {% if form.instance.pk %}Update Sample{% else %}Save Sample{% endif %}
+                </button>
             </div>
         </div>
-    </div>
+    </form>
 </div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize Materialize Selects (for customer, sample_source)
-    var selectElems = document.querySelectorAll('select');
-    M.FormSelect.init(selectElems);
+    M.FormSelect.init(document.querySelectorAll('select'));
 
-    // Initialize Materialize Date Picker for collection_datetime
     const datepickerElems = document.querySelectorAll('.datepicker');
     datepickerElems.forEach(elem => {
         const initialDate = elem.value ? new Date(elem.value.split('/').reverse().join('-')) : new Date();
         M.Datepicker.init(elem, {
-            format: 'dd/mm/yyyy', // Django's expected date format part
+            format: 'dd/mm/yyyy',
             autoClose: true,
-            
             defaultDate: initialDate,
-            setDefaultDate: true,
-        onSelect: function(selectedDate) {
-            const currentValue = this.el.value;
-            let timePart = '';
+            setDefaultDate: Boolean(elem.value),
+            onSelect: function(selectedDate) {
+                const currentValue = this.el.value;
+                let timePart = '';
 
-            // Preserve the time part if it exists
-            if (currentValue && currentValue.includes(' ')) {
-                timePart = currentValue.substring(currentValue.indexOf(' ')).trim();
+                if (currentValue && currentValue.includes(' ')) {
+                    timePart = currentValue.substring(currentValue.indexOf(' ')).trim();
+                }
+
+                if (!timePart) {
+                    const now = new Date();
+                    const hours = ('0' + now.getHours()).slice(-2);
+                    const minutes = ('0' + now.getMinutes()).slice(-2);
+                    const seconds = ('0' + now.getSeconds()).slice(-2);
+                    timePart = `${hours}:${minutes}:${seconds}`;
+                }
+
+                const year = selectedDate.getFullYear();
+                const month = ('0' + (selectedDate.getMonth() + 1)).slice(-2);
+                const day = ('0' + selectedDate.getDate()).slice(-2);
+                this.el.value = `${day}/${month}/${year} ${timePart}`;
+                M.updateTextFields();
             }
-
-            // Format the selected date
-            const year = selectedDate.getFullYear();
-            const month = ('0' + (selectedDate.getMonth() + 1)).slice(-2);
-            const day = ('0' + selectedDate.getDate()).slice(-2);
-            const formattedDate = `${day}/${month}/${year}`;
-
-            // If no time part was preserved, default to the current time
-            if (!timePart) {
-                const now = new Date();
-                const hours = ('0' + now.getHours()).slice(-2);
-                const minutes = ('0' + now.getMinutes()).slice(-2);
-                const seconds = ('0' + now.getSeconds()).slice(-2);
-                timePart = `${hours}:${minutes}:${seconds}`;
-            }
-
-            this.el.value = `${formattedDate} ${timePart}`;
-            M.updateTextFields(); // Update Materialize label
-        }
         });
     });
-    
-    // Re-initialize labels if form fields have values (e.g., on edit or after validation error)
+
     M.updateTextFields();
 
-    // Handle parent/child checkbox logic
     const parentCheckboxes = document.querySelectorAll('.parent-checkbox');
+    const childCheckboxes = document.querySelectorAll('.child-checkbox');
+
     parentCheckboxes.forEach(parent => {
         parent.addEventListener('change', function() {
             const group = this.dataset.group;
-            const childCheckboxes = document.querySelectorAll(`.child-checkbox[data-group="${group}"]`);
-            childCheckboxes.forEach(child => {
-                child.checked = this.checked;
+            document.querySelectorAll(`.child-checkbox[data-group="${group}"]`).forEach(child => {
+                child.checked = parent.checked;
             });
         });
     });
 
-    const childCheckboxes = document.querySelectorAll('.child-checkbox');
+    const syncParentState = (group) => {
+        const siblings = Array.from(document.querySelectorAll(`.child-checkbox[data-group="${group}"]`));
+        const parent = document.querySelector(`.parent-checkbox[data-group="${group}"]`);
+        if (!parent) return;
+        const checkedCount = siblings.filter(cb => cb.checked).length;
+        parent.indeterminate = checkedCount > 0 && checkedCount < siblings.length;
+        parent.checked = checkedCount === siblings.length;
+    };
+
+    const groupNames = new Set();
     childCheckboxes.forEach(child => {
+        groupNames.add(child.dataset.group);
         child.addEventListener('change', function() {
-            const group = this.dataset.group;
-            const parentCheckbox = document.querySelector(`.parent-checkbox[data-group="${group}"]`);
-            const allChildrenInGroup = document.querySelectorAll(`.child-checkbox[data-group="${group}"]`);
-            const allChecked = Array.from(allChildrenInGroup).every(c => c.checked);
-            parentCheckbox.checked = allChecked;
+            syncParentState(this.dataset.group);
         });
     });
+
+    groupNames.forEach(syncParentState);
 });
 </script>
 {% endblock %}
