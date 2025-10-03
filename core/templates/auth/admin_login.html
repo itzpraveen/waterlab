@@ -1,248 +1,50 @@
 {% extends 'core/base.html' %}
 {% load static %}
 
-{% block title %}{{ page_title|default:"Admin Login" }} - Water Lab LIMS{% endblock %}
+{% block title %}Admin Login - Water Lab LIMS{% endblock %}
 
-{% block extra_css %}
-<style>
-    html, body {
-        width: 100%;
-        height: 100%;
-        overflow-x: hidden; /* Prevent accidental horizontal scroll on html/body */
-        margin: 0;
-        padding: 0;
-    }
-    body {
-        /* Admin login page uses a slightly different gradient */
-        background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
-        display: flex; /* Ensure body remains a flex container if needed, though main will be fixed */
-        flex-direction: column;
-    }
-    /* Override base.html styles for a centered login page */
-    header, .page-footer {
-        display: none !important; /* Hide default header and footer for login page */
-    }
-    main.site-content { /* Make main content area cover viewport and center its child */
-        width: 100vw !important;
-        min-height: 100vh !important; /* Use min-height for flexibility */
-        height: 100vh; /* Explicitly set height for fixed positioning context */
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-        padding: 0 !important;
-        margin: 0 !important;
-        position: fixed !important; /* Position relative to viewport */
-        top: 0;
-        left: 0;
-        overflow-y: auto; /* Allow login card to scroll if viewport too short */
-        z-index: 1; /* Ensure it's above default body content if any overlap */
-    }
-    /* The .container div from base.html is inside main.site-content.
-       It should not constrain the login-card-container.
-       The login-card-container itself is now a direct child of the fixed main.site-content.
-    */
-    .login-card-container { /* This is the actual card for the login form */
-        max-width: 500px; /* Increased max-width for desktop */
-        width: 90%;
-        margin-left: auto; /* Ensure centering with width % */
-        margin-right: auto; /* Ensure centering with width % */
-    }
-    .login-card .card-content {
-        padding: 30px !important;
-    }
-    .login-header {
-        text-align: center;
-        margin-bottom: 25px;
-    }
-    .login-logo i {
-        font-size: 3rem;
-        color: #ff6b6b; /* Match gradient start */
-    }
-    .login-title {
-        font-size: 1.8rem;
-        color: #333;
-        font-weight: 400; /* Materialize-like font weight */
-        margin-top: 5px;
-    }
-    .login-subtitle {
-        color: #777;
-        font-size: 0.95rem;
-    }
-    .input-field label {
-        color: #555; /* Darker label for better contrast on white */
-    }
-    .btn.login-btn {
-        width: 100%;
-        background: linear-gradient(135deg, #ff6b6b, #ee5a24);
-        height: 45px;
-        line-height: 45px;
-        font-size: 1.1rem;
-        margin-top: 10px; /* Space above button */
-    }
-    .btn.login-btn:hover {
-        background: linear-gradient(135deg, #ee5a24, #ff6b6b); /* Slightly darker on hover */
-    }
-    .back-link-container {
-        text-align: center;
-        margin-top: 25px;
-    }
-    .back-link-container a {
-        color: #666;
-        text-decoration: none;
-        font-size: 0.9rem;
-    }
-    .back-link-container a:hover {
-        color: #ff6b6b;
-        text-decoration: underline;
-    }
-    .security-notice-panel {
-        background-color: #fff3e0; /* Light orange for warning */
-        color: #e65100; /* Dark orange text */
-        padding: 15px;
-        border-radius: 4px;
-        margin-bottom: 20px;
-        border-left: 5px solid #ff9800; /* Orange accent */
-    }
-    .security-notice-panel strong {
-        color: #bf360c; /* Darker red for emphasis */
-    }
-    /* Django form errors styling */
-    .form-errors, .messages-container {
-        margin-bottom: 20px;
-    }
-    .form-errors .card-panel, .messages-container .card-panel {
-        padding: 10px 15px;
-    }
-    /* Ensure form.username and form.password take full width and Materialize styles */
-    input[name="username"], input[name="password"] {
-        margin-bottom: 5px !important; /* Add some space below input before potential error text */
-    }
-    .errorlist { /* Style Django's default error list if it appears */
-        list-style-type: none;
-        padding: 0;
-        margin: 0;
-        color: #D8000C; /* Error red */
-    }
-    .errorlist li {
-        font-size: 0.9em;
-    }
-
-    @media screen and (max-width: 600px) {
-        .login-card-container {
-            width: 95%; /* Take more width on small screens */
-            margin-top: 20px; /* Add some margin from top if needed */
-            margin-bottom: 20px;
-            max-height: calc(100vh - 40px); /* Ensure it fits viewport height with margins */
-            overflow-y: auto; /* Allow scrolling if content overflows */
-        }
-        .login-card .card-content {
-            padding: 20px !important; /* Reduce padding for mobile */
-        }
-        .login-title {
-            font-size: 1.5rem; /* Smaller title for mobile */
-        }
-        .login-subtitle {
-            font-size: 0.9rem;
-        }
-        .btn.login-btn {
-            height: 42px;
-            line-height: 42px;
-            font-size: 1rem;
-        }
-        .security-notice-panel {
-            padding: 10px;
-            font-size: 0.85rem;
-        }
-        .back-link-container {
-            margin-top: 20px;
-        }
-    }
-</style>
-{% endblock %}
-
-{% block content %}
-{# Note: Removed the outer "container" class, login-card-container handles its own sizing and is centered by main.site-content flex properties #}
-<div class="login-card-container">
-    <div class="card login-card z-depth-3">
-        <div class="card-content">
-            <div class="login-header">
-                <div class="login-logo"><i class="material-icons">security</i></div>
-                <div class="login-title">Administrator Login</div>
-                <div class="login-subtitle">Water Lab LIMS</div>
-            </div>
-
-            <div class="security-notice-panel">
-                <strong>⚠️ Admin Access:</strong> This area is restricted to system administrators only.
-            </div>
-
-            {% if messages %}
-            <div class="messages-container">
-                {% for message in messages %}
-                {# Themed alert styles from base.html will apply based on message.tags #}
-                <div class="card-panel alert alert-{{ message.tags|lower }}"> 
-                    {{ message }}
-                </div>
-                {% endfor %}
-            </div>
-            {% endif %}
-
-            {% if form.non_field_errors %}
-            <div class="form-errors">
-                {% for error in form.non_field_errors %}
-                <div class="card-panel alert alert-danger">{{ error }}</div> {# Use themed alert style #}
-                {% endfor %}
-            </div>
-            {% endif %}
-            
-            {% if form.errors and not form.non_field_errors %} {# General error if not specific to fields #}
-             <div class="form-errors">
-                <div class="card-panel alert alert-danger"> {# Use themed alert style #}
-                    Invalid credentials. Please check your username and password.
-                </div>
-            </div>
-            {% endif %}
-
-            <form method="post" novalidate>
-                {% csrf_token %}
-                <div class="row">
-                    <div class="input-field col s12">
-                        <i class="material-icons prefix">account_circle</i>
-                        {{ form.username }}
-                        <label for="{{ form.username.id_for_label }}">Username</label>
-                        {% if form.username.errors %}
-                            {% for error in form.username.errors %}
-                                <span class="helper-text red-text">{{ error }}</span>
-                            {% endfor %}
-                        {% endif %}
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="input-field col s12">
-                        <i class="material-icons prefix">lock_outline</i>
-                        {{ form.password }}
-                        <label for="{{ form.password.id_for_label }}">Password</label>
-                         {% if form.password.errors %}
-                            {% for error in form.password.errors %}
-                                <span class="helper-text red-text">{{ error }}</span>
-                            {% endfor %}
-                        {% endif %}
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col s12">
-                        <button type="submit" class="btn waves-effect waves-light login-btn">
-                            <i class="material-icons left">lock_open</i>Admin Login
-                        </button>
-                    </div>
-                </div>
-            </form>
-
-            <div class="back-link-container">
-                <a href="{% url 'core:login_selector' %}"><i class="material-icons tiny left">arrow_back</i> Back to Login Options</a>
-            </div>
-        </div>
+{% block page_header %}
+<div class="page-header">
+    <div class="page-heading">
+        <h1 class="page-title">Administrator sign in</h1>
+        <p class="page-subtitle">Restricted access for Biofix system administrators.</p>
     </div>
 </div>
 {% endblock %}
 
-{% block fab %}{% endblock %} {# Hide FAB on login page #}
+{% block content %}
+<div class="auth-section info-card">
+    <div class="alert alert-warning small" role="alert">
+        <strong>Security notice:</strong> Only authorised personnel may access the administrator portal.
+    </div>
+    <form method="post" novalidate>
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+        <div class="alert alert-danger" role="alert">
+            {% for error in form.non_field_errors %}
+                <div>{{ error }}</div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <div class="mb-3">
+            <label for="{{ form.username.id_for_label }}" class="form-label">Username</label>
+            {{ form.username }}
+            {% if form.username.errors %}<div class="invalid-feedback d-block small">{{ form.username.errors.0 }}</div>{% endif %}
+        </div>
+        <div class="mb-3">
+            <label for="{{ form.password.id_for_label }}" class="form-label">Password</label>
+            {{ form.password }}
+            {% if form.password.errors %}<div class="invalid-feedback d-block small">{{ form.password.errors.0 }}</div>{% endif %}
+        </div>
+
+        <button type="submit" class="btn btn-primary w-100">
+            <i class="material-icons me-1">login</i>Sign in
+        </button>
+    </form>
+    <div class="text-center small mt-3">
+        <a href="{% url 'core:login_selector' %}" class="text-decoration-none">Back to login options</a>
+    </div>
+</div>
+{% endblock %}

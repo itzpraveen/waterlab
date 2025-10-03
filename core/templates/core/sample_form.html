@@ -1,176 +1,111 @@
 {% extends 'core/base.html' %}
 {% load static %}
 
-{% block title %}{% if form.instance.pk %}Edit Sample{% else %}Add New Sample{% endif %} - Water Lab LIMS{% endblock %}
+{% block title %}{% if form.instance.pk %}Edit Sample{% else %}Add Sample{% endif %} - Water Lab LIMS{% endblock %}
 
 {% block page_header %}
 <div class="page-header">
     <div class="page-heading">
-        <h1 class="page-title">{% if form.instance.pk %}Edit Sample{% else %}Register New Sample{% endif %}</h1>
-        <p class="page-subtitle">
-            {% if form.instance.pk %}
-                Update sampling information and requested analyses before results are logged.
-            {% else %}
-                Capture collection details and assign the required laboratory tests.
-            {% endif %}
-        </p>
+        <h1 class="page-title">{% if form.instance.pk %}Edit sample{% else %}Register new sample{% endif %}</h1>
+        <p class="page-subtitle">Capture collection details and assign the tests required for analysis.</p>
     </div>
-    <div class="page-actions">
-        <a href="{% url 'core:sample_list' %}" class="btn-flat waves-effect">
-            <i class="material-icons left" aria-hidden="true">arrow_back</i>
-            Back to Samples
-        </a>
-        {% if form.instance.pk %}
-        <a href="{% url 'core:sample_detail' pk=form.instance.sample_id %}" class="btn-flat waves-effect">
-            <i class="material-icons left" aria-hidden="true">visibility</i>
-            View Sample
-        </a>
-        {% endif %}
-    </div>
+    <a href="{% url 'core:sample_list' %}" class="btn btn-outline-secondary"><i class="material-icons me-1">arrow_back</i>Back to list</a>
 </div>
 {% endblock %}
 
 {% block content %}
-<div class="page-section fade-in-up">
-    <form method="post" novalidate>
-        {% csrf_token %}
+<form method="post" novalidate class="form-shell">
+    {% csrf_token %}
 
-        {% if form.non_field_errors %}
-        <div class="messages-container" role="region" aria-live="polite">
-            {% for error in form.non_field_errors %}
-            <div class="alert-card alert-error">
-                <div class="alert-icon" aria-hidden="true"><i class="material-icons">error</i></div>
-                <div class="alert-content">{{ error }}</div>
-                <button type="button" class="alert-close" aria-label="Dismiss"><i class="material-icons" aria-hidden="true">close</i></button>
+    {% if form.non_field_errors %}
+    <div class="alert alert-danger" role="alert">
+        {% for error in form.non_field_errors %}
+            <div>{{ error }}</div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="info-card">
+        <div class="form-section-title"><i class="material-icons">science</i>Sample details</div>
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label for="{{ form.customer.id_for_label }}" class="form-label">Customer *</label>
+                {{ form.customer }}
+                {% if form.customer.errors %}<div class="invalid-feedback d-block small">{{ form.customer.errors.0 }}</div>{% endif %}
             </div>
-            {% endfor %}
-        </div>
-        {% endif %}
-
-        <div class="form-shell">
-            <div class="data-surface">
-                <div class="form-section-title"><i class="material-icons">science</i>Sample Details</div>
-                <div class="form-grid">
-                    <div class="input-field">
-                        {{ form.customer }}
-                        <label for="{{ form.customer.id_for_label }}">Customer <span class="red-text">*</span></label>
-                        {% if form.customer.errors %}<span class="helper-text red-text">{{ form.customer.errors.0 }}</span>{% endif %}
-                    </div>
-                    <div class="input-field">
-                        {{ form.collection_datetime }}
-                        <label for="{{ form.collection_datetime.id_for_label }}">Collection Date &amp; Time <span class="red-text">*</span></label>
-                        {% if form.collection_datetime.errors %}
-                            <span class="helper-text red-text">{{ form.collection_datetime.errors.0 }}</span>
-                        {% else %}
-                            <span class="helper-text">Format: DD/MM/YYYY HH:MM:SS</span>
-                        {% endif %}
-                    </div>
-                    <div class="input-field">
-                        {{ form.sample_source }}
-                        <label for="{{ form.sample_source.id_for_label }}">Sample Source <span class="red-text">*</span></label>
-                        {% if form.sample_source.errors %}<span class="helper-text red-text">{{ form.sample_source.errors.0 }}</span>{% endif %}
-                    </div>
-                    <div class="input-field">
-                        {{ form.collected_by }}
-                        <label for="{{ form.collected_by.id_for_label }}">Collected By <span class="red-text">*</span></label>
-                        {% if form.collected_by.errors %}<span class="helper-text red-text">{{ form.collected_by.errors.0 }}</span>{% endif %}
-                    </div>
-                    <div class="input-field">
-                        {{ form.referred_by }}
-                        <label for="{{ form.referred_by.id_for_label }}">Referred By</label>
-                        {% if form.referred_by.errors %}<span class="helper-text red-text">{{ form.referred_by.errors.0 }}</span>{% endif %}
-                    </div>
-                </div>
-            </div>
-
-            <div class="data-surface">
-                <div class="form-section-title"><i class="material-icons">fact_check</i>Tests Requested</div>
-                {% if form.tests_requested.help_text %}
-                <div class="alert-card alert-info" data-auto-dismiss="8000">
-                    <div class="alert-icon" aria-hidden="true"><i class="material-icons">info</i></div>
-                    <div class="alert-content">{{ form.tests_requested.help_text }}</div>
-                    <button type="button" class="alert-close" aria-label="Dismiss"><i class="material-icons" aria-hidden="true">close</i></button>
-                </div>
+            <div class="col-md-6">
+                <label for="{{ form.collection_datetime.id_for_label }}" class="form-label">Collection date &amp; time *</label>
+                {{ form.collection_datetime }}
+                {% if form.collection_datetime.errors %}
+                    <div class="invalid-feedback d-block small">{{ form.collection_datetime.errors.0 }}</div>
+                {% else %}
+                    <div class="form-text">Format: DD/MM/YYYY HH:MM:SS</div>
                 {% endif %}
-                <div class="checkbox-grid">
-                    {% for group, parameters in form.grouped_parameters.items %}
-                    <div class="checkbox-card">
-                        <label class="group-title">
-                            <input type="checkbox" class="filled-in parent-checkbox" data-group="{{ group.name|slugify }}">
-                            <span>{{ group.name }}</span>
-                        </label>
-                        <div class="checkbox-list">
-                            {% for parameter in parameters %}
-                            <label>
-                                <input type="checkbox" name="{{ form.tests_requested.name }}" value="{{ parameter.pk }}" class="filled-in child-checkbox" data-group="{{ group.name|slugify }}" {% if parameter.pk in form.tests_requested.value %}checked{% endif %}>
-                                <span>{{ parameter.name }}</span>
-                            </label>
-                            {% endfor %}
-                        </div>
+            </div>
+            <div class="col-md-6">
+                <label for="{{ form.sample_source.id_for_label }}" class="form-label">Sample source *</label>
+                {{ form.sample_source }}
+                {% if form.sample_source.errors %}<div class="invalid-feedback d-block small">{{ form.sample_source.errors.0 }}</div>{% endif %}
+            </div>
+            <div class="col-md-6">
+                <label for="{{ form.collected_by.id_for_label }}" class="form-label">Collected by *</label>
+                {{ form.collected_by }}
+                {% if form.collected_by.errors %}<div class="invalid-feedback d-block small">{{ form.collected_by.errors.0 }}</div>{% endif %}
+            </div>
+            <div class="col-md-6">
+                <label for="{{ form.referred_by.id_for_label }}" class="form-label">Referred by</label>
+                {{ form.referred_by }}
+                {% if form.referred_by.errors %}<div class="invalid-feedback d-block small">{{ form.referred_by.errors.0 }}</div>{% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="info-card">
+        <div class="form-section-title"><i class="material-icons">fact_check</i>Tests requested</div>
+        {% if form.tests_requested.help_text %}
+        <div class="alert alert-info" role="alert">{{ form.tests_requested.help_text }}</div>
+        {% endif %}
+        <div class="checkbox-grid">
+            {% for group, parameters in form.grouped_parameters.items %}
+            <div class="checkbox-card">
+                <div class="group-title">
+                    <input type="checkbox" class="form-check-input parent-checkbox" data-group="{{ group.name|slugify }}" id="group-{{ forloop.counter }}">
+                    <label class="form-check-label fw-semibold" for="group-{{ forloop.counter }}">{{ group.name }}</label>
+                </div>
+                <div class="checkbox-list">
+                    {% for parameter in parameters %}
+                    <div class="form-check">
+                        <input class="form-check-input child-checkbox" type="checkbox" name="{{ form.tests_requested.name }}" value="{{ parameter.pk }}" data-group="{{ group.name|slugify }}" id="param-{{ parameter.pk }}" {% if parameter.pk in form.tests_requested.value %}checked{% endif %}>
+                        <label class="form-check-label" for="param-{{ parameter.pk }}">{{ parameter.name }}</label>
                     </div>
                     {% endfor %}
                 </div>
-                {% if form.tests_requested.errors %}
-                <span class="helper-text red-text">{{ form.tests_requested.errors.0 }}</span>
-                {% endif %}
             </div>
-
-            <div class="form-actions">
-                <a href="{% url 'core:sample_list' %}" class="btn-flat waves-effect">Cancel</a>
-                <button type="submit" class="btn waves-effect waves-light">
-                    <i class="material-icons left" aria-hidden="true">save</i>
-                    {% if form.instance.pk %}Update Sample{% else %}Save Sample{% endif %}
-                </button>
-            </div>
+            {% endfor %}
         </div>
-    </form>
-</div>
+        {% if form.tests_requested.errors %}
+        <div class="invalid-feedback d-block small">{{ form.tests_requested.errors.0 }}</div>
+        {% endif %}
+    </div>
+
+    <div class="form-actions">
+        <a href="{% url 'core:sample_list' %}" class="btn btn-outline-secondary">Cancel</a>
+        <button type="submit" class="btn btn-primary">
+            <i class="material-icons me-1">save</i>
+            {% if form.instance.pk %}Update sample{% else %}Save sample{% endif %}
+        </button>
+    </div>
+</form>
 {% endblock %}
 
 {% block extra_js %}
+{{ block.super }}
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    M.FormSelect.init(document.querySelectorAll('select'));
+(function() {
+    const parentBoxes = document.querySelectorAll('.parent-checkbox');
+    const childBoxes = document.querySelectorAll('.child-checkbox');
 
-    const datepickerElems = document.querySelectorAll('.datepicker');
-    datepickerElems.forEach(elem => {
-        const initialDate = elem.value ? new Date(elem.value.split('/').reverse().join('-')) : new Date();
-        M.Datepicker.init(elem, {
-            format: 'dd/mm/yyyy',
-            autoClose: true,
-            defaultDate: initialDate,
-            setDefaultDate: Boolean(elem.value),
-            onSelect: function(selectedDate) {
-                const currentValue = this.el.value;
-                let timePart = '';
-
-                if (currentValue && currentValue.includes(' ')) {
-                    timePart = currentValue.substring(currentValue.indexOf(' ')).trim();
-                }
-
-                if (!timePart) {
-                    const now = new Date();
-                    const hours = ('0' + now.getHours()).slice(-2);
-                    const minutes = ('0' + now.getMinutes()).slice(-2);
-                    const seconds = ('0' + now.getSeconds()).slice(-2);
-                    timePart = `${hours}:${minutes}:${seconds}`;
-                }
-
-                const year = selectedDate.getFullYear();
-                const month = ('0' + (selectedDate.getMonth() + 1)).slice(-2);
-                const day = ('0' + selectedDate.getDate()).slice(-2);
-                this.el.value = `${day}/${month}/${year} ${timePart}`;
-                M.updateTextFields();
-            }
-        });
-    });
-
-    M.updateTextFields();
-
-    const parentCheckboxes = document.querySelectorAll('.parent-checkbox');
-    const childCheckboxes = document.querySelectorAll('.child-checkbox');
-
-    parentCheckboxes.forEach(parent => {
+    parentBoxes.forEach(parent => {
         parent.addEventListener('change', function() {
             const group = this.dataset.group;
             document.querySelectorAll(`.child-checkbox[data-group="${group}"]`).forEach(child => {
@@ -179,24 +114,19 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    const syncParentState = (group) => {
-        const siblings = Array.from(document.querySelectorAll(`.child-checkbox[data-group="${group}"]`));
+    const syncParent = (group) => {
+        const children = Array.from(document.querySelectorAll(`.child-checkbox[data-group="${group}"]`));
         const parent = document.querySelector(`.parent-checkbox[data-group="${group}"]`);
-        if (!parent) return;
-        const checkedCount = siblings.filter(cb => cb.checked).length;
-        parent.indeterminate = checkedCount > 0 && checkedCount < siblings.length;
-        parent.checked = checkedCount === siblings.length;
+        if (!parent || children.length === 0) return;
+        const checkedCount = children.filter(cb => cb.checked).length;
+        parent.indeterminate = checkedCount > 0 && checkedCount < children.length;
+        parent.checked = checkedCount === children.length;
     };
 
-    const groupNames = new Set();
-    childCheckboxes.forEach(child => {
-        groupNames.add(child.dataset.group);
-        child.addEventListener('change', function() {
-            syncParentState(this.dataset.group);
-        });
+    childBoxes.forEach(child => {
+        syncParent(child.dataset.group);
+        child.addEventListener('change', () => syncParent(child.dataset.group));
     });
-
-    groupNames.forEach(syncParentState);
-});
+})();
 </script>
 {% endblock %}

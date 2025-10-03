@@ -1,288 +1,226 @@
 {% extends 'core/base.html' %}
 {% load static %}
 
-{% block title %}Sample Details - {{ sample.sample_id }}{% endblock %}
+{% block title %}Sample {{ sample.sample_id }} - Water Lab LIMS{% endblock %}
 
 {% block page_header %}
 <div class="page-header">
     <div class="page-heading">
-        <span class="page-eyebrow">Sample</span>
-        <h1 class="page-title">{{ sample.sample_id }}</h1>
-        <p class="page-subtitle">
-            Collected {{ sample.collection_datetime|date:"M d, Y H:i" }} for
-            <a href="{% url 'core:customer_detail' sample.customer.pk %}" class="text-primary">{{ sample.customer.name }}</a>.
-        </p>
-        <div class="hero-tags">
+        <h1 class="page-title">Sample {{ sample.sample_id }}</h1>
+        <p class="page-subtitle">Collected {{ sample.collection_datetime|date:"M d, Y H:i" }} for {{ sample.customer.name }}.</p>
+        <div class="d-flex flex-wrap gap-2 mt-2">
             {% with status=sample.current_status %}
                 {% if status in 'REPORT_APPROVED,REPORT_SENT' %}
-                    <span class="status-pill success">{{ sample.get_current_status_display }}</span>
+                    <span class="badge-soft success"><i class="material-icons">check_circle</i>{{ sample.get_current_status_display }}</span>
                 {% elif status in 'RESULTS_ENTERED,REVIEW_PENDING' %}
-                    <span class="status-pill warning">{{ sample.get_current_status_display }}</span>
+                    <span class="badge-soft warning"><i class="material-icons">hourglass_empty</i>{{ sample.get_current_status_display }}</span>
                 {% elif status in 'TESTING_IN_PROGRESS' %}
-                    <span class="status-pill info">{{ sample.get_current_status_display }}</span>
+                    <span class="badge-soft info"><i class="material-icons">science</i>{{ sample.get_current_status_display }}</span>
                 {% else %}
-                    <span class="status-pill">{{ sample.get_current_status_display }}</span>
+                    <span class="badge-soft"><i class="material-icons">assignment</i>{{ sample.get_current_status_display }}</span>
                 {% endif %}
             {% endwith %}
-            <span class="chip soft">{{ sample.get_sample_source_display }}</span>
+            <span class="badge-soft info"><i class="material-icons">opacity</i>{{ sample.get_sample_source_display }}</span>
         </div>
     </div>
-    <div class="page-actions">
-        <a href="{% url 'core:sample_list' %}" class="btn-flat waves-effect">
-            <i class="material-icons left" aria-hidden="true">arrow_back</i>
-            Back to Samples
-        </a>
-        <a href="{% url 'core:customer_detail' sample.customer.pk %}" class="btn-flat waves-effect">
-            <i class="material-icons left" aria-hidden="true">person</i>
-            View Customer
-        </a>
-    </div>
+    <a href="{% url 'core:sample_list' %}" class="btn btn-outline-secondary"><i class="material-icons me-1">arrow_back</i>Back to samples</a>
 </div>
 {% endblock %}
 
 {% block content %}
-<div class="content-grid">
-    <div class="grid-span-7 stack-column">
-        <section class="data-surface">
-            <div class="data-section-title">
-                <i class="material-icons" aria-hidden="true">info_outline</i>
-                Sample Overview
-            </div>
-            <div class="key-value-grid">
-                <div class="key-value">
-                    <span class="key-value-label">Sample ID</span>
-                    <span class="key-value-value">{{ sample.sample_id }}</span>
-                </div>
-                <div class="key-value">
-                    <span class="key-value-label">Customer</span>
-                    <span class="key-value-value">
-                        <a href="{% url 'core:customer_detail' sample.customer.pk %}" class="text-primary">{{ sample.customer.name }}</a>
-                    </span>
-                </div>
-                <div class="key-value">
-                    <span class="key-value-label">Collection Date</span>
-                    <span class="key-value-value">{{ sample.collection_datetime|date:"M d, Y H:i" }}</span>
-                </div>
-                <div class="key-value">
-                    <span class="key-value-label">Date Received</span>
-                    <span class="key-value-value">{{ sample.date_received_at_lab|date:"M d, Y H:i"|default:"Not yet received" }}</span>
-                </div>
-                <div class="key-value">
-                    <span class="key-value-label">Collected By</span>
-                    <span class="key-value-value">{{ sample.collected_by }}</span>
-                </div>
+<div class="row g-4">
+    <div class="col-12 col-xl-7">
+        <div class="info-card mb-4">
+            <div class="section-title"><i class="material-icons">info_outline</i>Sample overview</div>
+            <dl class="row mb-0 small">
+                <dt class="col-sm-4 text-muted">Sample ID</dt>
+                <dd class="col-sm-8 mb-2">{{ sample.sample_id }}</dd>
+                <dt class="col-sm-4 text-muted">Customer</dt>
+                <dd class="col-sm-8 mb-2"><a href="{% url 'core:customer_detail' sample.customer.pk %}">{{ sample.customer.name }}</a></dd>
+                <dt class="col-sm-4 text-muted">Collection date</dt>
+                <dd class="col-sm-8 mb-2">{{ sample.collection_datetime|date:"M d, Y H:i" }}</dd>
+                <dt class="col-sm-4 text-muted">Received at lab</dt>
+                <dd class="col-sm-8 mb-2">{{ sample.date_received_at_lab|date:"M d, Y H:i"|default:"Not yet received" }}</dd>
+                <dt class="col-sm-4 text-muted">Collected by</dt>
+                <dd class="col-sm-8 mb-2">{{ sample.collected_by }}</dd>
                 {% if sample.referred_by %}
-                <div class="key-value">
-                    <span class="key-value-label">Referred By</span>
-                    <span class="key-value-value">{{ sample.referred_by }}</span>
-                </div>
+                <dt class="col-sm-4 text-muted">Referred by</dt>
+                <dd class="col-sm-8 mb-0">{{ sample.referred_by }}</dd>
                 {% endif %}
-            </div>
-        </section>
+            </dl>
+        </div>
 
-        <section class="data-surface">
-            <div class="data-section-title">
-                <i class="material-icons" aria-hidden="true">checklist</i>
-                Tests Requested
-            </div>
+        <div class="info-card mb-4">
+            <div class="section-title"><i class="material-icons">checklist</i>Tests requested</div>
             {% if sample.tests_requested.all %}
-            <ul class="data-list">
-                {% for test in sample.tests_requested.all %}
-                <li class="data-list-item">
-                    <div>
-                        <strong>{{ test.name }}</strong>
-                        <p class="text-muted mb-0">Unit: {{ test.unit }}{% if test.min_permissible_limit and test.max_permissible_limit %}
-                            &nbsp;|&nbsp;Range: {{ test.min_permissible_limit }} - {{ test.max_permissible_limit }}
-                        {% endif %}</p>
-                    </div>
-                </li>
-                {% endfor %}
-            </ul>
+            <div class="table-responsive">
+                <table class="table table-sm align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Test</th>
+                            <th>Unit</th>
+                            <th>Permissible range</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for test in sample.tests_requested.all %}
+                        <tr>
+                            <td>{{ test.name }}</td>
+                            <td>{{ test.unit }}</td>
+                            <td>
+                                {% if test.min_permissible_limit and test.max_permissible_limit %}
+                                    {{ test.min_permissible_limit }} – {{ test.max_permissible_limit }}
+                                {% else %}
+                                    <span class="text-muted">Not specified</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
             {% else %}
-            <p class="text-muted mb-0">No tests have been requested for this sample.</p>
+            <p class="text-muted mb-0">No additional tests were requested for this sample.</p>
             {% endif %}
-        </section>
+        </div>
 
         {% if sample.results.exists %}
-        <section class="data-surface">
-            <div class="data-section-title">
-                <i class="material-icons" aria-hidden="true">assessment</i>
-                Test Results
-            </div>
-            <div class="table-responsive mobile-table-card">
-                <table class="highlight responsive-table">
+        <div class="info-card">
+            <div class="section-title"><i class="material-icons">assessment</i>Test results</div>
+            <div class="table-responsive">
+                <table class="table table-striped table-sm align-middle mb-0">
                     <thead>
                         <tr>
                             <th>Parameter</th>
                             <th class="text-center">Result</th>
                             <th>Unit</th>
                             <th class="text-center">Status</th>
-                            <th>Test Date</th>
+                            <th>Test date</th>
                             <th>Technician</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for result in sample.results.all %}
                         <tr>
-                            <td data-label="Parameter">{{ result.parameter.name }}</td>
-                            <td data-label="Result" class="text-center"><strong>{{ result.result_value }}</strong></td>
-                            <td data-label="Unit">{{ result.parameter.unit }}</td>
-                            <td data-label="Status" class="text-center">
+                            <td>{{ result.parameter.name }}</td>
+                            <td class="text-center fw-semibold">{{ result.result_value }}</td>
+                            <td>{{ result.parameter.unit }}</td>
+                            <td class="text-center">
                                 {% if result.parameter.min_permissible_limit is not None and result.parameter.max_permissible_limit is not None %}
                                     {% with result.result_value|stringformat:'f'|add:0 as numeric_value %}
                                         {% if numeric_value >= result.parameter.min_permissible_limit and numeric_value <= result.parameter.max_permissible_limit %}
-                                            <span class="status-pill success">Within Limits</span>
+                                            <span class="badge-soft success">Within limits</span>
                                         {% else %}
-                                            <span class="status-pill error">Out of Range</span>
+                                            <span class="badge-soft danger">Out of range</span>
                                         {% endif %}
                                     {% endwith %}
                                 {% else %}
-                                    <span class="status-pill">No Limits Set</span>
+                                    <span class="badge-soft">No limits set</span>
                                 {% endif %}
                             </td>
-                            <td data-label="Test Date">{{ result.test_date|date:"M d, H:i" }}</td>
-                            <td data-label="Technician">{{ result.technician.first_name|default:result.technician.username|default:"N/A" }}</td>
+                            <td>{{ result.test_date|date:"M d, Y H:i" }}</td>
+                            <td>{{ result.technician.first_name|default:result.technician.username|default:"N/A" }}</td>
                         </tr>
                         {% endfor %}
                     </tbody>
                 </table>
             </div>
-        </section>
+        </div>
         {% endif %}
     </div>
 
-    <div class="grid-span-5 stack-column">
-        <section class="data-surface tight">
-            <div class="data-section-title">
-                <i class="material-icons" aria-hidden="true">play_for_work</i>
-                Workflow Actions
-            </div>
+    <div class="col-12 col-xl-5">
+        <div class="info-card mb-4">
+            <div class="section-title"><i class="material-icons">play_for_work</i>Workflow actions</div>
             <div class="action-stack">
-                <a href="{% url 'core:sample_list' %}" class="btn-flat waves-effect">
-                    <i class="material-icons left" aria-hidden="true">arrow_back</i>
-                    Back to Samples
-                </a>
                 {% if user.is_frontdesk or user.is_admin %}
-                <a href="{% url 'core:sample_edit' sample.pk %}" class="btn waves-effect waves-light orange darken-1">
-                    <i class="material-icons left" aria-hidden="true">edit</i>
-                    Edit Sample
-                </a>
-                    {% if sample.current_status == 'RECEIVED_FRONT_DESK' %}
+                <a href="{% url 'core:sample_edit' sample.pk %}" class="btn btn-outline-primary"><i class="material-icons me-1">edit</i>Edit sample</a>
+                {% if sample.current_status == 'RECEIVED_FRONT_DESK' %}
+                <form method="post" action="{% url 'core:sample_status_update' sample.pk %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="new_status" value="SENT_TO_LAB">
+                    <button type="submit" class="btn btn-primary" onclick="return confirm('Send this sample to the lab for testing?')">
+                        <i class="material-icons me-1">send</i>Send to lab
+                    </button>
+                </form>
+                {% endif %}
+                {% endif %}
+
+                {% if user.is_lab_technician or user.is_admin %}
+                    {% if sample.current_status in 'SENT_TO_LAB,TESTING_IN_PROGRESS,RESULTS_ENTERED' or (sample.current_status == 'REVIEW_PENDING' and user.is_admin) %}
+                    <a href="{% url 'core:test_result_entry' sample.pk %}" class="btn btn-outline-secondary"><i class="material-icons me-1">edit_note</i>Enter / edit results</a>
+                    {% endif %}
+                    {% if sample.current_status == 'RESULTS_ENTERED' %}
                     <form method="post" action="{% url 'core:sample_status_update' sample.pk %}">
                         {% csrf_token %}
-                        <input type="hidden" name="new_status" value="SENT_TO_LAB">
-                        <button type="submit" class="btn waves-effect waves-light" onclick="return confirm('Send this sample to the lab for testing?')">
-                            <i class="material-icons left" aria-hidden="true">send</i>
-                            Send to Lab
+                        <input type="hidden" name="new_status" value="REVIEW_PENDING">
+                        <button type="submit" class="btn btn-outline-secondary" onclick="return confirm('Send this sample for consultant review?')">
+                            <i class="material-icons me-1">forward_to_inbox</i>Send for review
                         </button>
                     </form>
                     {% endif %}
                 {% endif %}
 
-                {% if user.is_lab_tech or user.is_admin %}
-                    {% if sample.current_status == 'SENT_TO_LAB' or sample.current_status == 'TESTING_IN_PROGRESS' or sample.current_status == 'RESULTS_ENTERED' or sample.current_status == 'REVIEW_PENDING' and user.is_admin %}
-                    <a href="{% url 'core:test_result_entry' sample.pk %}" class="btn waves-effect waves-light green darken-1">
-                        <i class="material-icons left" aria-hidden="true">edit_note</i>
-                        {% if sample.current_status == 'REVIEW_PENDING' and user.is_admin %}Correct Results (Admin){% else %}Enter/Edit Results{% endif %}
-                    </a>
-                    {% endif %}
-                    {% if user.is_lab_tech or user.is_admin %}
-                        {% if sample.current_status == 'RESULTS_ENTERED' %}
-                        <form method="post" action="{% url 'core:sample_status_update' sample.pk %}">
-                            {% csrf_token %}
-                            <input type="hidden" name="new_status" value="REVIEW_PENDING">
-                            <button type="submit" class="btn waves-effect waves-light blue darken-1" onclick="return confirm('Send this sample for consultant review?')">
-                                <i class="material-icons left" aria-hidden="true">send</i>
-                                Send for Review
-                            </button>
-                        </form>
-                        {% endif %}
-                    {% endif %}
-                {% endif %}
-
-                {% if sample.current_status == 'REPORT_APPROVED' or sample.current_status == 'REPORT_SENT' %}
-                <a href="{% url 'core:download_sample_report' pk=sample.pk %}" class="btn waves-effect waves-light teal darken-1" target="_blank">
-                    <i class="material-icons left" aria-hidden="true">download</i>
-                    Download Report
+                {% if sample.current_status in 'REPORT_APPROVED,REPORT_SENT' %}
+                <a href="{% url 'core:download_sample_report' pk=sample.pk %}" class="btn btn-outline-secondary" target="_blank">
+                    <i class="material-icons me-1">download</i>Download report
                 </a>
                 {% endif %}
 
                 {% if user.is_consultant or user.is_admin %}
-                    {% if sample.current_status == 'RESULTS_ENTERED' or sample.current_status == 'REVIEW_PENDING' %}
-                    <a href="{% url 'core:consultant_review' sample.pk %}" class="btn waves-effect waves-light blue darken-1">
-                        <i class="material-icons left" aria-hidden="true">rate_review</i>
-                        Review Sample
-                    </a>
+                    {% if sample.current_status in 'RESULTS_ENTERED,REVIEW_PENDING' %}
+                    <a href="{% url 'core:consultant_review' sample.pk %}" class="btn btn-outline-secondary"><i class="material-icons me-1">rate_review</i>Consultant review</a>
                     {% endif %}
                 {% endif %}
 
                 {% if user.is_admin %}
-                <a href="{% url 'core:audit_trail' %}?model=Sample&object_id={{ sample.pk }}" class="btn waves-effect waves-light grey darken-1">
-                    <i class="material-icons left" aria-hidden="true">history</i>
-                    View History
-                </a>
+                <a href="{% url 'core:audit_trail' %}?model=Sample&object_id={{ sample.pk }}" class="btn btn-outline-secondary"><i class="material-icons me-1">history</i>View audit trail</a>
                     {% if sample.current_status != 'CANCELLED' %}
                     <form method="post" action="{% url 'core:sample_status_update' sample.pk %}">
                         {% csrf_token %}
                         <input type="hidden" name="new_status" value="CANCELLED">
-                        <button type="submit" class="btn waves-effect waves-light red darken-2" onclick="return confirm('Cancel this sample? This action cannot be undone.')">
-                            <i class="material-icons left" aria-hidden="true">cancel</i>
-                            Cancel Sample
+                        <button type="submit" class="btn btn-outline-danger" onclick="return confirm('Cancel this sample? This action cannot be undone.')">
+                            <i class="material-icons me-1">cancel</i>Cancel sample
                         </button>
                     </form>
                     {% endif %}
                 {% endif %}
             </div>
-        </section>
+        </div>
 
         {% if sample.review %}
-        <section class="data-surface">
-            <div class="data-section-title">
-                <i class="material-icons" aria-hidden="true">assignment_ind</i>
-                Consultant Review
-            </div>
-            <div class="key-value-grid">
-                <div class="key-value">
-                    <span class="key-value-label">Reviewer</span>
-                    <span class="key-value-value">{{ sample.review.reviewer.first_name|default:sample.review.reviewer.username|default:"N/A" }}</span>
-                </div>
-                <div class="key-value">
-                    <span class="key-value-label">Review Date</span>
-                    <span class="key-value-value">{{ sample.review.review_date|date:"M d, Y H:i" }}</span>
-                </div>
-            </div>
-            <div class="hero-tags">
-                {% if sample.review.status == 'APPROVED' %}
-                    <span class="status-pill success">{{ sample.review.get_status_display }}</span>
-                {% elif sample.review.status == 'REJECTED' %}
-                    <span class="status-pill error">{{ sample.review.get_status_display }}</span>
-                {% else %}
-                    <span class="status-pill warning">{{ sample.review.get_status_display }}</span>
-                {% endif %}
-            </div>
+        <div class="info-card">
+            <div class="section-title"><i class="material-icons">assignment_ind</i>Consultant review</div>
+            <dl class="row mb-3 small">
+                <dt class="col-5 text-muted">Reviewer</dt>
+                <dd class="col-7 mb-2">{{ sample.review.reviewer.first_name|default:sample.review.reviewer.username|default:"N/A" }}</dd>
+                <dt class="col-5 text-muted">Review date</dt>
+                <dd class="col-7 mb-2">{{ sample.review.review_date|date:"M d, Y H:i" }}</dd>
+                <dt class="col-5 text-muted">Status</dt>
+                <dd class="col-7 mb-0">
+                    {% if sample.review.status == 'APPROVED' %}
+                        <span class="badge-soft success">Approved</span>
+                    {% elif sample.review.status == 'REJECTED' %}
+                        <span class="badge-soft danger">Rejected</span>
+                    {% else %}
+                        <span class="badge-soft warning">{{ sample.review.get_status_display }}</span>
+                    {% endif %}
+                </dd>
+            </dl>
             {% if sample.review.comments %}
-            <div class="data-note">
-                <strong>Comments</strong>
-                <p class="text-muted">{{ sample.review.comments|linebreaksbr }}</p>
+            <div class="note-card mb-3">
+                <h6>Reviewer comments</h6>
+                <p class="mb-0 small">{{ sample.review.comments|linebreaksbr }}</p>
             </div>
             {% endif %}
             {% if sample.review.recommendations %}
-            <div class="data-note">
-                <strong>Recommendations</strong>
-                <p class="text-muted">{{ sample.review.recommendations|linebreaksbr }}</p>
+            <div class="note-card">
+                <h6>Recommendations</h6>
+                <p class="mb-0 small">{{ sample.review.recommendations|linebreaksbr }}</p>
             </div>
             {% endif %}
-        </section>
+        </div>
         {% endif %}
     </div>
 </div>
-{% endblock %}
-
-{% block extra_js %}
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const tooltips = document.querySelectorAll('.tooltipped');
-    M.Tooltip.init(tooltips);
-});
-</script>
 {% endblock %}

@@ -6,199 +6,157 @@
 {% block page_header %}
 <div class="page-header">
     <div class="page-heading">
-        <h1 class="page-title">{% if form.instance.pk %}Edit Customer{% else %}Add Customer{% endif %}</h1>
-        <p class="page-subtitle">{% if form.instance.pk %}Refresh contact and address information to keep records accurate.{% else %}Create a customer profile to link sample submissions and reports.{% endif %}</p>
+        <h1 class="page-title">{% if form.instance.pk %}Edit customer{% else %}Add customer{% endif %}</h1>
+        <p class="page-subtitle">Create and maintain customer records for faster sample registration and reporting.</p>
     </div>
-    <div class="page-actions">
-        <a href="{% url 'core:customer_list' %}" class="btn-flat waves-effect">
-            <i class="material-icons left" aria-hidden="true">arrow_back</i>
-            Back to Customers
-        </a>
-        {% if form.instance.pk %}
-        <a href="{% url 'core:customer_detail' pk=form.instance.customer_id %}" class="btn-flat waves-effect">
-            <i class="material-icons left" aria-hidden="true">visibility</i>
-            View Profile
-        </a>
-        {% endif %}
-    </div>
+    <a href="{% url 'core:customer_list' %}" class="btn btn-outline-secondary"><i class="material-icons me-1">arrow_back</i>Back to customers</a>
 </div>
 {% endblock %}
 
 {% block content %}
-<div class="page-section fade-in-up">
-    <div class="content-grid">
-        <div class="grid-span-8 stack-column">
-            <form method="post" novalidate class="validate-form">
-                {% csrf_token %}
+<form method="post" novalidate class="form-shell">
+    {% csrf_token %}
 
-                {% if form.non_field_errors %}
-                <div class="messages-container" role="region" aria-live="polite">
-                    {% for error in form.non_field_errors %}
-                    <div class="alert-card alert-error">
-                        <div class="alert-icon" aria-hidden="true"><i class="material-icons">error</i></div>
-                        <div class="alert-content">{{ error }}</div>
-                        <button type="button" class="alert-close" aria-label="Dismiss"><i class="material-icons" aria-hidden="true">close</i></button>
-                    </div>
-                    {% endfor %}
-                </div>
-                {% endif %}
-
-                <div class="form-shell">
-                    <div class="data-surface">
-                        <div class="form-section-title"><i class="material-icons">person</i>Customer Profile</div>
-                        <div class="form-grid">
-                            <div class="input-field">
-                                {{ form.name }}
-                                <label for="{{ form.name.id_for_label }}">Customer Name <span class="red-text">*</span></label>
-                                {% if form.name.errors %}<span class="helper-text red-text">{{ form.name.errors.0 }}</span>{% endif %}
-                            </div>
-                            <div class="input-field">
-                                {{ form.email }}
-                                <label for="{{ form.email.id_for_label }}">Email Address <span class="red-text">*</span></label>
-                                {% if form.email.errors %}<span class="helper-text red-text">{{ form.email.errors.0 }}</span>{% else %}<span class="helper-text">e.g., customer@example.com</span>{% endif %}
-                            </div>
-                            <div class="input-field">
-                                {{ form.phone }}
-                                <label for="{{ form.phone.id_for_label }}">Phone Number <span class="red-text">*</span></label>
-                                {% if form.phone.errors %}<span class="helper-text red-text">{{ form.phone.errors.0 }}</span>{% else %}<span class="helper-text">10-digit Indian mobile number</span>{% endif %}
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="data-surface">
-                        <div class="form-section-title"><i class="material-icons">location_on</i>Address Details</div>
-                        <p class="text-muted mb-3">Enter address details aligned with Kerala postal formats.</p>
-                        <div class="form-grid">
-                            <div class="input-field">
-                                {{ form.house_name_door_no }}
-                                <label for="{{ form.house_name_door_no.id_for_label }}">House Name / Door Number</label>
-                                {% if form.house_name_door_no.errors %}<span class="helper-text red-text">{{ form.house_name_door_no.errors.0 }}</span>{% else %}<span class="helper-text">Optional but helpful for logistics.</span>{% endif %}
-                            </div>
-                            <div class="input-field">
-                                {{ form.street_locality_landmark }}
-                                <label for="{{ form.street_locality_landmark.id_for_label }}">Street / Locality <span class="red-text">*</span></label>
-                                {% if form.street_locality_landmark.errors %}<span class="helper-text red-text">{{ form.street_locality_landmark.errors.0 }}</span>{% else %}<span class="helper-text">E.g., M.G. Road, Near Temple</span>{% endif %}
-                            </div>
-                            <div class="input-field">
-                                {{ form.village_town_city }}
-                                <label for="{{ form.village_town_city.id_for_label }}">Village / Town / City <span class="red-text">*</span></label>
-                                {% if form.village_town_city.errors %}<span class="helper-text red-text">{{ form.village_town_city.errors.0 }}</span>{% endif %}
-                            </div>
-                            <div class="input-field">
-                                {{ form.panchayat_municipality }}
-                                <label for="{{ form.panchayat_municipality.id_for_label }}">Panchayat / Municipality <span class="red-text">*</span></label>
-                                {% if form.panchayat_municipality.errors %}<span class="helper-text red-text">{{ form.panchayat_municipality.errors.0 }}</span>{% endif %}
-                            </div>
-                            <div class="input-field">
-                                {{ form.taluk }}
-                                <label for="{{ form.taluk.id_for_label }}">Taluk <span class="red-text">*</span></label>
-                                {% if form.taluk.errors %}<span class="helper-text red-text">{{ form.taluk.errors.0 }}</span>{% endif %}
-                            </div>
-                            <div class="input-field">
-                                {{ form.district }}
-                                <label for="{{ form.district.id_for_label }}">District <span class="red-text">*</span></label>
-                                {% if form.district.errors %}<span class="helper-text red-text">{{ form.district.errors.0 }}</span>{% endif %}
-                            </div>
-                            <div class="input-field">
-                                {{ form.pincode }}
-                                <label for="{{ form.pincode.id_for_label }}">PIN Code <span class="red-text">*</span></label>
-                                {% if form.pincode.errors %}<span class="helper-text red-text">{{ form.pincode.errors.0 }}</span>{% else %}<span class="helper-text">6-digit Kerala PIN starting with 6</span>{% endif %}
-                            </div>
-                            <div class="input-field">
-                                {{ form.address }}
-                                <label for="{{ form.address.id_for_label }}">Auto-composed Address</label>
-                                <span class="helper-text">Updated automatically from the fields above.</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="form-actions">
-                        <a href="{% url 'core:customer_list' %}" class="btn-flat waves-effect">Cancel</a>
-                        <button type="submit" class="btn waves-effect waves-light">
-                            <i class="material-icons left" aria-hidden="true">save</i>
-                            {% if form.instance.pk %}Update Customer{% else %}Save Customer{% endif %}
-                        </button>
-                    </div>
-                </div>
-            </form>
-        </div>
-
-        <aside class="grid-span-4 stack-column">
-            <div class="data-surface tight">
-                <div class="form-section-title"><i class="material-icons">help_outline</i>Tips</div>
-                <ul class="data-list">
-                    <li class="data-list-item">Ensure email addresses are unique per customer.</li>
-                    <li class="data-list-item">Verify mobile numbers for report notifications.</li>
-                    <li class="data-list-item">Complete addresses speed up sample pickups and deliveries.</li>
-                    <li class="data-list-item">Fields marked with <span class="red-text">*</span> are required.</li>
-                </ul>
-            </div>
-        </aside>
+    {% if form.non_field_errors %}
+    <div class="alert alert-danger" role="alert">
+        {% for error in form.non_field_errors %}
+            <div>{{ error }}</div>
+        {% endfor %}
     </div>
-</div>
+    {% endif %}
+
+    <div class="info-card">
+        <div class="form-section-title"><i class="material-icons">person</i>Customer profile</div>
+        <div class="row g-3">
+            <div class="col-md-12">
+                <label for="{{ form.name.id_for_label }}" class="form-label">Customer name *</label>
+                {{ form.name }}
+                {% if form.name.errors %}<div class="invalid-feedback d-block small">{{ form.name.errors.0 }}</div>{% endif %}
+            </div>
+            <div class="col-md-6">
+                <label for="{{ form.email.id_for_label }}" class="form-label">Email *</label>
+                {{ form.email }}
+                {% if form.email.errors %}<div class="invalid-feedback d-block small">{{ form.email.errors.0 }}</div>{% else %}<div class="form-text">e.g., customer@example.com</div>{% endif %}
+            </div>
+            <div class="col-md-6">
+                <label for="{{ form.phone.id_for_label }}" class="form-label">Phone *</label>
+                {{ form.phone }}
+                {% if form.phone.errors %}<div class="invalid-feedback d-block small">{{ form.phone.errors.0 }}</div>{% else %}<div class="form-text">10-digit Indian mobile number</div>{% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="info-card">
+        <div class="form-section-title"><i class="material-icons">location_on</i>Address details</div>
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label for="{{ form.house_name_door_no.id_for_label }}" class="form-label">House name / door number</label>
+                {{ form.house_name_door_no }}
+                {% if form.house_name_door_no.errors %}<div class="invalid-feedback d-block small">{{ form.house_name_door_no.errors.0 }}</div>{% endif %}
+            </div>
+            <div class="col-md-6">
+                <label for="{{ form.street_locality_landmark.id_for_label }}" class="form-label">Street / locality *</label>
+                {{ form.street_locality_landmark }}
+                {% if form.street_locality_landmark.errors %}<div class="invalid-feedback d-block small">{{ form.street_locality_landmark.errors.0 }}</div>{% endif %}
+            </div>
+            <div class="col-md-6">
+                <label for="{{ form.village_town_city.id_for_label }}" class="form-label">Village / town / city *</label>
+                {{ form.village_town_city }}
+                {% if form.village_town_city.errors %}<div class="invalid-feedback d-block small">{{ form.village_town_city.errors.0 }}</div>{% endif %}
+            </div>
+            <div class="col-md-6">
+                <label for="{{ form.panchayat_municipality.id_for_label }}" class="form-label">Panchayat / municipality *</label>
+                {{ form.panchayat_municipality }}
+                {% if form.panchayat_municipality.errors %}<div class="invalid-feedback d-block small">{{ form.panchayat_municipality.errors.0 }}</div>{% endif %}
+            </div>
+            <div class="col-md-6">
+                <label for="{{ form.taluk.id_for_label }}" class="form-label">Taluk *</label>
+                {{ form.taluk }}
+                {% if form.taluk.errors %}<div class="invalid-feedback d-block small">{{ form.taluk.errors.0 }}</div>{% endif %}
+            </div>
+            <div class="col-md-6">
+                <label for="{{ form.district.id_for_label }}" class="form-label">District *</label>
+                {{ form.district }}
+                {% if form.district.errors %}<div class="invalid-feedback d-block small">{{ form.district.errors.0 }}</div>{% endif %}
+            </div>
+            <div class="col-md-6">
+                <label for="{{ form.pincode.id_for_label }}" class="form-label">PIN code *</label>
+                {{ form.pincode }}
+                {% if form.pincode.errors %}<div class="invalid-feedback d-block small">{{ form.pincode.errors.0 }}</div>{% else %}<div class="form-text">Kerala PIN codes start with 6</div>{% endif %}
+            </div>
+            <div class="col-md-6">
+                <label for="{{ form.address.id_for_label }}" class="form-label">Auto-composed address</label>
+                {{ form.address }}
+                <div class="form-text">Populated automatically from the fields above.</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="form-actions">
+        <a href="{% url 'core:customer_list' %}" class="btn btn-outline-secondary">Cancel</a>
+        <button type="submit" class="btn btn-primary">
+            <i class="material-icons me-1">save</i>
+            {% if form.instance.pk %}Update customer{% else %}Save customer{% endif %}
+        </button>
+    </div>
+</form>
 {% endblock %}
 
 {% block extra_js %}
+{{ block.super }}
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    M.FormSelect.init(document.querySelectorAll('select'));
-
+(function() {
     const phoneInput = document.getElementById('{{ form.phone.id_for_label }}');
     if (phoneInput) {
-        phoneInput.addEventListener('input', function() {
+        phoneInput.addEventListener('input', function () {
             this.value = this.value.replace(/\D/g, '').slice(0, 10);
         });
     }
 
     const pincodeInput = document.getElementById('{{ form.pincode.id_for_label }}');
     if (pincodeInput) {
-        pincodeInput.addEventListener('input', function() {
+        pincodeInput.addEventListener('input', function () {
             this.value = this.value.replace(/\D/g, '').slice(0, 6);
             updateAddress();
         });
     }
 
     function updateAddress() {
-        const addressParts = [];
-        const fieldSelectors = {
-            'house_name_door_no': '{{ form.house_name_door_no.id_for_label }}',
-            'street_locality_landmark': '{{ form.street_locality_landmark.id_for_label }}',
-            'village_town_city': '{{ form.village_town_city.id_for_label }}',
-            'panchayat_municipality': '{{ form.panchayat_municipality.id_for_label }}',
-            'taluk': '{{ form.taluk.id_for_label }}',
-            'district': '{{ form.district.id_for_label }}',
-            'pincode': '{{ form.pincode.id_for_label }}'
-        };
-
-        for (const key in fieldSelectors) {
-            const element = document.getElementById(fieldSelectors[key]);
-            if (!element) continue;
-
-            let displayValue = '';
-            if (element.tagName === 'SELECT') {
-                const selected = element.options[element.selectedIndex];
-                if (selected && selected.value) {
-                    displayValue = selected.text.trim();
+        const partIds = [
+            '{{ form.house_name_door_no.id_for_label }}',
+            '{{ form.street_locality_landmark.id_for_label }}',
+            '{{ form.village_town_city.id_for_label }}',
+            '{{ form.panchayat_municipality.id_for_label }}',
+            '{{ form.taluk.id_for_label }}',
+            '{{ form.district.id_for_label }}',
+            '{{ form.pincode.id_for_label }}'
+        ];
+        const parts = [];
+        partIds.forEach((id) => {
+            const el = document.getElementById(id);
+            if (!el) return;
+            let value = '';
+            if (el.tagName === 'SELECT') {
+                const opt = el.options[el.selectedIndex];
+                if (opt && opt.value) {
+                    value = opt.text.trim();
                 }
-            } else if (element.value && element.value.trim()) {
-                displayValue = element.value.trim();
+            } else if (el.value.trim()) {
+                value = el.value.trim();
             }
-
-            if (!displayValue) continue;
-            if (key == 'taluk') displayValue += ' Taluk';
-            if (key == 'district') displayValue += ' District';
-            if (key == 'pincode') displayValue = 'Kerala - ' + displayValue;
-            addressParts.push(displayValue);
-        }
-
+            if (!value) return;
+            if (id === '{{ form.taluk.id_for_label }}') value += ' Taluk';
+            if (id === '{{ form.district.id_for_label }}') value += ' District';
+            if (id === '{{ form.pincode.id_for_label }}') value = 'Kerala - ' + value;
+            parts.push(value);
+        });
         const addressField = document.getElementById('{{ form.address.id_for_label }}');
         if (addressField) {
-            addressField.value = addressParts.join(', ');
-            M.updateTextFields();
+            addressField.value = parts.join(', ');
         }
     }
 
-    const addressFieldIds = [
+    const addressIds = [
         '{{ form.house_name_door_no.id_for_label }}',
         '{{ form.street_locality_landmark.id_for_label }}',
         '{{ form.village_town_city.id_for_label }}',
@@ -207,15 +165,14 @@ document.addEventListener('DOMContentLoaded', function() {
         '{{ form.district.id_for_label }}'
     ];
 
-    addressFieldIds.forEach(id => {
-        const element = document.getElementById(id);
-        if (!element) return;
-        const handler = element.tagName === 'SELECT' ? 'change' : 'input';
-        element.addEventListener(handler, updateAddress);
+    addressIds.forEach((id) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        const eventName = el.tagName === 'SELECT' ? 'change' : 'input';
+        el.addEventListener(eventName, updateAddress);
     });
 
     updateAddress();
-    M.updateTextFields();
-});
+})();
 </script>
 {% endblock %}

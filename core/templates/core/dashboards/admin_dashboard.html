@@ -1,502 +1,158 @@
 {% extends 'core/base.html' %}
-{% load static %}
 
 {% block title %}Admin Dashboard - Water Lab LIMS{% endblock %}
 
-{% block breadcrumbs %}
-<div class="col s12 breadcrumb-container">
-    <nav>
-        <div class="nav-wrapper">
-            <a href="{% if user.is_authenticated %}{% url 'core:dashboard' %}{% else %}{% url 'core:home' %}{% endif %}" class="breadcrumb">Home</a>
-            <span class="breadcrumb active">Admin Dashboard</span>
-        </div>
-    </nav>
+{% block page_header %}
+<div class="page-header">
+    <div class="page-heading">
+        <h1 class="page-title">Administrator overview</h1>
+        <p class="page-subtitle">System-wide metrics and shortcuts for daily administration.</p>
+    </div>
+    <div class="badge-soft info"><i class="material-icons">admin_panel_settings</i>{{ user.get_role_display }}</div>
 </div>
-{% endblock breadcrumbs %}
+{% endblock %}
 
 {% block content %}
-<div class="row section">
-    <div class="col s12 m8">
-        <h4 class="header">👨‍💼 Administrator Dashboard</h4>
+<section class="stat-grid mb-4">
+    <div class="stat-card">
+        <div class="stat-icon"><i class="material-icons">people</i></div>
+        <div class="stat-value">{{ total_customers }}</div>
+        <p class="stat-label mb-0">Total customers</p>
     </div>
-    <div class="col s12 m4 right-align">
-        <p>
-            <span class="role-badge {{ user.role }}">{{ user.get_role_display }}</span>
-            Welcome, {{ user.first_name|default:user.username }}!
-        </p>
+    <div class="stat-card">
+        <div class="stat-icon"><i class="material-icons">science</i></div>
+        <div class="stat-value">{{ total_samples }}</div>
+        <p class="stat-label mb-0">Total samples</p>
     </div>
-</div>
+    <div class="stat-card">
+        <div class="stat-icon"><i class="material-icons">hourglass_top</i></div>
+        <div class="stat-value">{{ pending_samples_count }}</div>
+        <p class="stat-label mb-0">Pending samples</p>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon"><i class="material-icons">experiment</i></div>
+        <div class="stat-value">{{ testing_samples_count }}</div>
+        <p class="stat-label mb-0">In lab</p>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon"><i class="material-icons">fact_check</i></div>
+        <div class="stat-value">{{ review_pending_count }}</div>
+        <p class="stat-label mb-0">Awaiting review</p>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon"><i class="material-icons">task_alt</i></div>
+        <div class="stat-value">{{ completed_samples_count }}</div>
+        <p class="stat-label mb-0">Completed</p>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon"><i class="material-icons">calendar_month</i></div>
+        <div class="stat-value">{{ today_samples_count }}</div>
+        <p class="stat-label mb-0">Collected today</p>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon"><i class="material-icons">date_range</i></div>
+        <div class="stat-value">{{ week_samples_count }}</div>
+        <p class="stat-label mb-0">Last 7 days</p>
+    </div>
+</section>
 
-<!-- System Overview Stats -->
-<div class="row section stats-card"> {# Added stats-card class for specific styling #}
-    <div class="col s6 m6 l3"> {# Changed s12 to s6 for 2-column mobile layout #}
-        <a href="{% url 'core:customer_list' %}" class="black-text">
-            <div class="card-panel hoverable center-align">
-                <i class="material-icons large blue-text text-darken-2">people</i>
-                <h5>{{ total_customers }}</h5>
-                <p class="grey-text">Total Customers</p>
-            </div>
-        </a>
+<section class="info-card mb-4">
+    <div class="section-title"><i class="material-icons">flash_on</i>Quick actions</div>
+    <div class="quick-link-bar">
+        <a href="{% url 'core:customer_add' %}" class="btn btn-primary btn-sm"><i class="material-icons me-1">person_add</i>Add customer</a>
+        <a href="{% url 'core:sample_add' %}" class="btn btn-outline-primary btn-sm"><i class="material-icons me-1">note_add</i>Register sample</a>
+        <a href="{% url 'core:customer_list' %}" class="btn btn-outline-secondary btn-sm"><i class="material-icons me-1">contacts</i>View customers</a>
+        <a href="{% url 'core:sample_list' %}" class="btn btn-outline-secondary btn-sm"><i class="material-icons me-1">inventory</i>View samples</a>
+        <a href="{% url 'core:setup_test_parameters' %}" class="btn btn-outline-secondary btn-sm"><i class="material-icons me-1">tune</i>Test parameters</a>
+        <a href="{% url 'core:audit_trail' %}" class="btn btn-outline-secondary btn-sm"><i class="material-icons me-1">history</i>Audit trail</a>
+        <a href="/admin/" class="btn btn-outline-secondary btn-sm"><i class="material-icons me-1">security</i>Django admin</a>
     </div>
-    <div class="col s6 m6 l3"> {# Changed s12 to s6 for 2-column mobile layout #}
-        <a href="{% url 'core:sample_list' %}" class="black-text">
-            <div class="card-panel hoverable center-align">
-                <i class="material-icons large teal-text text-darken-2">science</i>
-                <h5>{{ total_samples }}</h5>
-                <p class="grey-text">Total Samples</p>
-            </div>
-        </a>
-    </div>
-    <div class="col s6 m6 l3"> {# Changed s12 to s6 for 2-column mobile layout #}
-        <a href="{% url 'core:sample_list' %}" class="black-text">
-            <div class="card-panel hoverable center-align">
-                <i class="material-icons large orange-text text-darken-2">hourglass_empty</i>
-                <h5>{{ pending_samples_count }}</h5>
-                <p class="grey-text">Pending Samples</p>
-            </div>
-        </a>
-    </div>
-    <div class="col s6 m6 l3"> {# Changed s12 to s6 for 2-column mobile layout #}
-        <a href="{% url 'core:sample_list' %}" class="black-text">
-            <div class="card-panel hoverable center-align">
-                <i class="material-icons large green-text text-darken-2">check_circle</i>
-                <h5>{{ completed_samples_count }}</h5>
-                <p class="grey-text">Completed</p>
-            </div>
-        </a>
-    </div>
-    <div class="col s6 m6 l3"> {# Changed s12 to s6 for 2-column mobile layout #}
-        <a href="{% url 'core:sample_list' %}" class="black-text">
-            <div class="card-panel hoverable center-align">
-                <i class="material-icons large red-text text-darken-2">rate_review</i>
-                <h5>{{ review_pending_count }}</h5>
-                <p class="grey-text">Review Pending</p>
-            </div>
-        </a>
-    </div>
-    <div class="col s6 m6 l3"> {# Changed s12 to s6 for 2-column mobile layout #}
-        <a href="/admin/auth/user/" class="black-text">
-            <div class="card-panel hoverable center-align">
-                <i class="material-icons large purple-text text-darken-2">supervisor_account</i>
-                <h5>{{ total_users }}</h5>
-                <p class="grey-text">System Users</p>
-            </div>
-        </a>
-    </div>
-</div>
+</section>
 
-<!-- Quick Actions -->
-<div class="row section">
-    <div class="col s12">
-        <h5 class="header">⚡ Quick Actions</h5>
-        <a href="{% url 'core:customer_add' %}" class="btn waves-effect waves-light"><i class="material-icons left">person_add</i>Add Customer</a>
-        <a href="{% url 'core:sample_add' %}" class="btn waves-effect waves-light"><i class="material-icons left">colorize</i>Register Sample</a>
-        <a href="{% url 'core:customer_list' %}" class="btn-flat waves-effect waves-teal"><i class="material-icons left">list_alt</i>View Customers</a>
-        <a href="{% url 'core:sample_list' %}" class="btn-flat waves-effect waves-teal"><i class="material-icons left">view_list</i>View Samples</a>
-        <a href="{% url 'core:setup_test_parameters' %}" class="btn-flat waves-effect waves-teal"><i class="material-icons left">settings_applications</i>Test Parameters</a>
-        <a href="{% url 'core:audit_trail' %}" class="btn-flat waves-effect waves-teal"><i class="material-icons left">history</i>Audit Trail</a>
-        <a href="/admin/" class="btn-flat waves-effect waves-teal"><i class="material-icons left">security</i>Admin Panel</a>
-    </div>
-</div>
-
-<div class="row section">
-    <!-- Recent Activity -->
-    <div class="col s12 m6">
-        <div class="card dashboard-card"> {# Added dashboard-card class #}
-            <div class="card-content">
-                <span class="card-title"><i class="material-icons left">timeline</i>Recent Activity</span>
-                <h6>Latest Samples</h6>
-                {% if recent_samples %}
-                <ul class="collection">
-                    {% for sample in recent_samples %}
-                    <li class="collection-item avatar">
-                        <i class="material-icons circle blue">science</i>
-                        <span class="title"><a href="{% url 'core:sample_detail' sample.pk %}">Sample {{ sample.sample_id|truncatechars:8 }}</a></span>
-                        <p>By: {{ sample.customer.name }} <br>
-                           {{ sample.collection_datetime|timesince }} ago
-                        </p>
-                        <span class="secondary-content chip">{{ sample.get_current_status_display }}</span>
-                    </li>
-                    {% endfor %}
-                </ul>
-                {% else %}
-                <p class="grey-text">No recent samples</p>
-                {% endif %}
-            </div>
-        </div>
-    </div>
-
-    <!-- System Status -->
-    <div class="col s12 m6">
-        <div class="card dashboard-card"> {# Added dashboard-card class #}
-            <div class="card-content">
-                <span class="card-title"><i class="material-icons left">settings_system_daydream</i>System Status</span>
-                <ul class="collection">
-                    <li class="collection-item">Daily Samples: <span class="right">{{ today_samples_count }}</span></li>
-                    <li class="collection-item">Weekly Samples: <span class="right">{{ week_samples_count }}</span></li>
-                    <li class="collection-item">Testing in Progress: <span class="right">{{ testing_samples_count }}</span></li>
-                </ul>
-                <h6 class="mt-3">User Distribution</h6>
-                <ul class="collection">
+<div class="row g-4">
+    <div class="col-xl-4">
+        <div class="info-card h-100">
+            <div class="section-title"><i class="material-icons">supervisor_account</i>User mix</div>
+            {% if user_stats %}
+            <ul class="list-group list-group-flush small">
                 {% for stat in user_stats %}
-                    <li class="collection-item">{{ stat.role|capfirst }}: <span class="right">{{ stat.count }}</span></li>
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    {{ stat.role|default:"Undefined" }}
+                    <span class="badge bg-light text-dark">{{ stat.count }}</span>
+                </li>
                 {% endfor %}
-                </ul>
-            </div>
+            </ul>
+            {% else %}
+            <p class="text-muted small mb-0">No additional users found.</p>
+            {% endif %}
+        </div>
+    </div>
+    <div class="col-xl-4">
+        <div class="info-card h-100">
+            <div class="section-title"><i class="material-icons">person_add</i>Recent customers</div>
+            {% if recent_customers %}
+            <ul class="list-group list-group-flush small">
+                {% for item in recent_customers %}
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <span>{{ item.name }}</span>
+                    <a href="{% url 'core:customer_detail' pk=item.customer_id %}" class="btn btn-sm btn-outline-secondary">View</a>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p class="text-muted small mb-0">No recent customers.</p>
+            {% endif %}
+        </div>
+    </div>
+    <div class="col-xl-4">
+        <div class="info-card h-100">
+            <div class="section-title"><i class="material-icons">science</i>Samples in lab</div>
+            {% if samples_in_lab %}
+            <ul class="list-group list-group-flush small">
+                {% for sample_item in samples_in_lab %}
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="fw-semibold">{{ sample_item.sample_id }}</div>
+                        <div class="text-muted">{{ sample_item.customer.name }}</div>
+                    </div>
+                    <a href="{% url 'core:sample_detail' pk=sample_item.sample_id %}" class="btn btn-sm btn-outline-secondary">View</a>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p class="text-muted small mb-0">No samples currently in lab processing.</p>
+            {% endif %}
         </div>
     </div>
 </div>
 
-<!-- Recent Users -->
-<div class="row section">
-    <div class="col s12">
-        <div class="card dashboard-card"> {# Added dashboard-card class #}
-            <div class="card-content">
-                <span class="card-title"><i class="material-icons left">group</i>Recent Users</span>
-                {% if recent_users %}
-                <table class="highlight responsive-table">
-                    <thead>
-                        <tr>
-                            <th>Username</th>
-                            <th>Name</th>
-                            <th>Role</th>
-                            <th>Department</th>
-                            <th>Joined</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for user_obj in recent_users %} {# Renamed user to user_obj to avoid conflict with request.user #}
-                        <tr>
-                            <td>{{ user_obj.username }}</td>
-                            <td>{{ user_obj.first_name }} {{ user_obj.last_name }}</td>
-                            <td>
-                                <span class="role-badge {{ user_obj.role }}">{{ user_obj.get_role_display }}</span>
-                            </td>
-                            <td>{{ user_obj.department|default:"—" }}</td>
-                            <td>{{ user_obj.date_joined|date:"M d, Y" }}</td>
-                            <td>
-                                <span class="new badge {% if user_obj.is_active %}green{% else %}red{% endif %}" data-badge-caption="">
-                                    {% if user_obj.is_active %}Active{% else %}Inactive{% endif %}
-                                </span>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-                {% else %}
-                <p class="grey-text center-align">No users registered yet</p>
-                {% endif %}
-            </div>
-        </div>
+<div class="info-card mt-4">
+    <div class="section-title"><i class="material-icons">playlist_add_check</i>Samples awaiting review</div>
+    {% if samples_awaiting_review %}
+    <div class="table-responsive">
+        <table class="table table-sm align-middle mb-0">
+            <thead>
+                <tr>
+                    <th>Sample</th>
+                    <th>Customer</th>
+                    <th>Collected</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for sample_item in samples_awaiting_review %}
+                <tr>
+                    <td>{{ sample_item.sample_id }}</td>
+                    <td>{{ sample_item.customer.name }}</td>
+                    <td>{{ sample_item.collection_datetime|date:'M d, Y' }}</td>
+                    <td class="text-end"><a href="{% url 'core:sample_detail' pk=sample_item.sample_id %}" class="btn btn-sm btn-outline-secondary">View</a></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
-</div>
-
-<!-- Lab Workflow Overview -->
-<div class="row section">
-    <div class="col s12">
-        <h5 class="header"><i class="material-icons left">device_hub</i>Lab Workflow Overview</h5>
-    </div>
-    {% if data_load_error %}
-    <div class="col s12">
-        <div class="card-panel red lighten-2 white-text">
-            <span class="card-title">Data Loading Error!</span>
-            <p>There was an issue loading some of the dashboard data. Some information might be missing or incomplete. Please try refreshing the page or contact support if the problem persists.</p>
-        </div>
-    </div>
+    {% else %}
+    <p class="text-muted mb-0">Great! There are no samples waiting for consultant review.</p>
     {% endif %}
-    <div class="col s12 m6">
-        <div class="card dashboard-card"> {# Added dashboard-card class #}
-            <div class="card-content">
-                <span class="card-title"><i class="material-icons left">local_lab</i>Samples Currently in Lab ({{ samples_in_lab.count }})</span>
-                {% if samples_in_lab %}
-                <ul class="collection">
-                    {% for sample in samples_in_lab %}
-                    <li class="collection-item avatar">
-                        <i class="material-icons circle amber">opacity</i>
-                        <span class="title"><a href="{% url 'core:sample_detail' sample.pk %}">Sample {{ sample.sample_id|truncatechars:8 }}</a></span>
-                        <p>{{ sample.customer.name }} <br>
-                           {{ sample.get_current_status_display }}
-                        </p>
-                        <span class="secondary-content chip">{{ sample.collection_datetime|timesince }} ago</span>
-                    </li>
-                    {% endfor %}
-                </ul>
-                {% if samples_in_lab.count >= 5 %}
-                <div class="card-action right-align">
-                    <a href="{% url 'core:sample_list' %}?status=SENT_TO_LAB&status=TESTING_IN_PROGRESS">View all...</a>
-                </div>
-                {% endif %}
-                {% else %}
-                <p class="grey-text">No samples currently in the lab.</p>
-                {% endif %}
-            </div>
-        </div>
-    </div>
-
-    <div class="col s12 m6">
-        <div class="card dashboard-card"> {# Added dashboard-card class #}
-            <div class="card-content">
-                <span class="card-title"><i class="material-icons left">playlist_add_check</i>Samples Awaiting Review ({{ samples_awaiting_review.count }})</span>
-                {% if samples_awaiting_review %}
-                <ul class="collection">
-                    {% for sample in samples_awaiting_review %}
-                    <li class="collection-item avatar">
-                        <i class="material-icons circle light-blue">assignment_turned_in</i>
-                        <span class="title"><a href="{% url 'core:sample_detail' sample.pk %}">Sample {{ sample.sample_id|truncatechars:8 }}</a></span>
-                        <p>{{ sample.customer.name }} <br>
-                           Results Entered
-                        </p>
-                        <span class="secondary-content chip">{{ sample.collection_datetime|timesince }} ago</span>
-                    </li>
-                    {% endfor %}
-                </ul>
-                {% if samples_awaiting_review.count >= 5 %}
-                <div class="card-action right-align">
-                    <a href="{% url 'core:sample_list' %}?status=RESULTS_ENTERED">View all...</a>
-                </div>
-                {% endif %}
-                {% else %}
-                <p class="grey-text">No samples currently awaiting review.</p>
-                {% endif %}
-            </div>
-        </div>
-    </div>
 </div>
 {% endblock %}
-
-{% block extra_css %}
-<style>
-    .section {
-        margin-bottom: 2rem;
-    }
-    .header { /* For h4, h5 used as section titles */
-        font-weight: 400; /* Adjusted for M3 feel */
-        margin-top: 1rem;
-        margin-bottom: 1.5rem;
-        color: var(--text-color-dark);
-    }
-    .card-panel.hoverable { /* Ensure card panels in stats section use surface color */
-        background-color: var(--surface-color);
-    }
-    .card-panel h5 {
-        margin-top: 0.5rem;
-        margin-bottom: 0.5rem;
-        font-size: 1.8rem;
-        font-weight: 500; /* Slightly bolder for stat numbers */
-        color: var(--text-color-dark);
-    }
-    .card-panel p {
-        font-size: 0.9rem;
-        color: var(--text-color-medium);
-    }
-
-    /* Styles for compact stat cards */
-    .stats-card .card-panel {
-        padding: 15px !important; /* Slightly adjusted padding */
-        border-radius: var(--m3-border-radius-medium) !important; /* Ensure M3 radius */
-        border-left: 5px solid var(--primary-color); /* Default left border */
-        transition: box-shadow 0.3s ease-in-out, transform 0.2s ease-in-out;
-    }
-    .stats-card .card-panel:hover {
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15), 0 2px 8px rgba(0,0,0,0.1) !important;
-        transform: translateY(-2px);
-    }
-    /* Custom border colors per card - this requires adding classes to HTML if we want to be specific */
-    /* For now, we'll rely on icon colors for differentiation and use a default border */
-
-    .stats-card .card-panel .material-icons.large {
-        font-size: 2.5rem !important; /* Reduced icon size */
-        margin-bottom: 0; /* Remove extra space below icon */
-    }
-    .stats-card .card-panel h5 {
-        font-size: 1.5rem !important; /* Reduced number size */
-        margin-top: 0.25rem;
-        margin-bottom: 0.25rem;
-    }
-    .stats-card .card-panel p {
-        font-size: 0.8rem !important; /* Reduced label size */
-        margin-bottom: 0; /* Remove extra space below label */
-    }
-
-    .mt-3 { /* For User Distribution title */
-        margin-top: 1.5rem !important;
-    }
-    /* Button margins are handled by Materialize grid or custom spacing if needed */
-    /* .btn, .btn-flat {
-        margin-right: 5px;
-        margin-bottom: 5px; 
-    } */
-    .collection .collection-item.avatar .secondary-content.chip {
-        top: 25px; /* Adjust chip position in avatar collection items */
-        font-weight: 500;
-    }
-    .collection .collection-header {
-        background-color: var(--primary-color-light);
-        color: var(--primary-color-dark);
-        font-weight: 500;
-        padding-top: 0.5rem;
-        padding-bottom: 0.5rem;
-    }
-    .collection .collection-item {
-        border-bottom-color: var(--primary-color-light);
-    }
-    .collection a.collection-item { /* Ensure links in collections are styled correctly */
-        color: var(--text-color-dark);
-    }
-    .collection a.collection-item:hover {
-        background-color: var(--primary-color-light);
-        color: var(--primary-color-dark);
-    }
-    .card .card-action a:not(.btn):not(.btn-large):not(.btn-small):not(.btn-large):not(.btn-floating) {
-        color: var(--primary-color) !important; /* Ensure card action links use primary color */
-    }
-    .card .card-action a:not(.btn):not(.btn-large):not(.btn-small):not(.btn-large):not(.btn-floating):hover {
-        color: var(--primary-color-dark) !important;
-    }
-
-    @media screen and (max-width: 600px) {
-        /* Header section adjustments */
-        .row.section:first-child h4.header { /* Target the main dashboard title */
-            font-size: 1.6rem; /* Reduce font size for mobile */
-            margin-bottom: 0.25rem;
-            line-height: 1.2;
-        }
-
-        .row.section:first-child .col.s12.m4.right-align p { /* Welcome message */
-            text-align: left;
-            font-size: 0.85rem;
-            margin-top: 0;
-            line-height: 1.3;
-        }
-        .row.section:first-child .col.s12.m4.right-align p .role-badge {
-            font-size: 0.7rem; /* Smaller role badge */
-            padding: 2px 6px;
-            vertical-align: middle;
-        }
-
-        /* Stat Cards - make them more compact on small screens (now 2-column s6) */
-        .stats-card .col.s6 .card-panel { /* Adjusted selector for s6 columns */
-            padding: 10px !important;
-            display: flex; /* Use flexbox for better alignment */
-            flex-direction: column;
-            align-items: center; /* Center content horizontally */
-            justify-content: center; /* Center content vertically */
-            min-height: 100px; /* Ensure a minimum tap height, but allow shrinking */
-        }
-
-        .stats-card .col.s6 .card-panel .material-icons.large { /* Adjusted selector */
-            font-size: 2rem !important; /* Smaller icons */
-            margin-bottom: 2px; /* Minimal margin */
-        }
-
-        .stats-card .col.s6 .card-panel h5 { /* Adjusted selector */
-            font-size: 1.2rem !important; /* Smaller numbers */
-            margin-top: 0;
-            margin-bottom: 2px;
-        }
-
-        .stats-card .col.s6 .card-panel p { /* Adjusted selector */
-            font-size: 0.7rem !important; /* Smaller text label */
-            line-height: 1.2;
-        }
-
-        /* Quick Actions buttons styling for mobile */
-        .row.section .btn, 
-        .row.section .btn-flat {
-            display: block;
-            width: 100%;
-            margin-left: 0; /* Ensure no horizontal margin inherited */
-            margin-right: 0; /* Ensure no horizontal margin inherited */
-            margin-bottom: 10px; /* Space between stacked buttons */
-            text-align: center;
-            padding-top: 8px; /* Adjust padding for better appearance */
-            padding-bottom: 8px;
-            height: auto; /* Allow height to adjust to content */
-            line-height: 1.5; /* Adjust line height for button text */
-        }
-
-        .row.section .btn:last-child,
-        .row.section .btn-flat:last-child {
-            margin-bottom: 0; /* No margin for the last button */
-        }
-
-        .row.section .btn i.material-icons.left,
-        .row.section .btn-flat i.material-icons.left {
-            float: none;
-            margin-right: 5px;
-            line-height: inherit;
-            vertical-align: middle; /* Better vertical alignment of icon */
-            font-size: 1.2em; /* Adjust icon size relative to button text */
-        }
-        
-        /* Reduce margin for sections on mobile */
-        .section {
-            margin-bottom: 1.5rem;
-        }
-        h5.header { /* Quick Actions title, etc. */
-            font-size: 1.3rem;
-        }
-
-        /* Further refinements for dashboard cards on mobile */
-        .dashboard-card .collection .collection-item {
-            padding-top: 8px;
-            padding-bottom: 8px;
-        }
-
-        .dashboard-card .collection .collection-item.avatar {
-            min-height: 0; /* Reset min-height if Materialize default is too large */
-            padding-left: 65px; /* Adjust if avatar icon size changes */
-        }
-        
-        .dashboard-card .collection .collection-item.avatar .circle {
-            width: 32px; /* Smaller avatar icon */
-            height: 32px;
-            line-height: 32px;
-            font-size: 1.2rem; /* Smaller icon within circle */
-        }
-
-        .dashboard-card .collection .collection-item.avatar .title {
-            font-size: 0.9rem; /* Slightly smaller title in list items */
-            line-height: 1.3;
-        }
-
-        .dashboard-card .collection .collection-item.avatar p {
-            font-size: 0.75rem; /* Smaller paragraph text in list items */
-            line-height: 1.2;
-            margin-bottom: 2px;
-        }
-        
-        .dashboard-card .collection .collection-item.avatar .secondary-content.chip {
-            font-size: 0.7rem;
-            padding: 2px 6px;
-            height: auto;
-            line-height: 1.2;
-            top: 15px; /* Re-adjust chip position based on new item padding/sizing */
-        }
-
-        .dashboard-card .card-content .card-title { /* Card titles within dashboard cards */
-            font-size: 1.1rem;
-            margin-bottom: 0.5rem; /* Less space below card titles */
-        }
-        .dashboard-card .card-content h6 { /* Sub-headers like "Latest Samples" */
-            font-size: 0.95rem;
-            margin: 0.5rem 0;
-        }
-    }
-</style>
-{% endblock %}
-
-{% block fab %}
-{% if user.is_authenticated and user.is_admin %}
-<div class="fixed-action-btn">
-    <a class="btn-floating btn-large tooltipped" data-position="left" data-tooltip="Quick Actions" style="background-color: var(--primary-color);">
-        <i class="large material-icons">add</i>
-    </a>
-    <ul>
-        <li><a href="{% url 'core:sample_add' %}" class="btn-floating tooltipped" data-position="left" data-tooltip="Register New Sample" style="background-color: var(--info-color);"><i class="material-icons">colorize</i></a></li>
-        <li><a href="{% url 'core:customer_add' %}" class="btn-floating tooltipped" data-position="left" data-tooltip="Add New Customer" style="background-color: var(--success-color);"><i class="material-icons">person_add</i></a></li>
-    </ul>
-</div>
-{% endif %}
-{% endblock fab %}

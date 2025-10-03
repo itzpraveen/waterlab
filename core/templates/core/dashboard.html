@@ -3,211 +3,116 @@
 {% block title %}Dashboard - Water Lab LIMS{% endblock %}
 
 {% block page_header %}
-<div class="page-hero-card fade-in">
-    <div class="hero-content">
-        <span class="hero-eyebrow">Overview</span>
-        <h1 class="hero-title">Dashboard</h1>
-        <p class="hero-description">Monitor customer onboarding, sample throughput, and result approvals in a single view.</p>
-        <div class="hero-tags">
-            {% if user.role %}
-            <span class="role-badge {{ user.role }}">{{ user.get_role_display }}</span>
-            {% endif %}
-            <span class="chip soft">Active Session</span>
-        </div>
+<div class="page-header">
+    <div class="page-heading">
+        <h1 class="page-title">Administrator Dashboard</h1>
+        <p class="page-subtitle">Keep track of customer onboarding, sample testing progress, and reporting workflows.</p>
     </div>
-    <div class="hero-meta">
-        <div class="meta-tile">
-            <span class="meta-label">Signed in as</span>
-            <span class="meta-value">{{ user.get_full_name|default:user.username }}</span>
-            {% if user.email %}<span class="meta-note">{{ user.email }}</span>{% endif %}
-        </div>
-        <div class="meta-tile">
-            <span class="meta-label">Role</span>
-            <span class="meta-value">{% if user.role %}{{ user.get_role_display }}{% else %}Standard User{% endif %}</span>
-            <span class="meta-note">Last login {{ user.last_login|date:"M d, Y H:i"|default:"N/A" }}</span>
-        </div>
-        {% if user.department %}
-        <div class="meta-tile">
-            <span class="meta-label">Department</span>
-            <span class="meta-value">{{ user.department }}</span>
-        </div>
-        {% endif %}
+    <div class="badge-soft success">
+        <i class="material-icons">verified_user</i>
+        Welcome {{ user.first_name|default:user.username }}
     </div>
 </div>
 {% endblock %}
 
 {% block content %}
-
-<!-- Dashboard Stats -->
-<div class="dashboard-stats grid grid-4-col gap-md mb-5">
-    <div class="stat-card fade-in-up">
+<section class="stat-grid mb-4">
+    <div class="stat-card">
+        <div class="stat-icon"><i class="material-icons">people</i></div>
         <div class="stat-value">{{ total_customers|default:0 }}</div>
-        <div class="stat-label">Total Customers</div>
+        <p class="stat-label mb-0">Total Customers</p>
     </div>
-    <div class="stat-card info fade-in-up" style="animation-delay: 0.1s;">
+    <div class="stat-card">
+        <div class="stat-icon"><i class="material-icons">science</i></div>
         <div class="stat-value">{{ total_samples|default:0 }}</div>
-        <div class="stat-label">Total Samples</div>
+        <p class="stat-label mb-0">Total Samples</p>
     </div>
-    <div class="stat-card warning fade-in-up" style="animation-delay: 0.2s;">
+    <div class="stat-card">
+        <div class="stat-icon"><i class="material-icons">hourglass_top</i></div>
         <div class="stat-value">{{ pending_samples|default:0 }}</div>
-        <div class="stat-label">Pending Samples</div>
+        <p class="stat-label mb-0">Pending Samples</p>
     </div>
-    <div class="stat-card success fade-in-up" style="animation-delay: 0.3s;">
+    <div class="stat-card">
+        <div class="stat-icon"><i class="material-icons">task_alt</i></div>
         <div class="stat-value">{{ completed_samples|default:0 }}</div>
-        <div class="stat-label">Completed Samples</div>
+        <p class="stat-label mb-0">Completed</p>
     </div>
-</div>
+</section>
 
-<!-- Navigation Options / Quick Actions -->
-<div class="dashboard-section fade-in-up" style="animation-delay: 0.35s;">
-    <div class="card">
-        <div class="card-content">
-            <div class="section-header mb-3">
-                <h2 class="section-title">⚡ Quick Actions</h2>
-            </div>
-            <p class="text-muted mb-3">Jump straight into the workflows you access most often.</p>
-            <div class="quick-actions">
-                {% if user.is_frontdesk or user.is_admin or user.is_lab_technician or user.is_consultant %}
-                <a href="{% url 'core:customer_list' %}" class="btn waves-effect waves-light"><i class="material-icons left">people</i>Customers</a>
-                <a href="{% url 'core:sample_list' %}" class="btn waves-effect waves-light"><i class="material-icons left">science</i>Samples</a>
-                {% endif %}
-                {% if user.is_frontdesk or user.is_admin %}
-                    <a href="{% url 'core:customer_add' %}" class="btn btn-outline waves-effect waves-light"><i class="material-icons left">person_add</i>New Customer</a>
-                    <a href="{% url 'core:sample_add' %}" class="btn btn-outline waves-effect waves-light"><i class="material-icons left">note_add</i>Register Sample</a>
-                {% endif %}
-                {% if user.is_lab_technician or user.is_admin %}
-                    <a href="{% url 'core:test_result_list' %}" class="btn waves-effect waves-light"><i class="material-icons left">list_alt</i>Record Results</a>
-                {% endif %}
-                {% if user.is_admin %}
-                    <a href="{% url 'core:audit_trail' %}" class="btn btn-outline waves-effect waves-light"><i class="material-icons left">history</i>Audit Trail</a>
-                {% endif %}
-                {% if not user.is_authenticated %}
-                    <a href="{% url 'core:login_selector' %}" class="btn waves-effect waves-light"><i class="material-icons left">login</i>Login</a>
-                {% endif %}
-            </div>
-        </div>
+<section class="info-card mb-4">
+    <div class="section-title">
+        <i class="material-icons">flash_on</i>
+        Quick actions
     </div>
-</div>
-
-<div class="grid grid-2-col gap-md">
-    <!-- Welcome Message & User Info -->
-    <div class="card fade-in-up" style="animation-delay: 0.5s;">
-        <div class="card-header">
-            <h3 class="card-title"><i class="material-icons">handshake</i>Welcome to WaterLab LIMS</h3>
-        </div>
-        <div class="card-content">
-            <p>This is your central hub for managing water testing laboratory operations. Access key features and information below.</p>
-            
-            <h4 class="h5 mt-4 mb-2">Your Access Profile</h4>
-            <div class="status-item">
-                <span class="status-label">Role:</span>
-                <span class="status-value">{{ user.get_role_display|default:"Standard User" }}</span>
-            </div>
-            {% if user.department %}
-            <div class="status-item">
-                <span class="status-label">Department:</span>
-                <span class="status-value">{{ user.department }}</span>
-            </div>
-            {% endif %}
-            <div class="status-item">
-                <span class="status-label">Permissions:</span>
-                <span class="status-value">
-                    {% if user.is_admin %}Admin
-                    {% elif user.is_staff %}Staff
-                    {% else %}Standard User
-                    {% endif %}
-                </span>
-            </div>
-             <div class="status-item">
-                <span class="status-label">Last Login:</span>
-                <span class="status-value">{{ user.last_login|date:"M d, Y H:i"|default:"N/A" }}</span>
-            </div>
-        </div>
-    </div>
-
-    <!-- System Information -->
-    <div class="card fade-in-up" style="animation-delay: 0.6s;">
-        <div class="card-header">
-            <h3 class="card-title"><i class="material-icons">info_outline</i>System Information</h3>
-        </div>
-        <div class="card-content">
-            <div class="status-item">
-                <span class="status-label">Lab Name:</span>
-                <span class="status-value">WaterLab LIMS by Biofix</span>
-            </div>
-            <div class="status-item">
-                <span class="status-label">Location:</span>
-                <span class="status-value">Kerala, India</span>
-            </div>
-            <div class="status-item">
-                <span class="status-label">Version:</span>
-                <span class="status-value">1.0.0</span>
-            </div>
-            <div class="status-item">
-                <span class="status-label">Accreditation:</span>
-                <span class="status-value">NABL Compliant</span>
-            </div>
-             <div class="status-item">
-                <span class="status-label">Support Contact:</span>
-                <span class="status-value"><a href="mailto:support@biofix.in">support@biofix.in</a></span>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Role-based Information / Call to Action -->
-{% if not user.role or user.role == 'CUSTOMER' %}
-<div class="card mt-5 fade-in-up" style="animation-delay: 0.7s;">
-    <div class="card-header">
-        <h3 class="card-title"><i class="material-icons">contact_support</i>Need Assistance?</h3>
-    </div>
-    <div class="card-content text-center">
-        <p>If you require additional permissions, access to more features, or have any questions about using the LIMS, please contact your system administrator or the lab support team.</p>
-        <p class="text-muted font-size-sm">As a customer, you can view your sample statuses and reports once available.</p>
-        {% if not user.is_authenticated %}
-        <a href="{% url 'core:login_selector' %}" class="btn btn-large waves-effect waves-light mt-3"><i class="material-icons left">login</i>Login to View Samples</a>
-        {% else %}
-        <a href="{% url 'core:sample_list' %}" class="btn btn-large waves-effect waves-light mt-3"><i class="material-icons left">science</i>View My Samples</a>
+    <p class="text-muted mb-3">Move directly into the tasks you handle most.</p>
+    <div class="quick-link-bar">
+        {% if user.is_frontdesk or user.is_admin %}
+        <a href="{% url 'core:customer_add' %}" class="btn btn-primary btn-sm"><i class="material-icons me-1">person_add</i>Add customer</a>
+        {% endif %}
+        {% if user.is_frontdesk or user.is_admin %}
+        <a href="{% url 'core:sample_add' %}" class="btn btn-outline-primary btn-sm"><i class="material-icons me-1">note_add</i>Register sample</a>
+        {% endif %}
+        {% if user.is_frontdesk or user.is_admin or user.is_lab_technician or user.is_consultant %}
+        <a href="{% url 'core:customer_list' %}" class="btn btn-outline-secondary btn-sm"><i class="material-icons me-1">contacts</i>View customers</a>
+        <a href="{% url 'core:sample_list' %}" class="btn btn-outline-secondary btn-sm"><i class="material-icons me-1">inventory</i>View samples</a>
+        {% endif %}
+        {% if user.is_lab_technician or user.is_admin %}
+        <a href="{% url 'core:test_result_list' %}" class="btn btn-outline-secondary btn-sm"><i class="material-icons me-1">fact_check</i>Enter results</a>
+        {% endif %}
+        {% if user.is_admin %}
+        <a href="{% url 'core:audit_trail' %}" class="btn btn-outline-secondary btn-sm"><i class="material-icons me-1">history</i>Audit trail</a>
         {% endif %}
     </div>
+</section>
+
+<div class="row g-4">
+    <div class="col-lg-6">
+        <div class="info-card h-100">
+            <div class="section-title"><i class="material-icons">badge</i>Your access profile</div>
+            <dl class="row mb-0 small">
+                <dt class="col-5 text-muted">Role</dt>
+                <dd class="col-7 mb-2">{{ user.get_role_display|default:"Standard User" }}</dd>
+                {% if user.department %}
+                <dt class="col-5 text-muted">Department</dt>
+                <dd class="col-7 mb-2">{{ user.department }}</dd>
+                {% endif %}
+                <dt class="col-5 text-muted">Permissions</dt>
+                <dd class="col-7 mb-2">
+                    {% if user.is_admin %}Administrator{% elif user.is_staff %}Staff{% else %}Standard user{% endif %}
+                </dd>
+                <dt class="col-5 text-muted">Last login</dt>
+                <dd class="col-7 mb-0">{{ user.last_login|date:"M d, Y H:i"|default:"N/A" }}</dd>
+            </dl>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="info-card h-100">
+            <div class="section-title"><i class="material-icons">info</i>System status</div>
+            <dl class="row mb-0 small">
+                <dt class="col-5 text-muted">Lab name</dt>
+                <dd class="col-7 mb-2">WaterLab LIMS by Biofix</dd>
+                <dt class="col-5 text-muted">Location</dt>
+                <dd class="col-7 mb-2">Kerala, India</dd>
+                <dt class="col-5 text-muted">Version</dt>
+                <dd class="col-7 mb-2">1.0.0</dd>
+                <dt class="col-5 text-muted">Accreditation</dt>
+                <dd class="col-7 mb-2">NABL compliant</dd>
+                <dt class="col-5 text-muted">Support</dt>
+                <dd class="col-7 mb-0"><a href="mailto:support@biofix.in">support@biofix.in</a></dd>
+            </dl>
+        </div>
+    </div>
 </div>
+
+{% if not user.role or user.role == 'CUSTOMER' %}
+<section class="info-card mt-4 text-center">
+    <div class="section-title justify-content-center"><i class="material-icons">contact_support</i>Need assistance?</div>
+    <p class="mb-2">For additional permissions or guidance, reach out to your system administrator or the support team.</p>
+    {% if not user.is_authenticated %}
+    <a href="{% url 'core:login_selector' %}" class="btn btn-primary btn-sm"><i class="material-icons me-1">login</i>Login to view samples</a>
+    {% else %}
+    <a href="{% url 'core:sample_list' %}" class="btn btn-outline-primary btn-sm"><i class="material-icons me-1">science</i>View my samples</a>
+    {% endif %}
+</section>
 {% endif %}
-
-{% endblock %}
-
-{% block extra_css %}
-<style>
-/* Styles specific to dashboard elements, can be moved to main CSS if widely used */
-.status-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: var(--space-xs) 0;
-    border-bottom: 1px solid var(--border-color);
-    font-size: var(--font-size-md);
-}
-
-.status-item:last-child {
-    border-bottom: none;
-}
-
-.status-label {
-    font-weight: var(--font-weight-medium);
-    color: var(--text-color-medium);
-}
-
-.status-value {
-    font-weight: var(--font-weight-medium);
-    color: var(--text-color-dark);
-}
-.status-value a {
-    color: var(--primary-color);
-    font-weight: var(--font-weight-medium);
-}
-.status-value a:hover {
-    color: var(--primary-color-dark);
-    text-decoration: underline;
-}
-
-</style>
 {% endblock %}
