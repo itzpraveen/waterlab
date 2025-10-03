@@ -89,7 +89,7 @@
                         </li>
                         {% if user.is_lab_technician or user.is_admin %}
                         <li role="none">
-                            <a href="{% url 'core:test_result_list' %}" role="menuitem" class="nav-link {% if 'test_result_list' == request.resolver_match.url_name or 'test_result_entry' == request.resolver_match.url_name %}active{% endif %}">
+                            <a href="{% url 'core:test_result_list' %}" role="menuitem" class="nav-link {% if 'test_result_list' == request.resolver_match.url_name %}active{% endif %}">
                                 <i class="material-icons left" aria-hidden="true">list_alt</i>
                                 Results
                             </a>
@@ -154,7 +154,7 @@
                 {% endif %}
                 <li><a href="{% url 'core:sample_list' %}" class="waves-effect {% if 'sample_list' == request.resolver_match.url_name or 'sample_detail' == request.resolver_match.url_name or 'sample_form' == request.resolver_match.url_name %}active{% endif %}"><i class="material-icons">opacity</i>Samples</a></li>
                 {% if user.is_lab_technician or user.is_admin %}
-                <li><a href="{% url 'core:test_result_list' %}" class="waves-effect {% if 'test_result_list' == request.resolver_match.url_name or 'test_result_entry' == request.resolver_match.url_name %}active{% endif %}"><i class="material-icons">list_alt</i>Results</a></li>
+                <li><a href="{% url 'core:test_result_list' %}" class="waves-effect {% if 'test_result_list' == request.resolver_match.url_name %}active{% endif %}"><i class="material-icons">list_alt</i>Results</a></li>
                 {% endif %}
                 {% if user.is_admin %}
                 <li><a href="{% url 'core:setup_test_parameters' %}" class="waves-effect {% if 'setup_test_parameters' == request.resolver_match.url_name %}active{% endif %}"><i class="material-icons">tune</i>Test Setup</a></li>
@@ -166,7 +166,7 @@
                 <li><a href="{% url 'core:sample_add' %}" class="waves-effect"><i class="material-icons">note_add</i>Register Sample</a></li>
                 {% endif %}
                 {% if user.is_lab_technician or user.is_admin %}
-                <li><a href="{% url 'core:test_result_entry' %}" class="waves-effect"><i class="material-icons">edit_note</i>Enter Results</a></li>
+                <li><a href="{% url 'core:test_result_list' %}" class="waves-effect"><i class="material-icons">edit_note</i>Enter Results</a></li>
                 {% endif %}
                 <li class="nav-section"><span class="subheader">Account</span></li>
                 <li><a href="#" class="waves-effect theme-toggle"><i class="material-icons">dark_mode</i>Theme</a></li>
