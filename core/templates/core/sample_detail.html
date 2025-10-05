@@ -6,15 +6,15 @@
 {% block page_header %}
 <div class="page-header">
     <div class="page-heading">
-        <h1 class="page-title">Sample {{ sample.sample_id }}</h1>
+        <h1 class="page-title">Sample {{ sample.display_id|default:sample.sample_id }}</h1>
         <p class="page-subtitle">Collected {{ sample.collection_datetime|date:"M d, Y H:i" }} for {{ sample.customer.name }}.</p>
         <div class="d-flex flex-wrap gap-2 mt-2">
             {% with status=sample.current_status %}
-                {% if status in 'REPORT_APPROVED,REPORT_SENT' %}
+                {% if status in ('REPORT_APPROVED', 'REPORT_SENT') %}
                     <span class="badge-soft success"><i class="material-icons">check_circle</i>{{ sample.get_current_status_display }}</span>
-                {% elif status in 'RESULTS_ENTERED,REVIEW_PENDING' %}
+                {% elif status in ('RESULTS_ENTERED', 'REVIEW_PENDING') %}
                     <span class="badge-soft warning"><i class="material-icons">hourglass_empty</i>{{ sample.get_current_status_display }}</span>
-                {% elif status in 'TESTING_IN_PROGRESS' %}
+                {% elif status == 'TESTING_IN_PROGRESS' %}
                     <span class="badge-soft info"><i class="material-icons">science</i>{{ sample.get_current_status_display }}</span>
                 {% else %}
                     <span class="badge-soft"><i class="material-icons">assignment</i>{{ sample.get_current_status_display }}</span>
@@ -28,33 +28,105 @@
 {% endblock %}
 
 {% block content %}
+<div class="summary-grid">
+    {% with status=sample.current_status %}
+    <div class="summary-card">
+        <span class="summary-icon material-icons">
+            {% if status in ('REPORT_APPROVED', 'REPORT_SENT') %}verified{% elif status in ('RESULTS_ENTERED', 'REVIEW_PENDING') %}hourglass_bottom{% elif status == 'TESTING_IN_PROGRESS' %}science{% else %}flag_circle{% endif %}
+        </span>
+        <p class="summary-label">Current Status</p>
+        <p class="summary-value">{{ sample.get_current_status_display }}</p>
+        <span class="summary-meta">
+            <i class="material-icons">schedule</i>
+            {% if sample.test_completed_on %}
+                Tests completed {{ sample.test_completed_on|date:"M d, Y" }}
+            {% elif sample.date_received_at_lab %}
+                Received {{ sample.date_received_at_lab|date:"M d, Y H:i" }}
+            {% else %}
+                Collected {{ sample.collection_datetime|date:"M d, Y H:i" }}
+            {% endif %}
+        </span>
+    </div>
+    {% endwith %}
+
+    {% with total_tests=sample.tests_requested.count results_count=sample.results.count %}
+    <div class="summary-card">
+        <span class="summary-icon material-icons">biotech</span>
+        <p class="summary-label">Requested Tests</p>
+        <p class="summary-value">{{ total_tests }}</p>
+        <span class="summary-meta">
+            <i class="material-icons">fact_check</i>
+            {% if total_tests %}
+                {{ results_count }} of {{ total_tests }} completed{% if results_count < total_tests %} · Awaiting results{% else %} · All results recorded{% endif %}
+            {% else %}
+                No tests assigned
+            {% endif %}
+        </span>
+    </div>
+    {% endwith %}
+
+    <div class="summary-card">
+        <span class="summary-icon material-icons">water_drop</span>
+        <p class="summary-label">Sample Type</p>
+        <p class="summary-value">{{ sample.sample_type|default:"Water" }}</p>
+        <span class="summary-meta">
+            <i class="material-icons">place</i>
+            {{ sample.sampling_location|default:"Location not specified" }}
+        </span>
+    </div>
+</div>
+
 <div class="row g-4">
     <div class="col-12 col-xl-7">
         <div class="info-card mb-4">
             <div class="section-title"><i class="material-icons">info_outline</i>Sample overview</div>
-            <dl class="row mb-0 small">
-                <dt class="col-sm-4 text-muted">Sample ID</dt>
-                <dd class="col-sm-8 mb-2">{{ sample.sample_id }}</dd>
-                <dt class="col-sm-4 text-muted">Customer</dt>
-                <dd class="col-sm-8 mb-2"><a href="{% url 'core:customer_detail' sample.customer.pk %}">{{ sample.customer.name }}</a></dd>
-                <dt class="col-sm-4 text-muted">Collection date</dt>
-                <dd class="col-sm-8 mb-2">{{ sample.collection_datetime|date:"M d, Y H:i" }}</dd>
-                <dt class="col-sm-4 text-muted">Received at lab</dt>
-                <dd class="col-sm-8 mb-2">{{ sample.date_received_at_lab|date:"M d, Y H:i"|default:"Not yet received" }}</dd>
-                <dt class="col-sm-4 text-muted">Collected by</dt>
-                <dd class="col-sm-8 mb-2">{{ sample.collected_by }}</dd>
+            <dl class="data-pairs">
+                <div class="data-pair">
+                    <dt>Sample ID</dt>
+                    <dd>{{ sample.display_id|default:sample.sample_id }}</dd>
+                </div>
+                <div class="data-pair">
+                    <dt>Customer</dt>
+                    <dd><a href="{% url 'core:customer_detail' sample.customer.pk %}">{{ sample.customer.name }}</a></dd>
+                </div>
+                <div class="data-pair">
+                    <dt>Collection Date</dt>
+                    <dd>{{ sample.collection_datetime|date:"M d, Y H:i" }}</dd>
+                </div>
+                <div class="data-pair">
+                    <dt>Received at Lab</dt>
+                    <dd>{{ sample.date_received_at_lab|date:"M d, Y H:i"|default:"Not yet received" }}</dd>
+                </div>
+                <div class="data-pair">
+                    <dt>Collected By</dt>
+                    <dd>{{ sample.get_collected_by_display }}</dd>
+                </div>
                 {% if sample.referred_by %}
-                <dt class="col-sm-4 text-muted">Referred by</dt>
-                <dd class="col-sm-8 mb-0">{{ sample.referred_by }}</dd>
+                <div class="data-pair">
+                    <dt>Referred By</dt>
+                    <dd>{{ sample.referred_by }}</dd>
+                </div>
+                {% endif %}
+                {% if sample.ulr_number %}
+                <div class="data-pair">
+                    <dt>ULR Number</dt>
+                    <dd>{{ sample.ulr_number }}</dd>
+                </div>
+                {% endif %}
+                {% if sample.report_number %}
+                <div class="data-pair">
+                    <dt>Report Number</dt>
+                    <dd>{{ sample.report_number }}</dd>
+                </div>
                 {% endif %}
             </dl>
         </div>
 
         <div class="info-card mb-4">
             <div class="section-title"><i class="material-icons">checklist</i>Tests requested</div>
-            {% if sample.tests_requested.all %}
+            {% if sample.tests_requested.count %}
             <div class="table-responsive">
-                <table class="table table-sm align-middle mb-0">
+                <table class="table table-modern align-middle mb-0">
                     <thead>
                         <tr>
                             <th>Test</th>
@@ -84,11 +156,11 @@
             {% endif %}
         </div>
 
-        {% if sample.results.exists %}
+        {% if sample.results.count %}
         <div class="info-card">
             <div class="section-title"><i class="material-icons">assessment</i>Test results</div>
             <div class="table-responsive">
-                <table class="table table-striped table-sm align-middle mb-0">
+                <table class="table table-modern align-middle mb-0">
                     <thead>
                         <tr>
                             <th>Parameter</th>
