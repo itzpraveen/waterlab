@@ -28,12 +28,11 @@
 {% endblock %}
 
 {% block content %}
-<div class="page-shell">
 <div class="summary-grid">
     {% with status=sample.current_status %}
     <div class="summary-card">
         <span class="summary-icon material-icons">
-            {% if status in ('REPORT_APPROVED', 'REPORT_SENT') %}verified{% elif status in ('RESULTS_ENTERED', 'REVIEW_PENDING') %}hourglass_bottom{% elif status == 'TESTING_IN_PROGRESS' %}science{% else %}flag_circle{% endif %}
+            {% if status == 'REPORT_APPROVED' or status == 'REPORT_SENT' %}verified{% elif status == 'RESULTS_ENTERED' or status == 'REVIEW_PENDING' %}hourglass_bottom{% elif status == 'TESTING_IN_PROGRESS' %}science{% else %}flag_circle{% endif %}
         </span>
         <p class="summary-label">Current Status</p>
         <p class="summary-value">{{ sample.get_current_status_display }}</p>
@@ -295,7 +294,5 @@
         </div>
         {% endif %}
     </div>
-</div>
-
 </div>
 {% endblock %}
