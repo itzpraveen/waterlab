@@ -147,7 +147,7 @@
                 {% endif %}
 
                 {% if user.is_lab_technician or user.is_admin %}
-                    {% if sample.current_status in 'SENT_TO_LAB,TESTING_IN_PROGRESS,RESULTS_ENTERED' or (sample.current_status == 'REVIEW_PENDING' and user.is_admin) %}
+                    {% if sample.current_status in 'SENT_TO_LAB,TESTING_IN_PROGRESS,RESULTS_ENTERED' or user.is_admin and sample.current_status == 'REVIEW_PENDING' %}
                     <a href="{% url 'core:test_result_entry' sample.pk %}" class="btn btn-outline-secondary"><i class="material-icons me-1">edit_note</i>Enter / edit results</a>
                     {% endif %}
                     {% if sample.current_status == 'RESULTS_ENTERED' %}
