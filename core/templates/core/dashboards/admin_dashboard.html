@@ -59,18 +59,18 @@
 <section class="info-card mb-4">
     <div class="section-title"><i class="material-icons">flash_on</i>Quick actions</div>
     <div class="quick-link-bar">
-        <a href="{% url 'core:customer_add' %}" class="btn btn-primary btn-sm"><i class="material-icons me-1">person_add</i>Add customer</a>
-        <a href="{% url 'core:sample_add' %}" class="btn btn-outline-primary btn-sm"><i class="material-icons me-1">note_add</i>Register sample</a>
-        <a href="{% url 'core:customer_list' %}" class="btn btn-outline-secondary btn-sm"><i class="material-icons me-1">contacts</i>View customers</a>
-        <a href="{% url 'core:sample_list' %}" class="btn btn-outline-secondary btn-sm"><i class="material-icons me-1">inventory</i>View samples</a>
-        <a href="{% url 'core:setup_test_parameters' %}" class="btn btn-outline-secondary btn-sm"><i class="material-icons me-1">tune</i>Test parameters</a>
-        <a href="{% url 'core:audit_trail' %}" class="btn btn-outline-secondary btn-sm"><i class="material-icons me-1">history</i>Audit trail</a>
-        <a href="/admin/" class="btn btn-outline-secondary btn-sm"><i class="material-icons me-1">security</i>Django admin</a>
+        <a href="{% url 'core:customer_add' %}" class="action-chip action-chip--primary"><i class="material-icons">person_add</i>Add customer</a>
+        <a href="{% url 'core:sample_add' %}" class="action-chip action-chip--primary"><i class="material-icons">note_add</i>Register sample</a>
+        <a href="{% url 'core:sample_list' %}" class="action-chip"><i class="material-icons">inventory_2</i>Manage samples</a>
+        <a href="{% url 'core:customer_list' %}" class="action-chip"><i class="material-icons">groups</i>Customer directory</a>
+        <a href="{% url 'core:setup_test_parameters' %}" class="action-chip"><i class="material-icons">tune</i>Test parameters</a>
+        <a href="{% url 'core:audit_trail' %}" class="action-chip"><i class="material-icons">history</i>Audit trail</a>
+        <a href="/admin/" class="action-chip"><i class="material-icons">admin_panel_settings</i>Django admin</a>
     </div>
 </section>
 
-<div class="row g-4">
-    <div class="col-xl-4">
+<div class="row g-4 align-items-stretch">
+    <div class="col-lg-6">
         <div class="info-card h-100">
             <div class="section-title"><i class="material-icons">supervisor_account</i>User mix</div>
             {% if user_stats %}
@@ -87,7 +87,7 @@
             {% endif %}
         </div>
     </div>
-    <div class="col-xl-4">
+    <div class="col-lg-6">
         <div class="info-card h-100">
             <div class="section-title"><i class="material-icons">person_add</i>Recent customers</div>
             {% if recent_customers %}
@@ -104,7 +104,7 @@
             {% endif %}
         </div>
     </div>
-    <div class="col-xl-4">
+    <div class="col-12">
         <div class="info-card h-100">
             <div class="section-title"><i class="material-icons">science</i>Samples in lab</div>
             {% if samples_in_lab %}

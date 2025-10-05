@@ -160,10 +160,11 @@ main {
   color: var(--wl-muted);
 }
 
+
 .stat-grid {
   display: grid;
   gap: 1.25rem;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
 }
 
 .stat-card {
@@ -173,6 +174,10 @@ main {
   box-shadow: var(--wl-shadow-sm);
   border: 1px solid var(--wl-border);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-height: 168px;
 }
 
 .stat-card:hover {
@@ -184,18 +189,17 @@ main {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 2.5rem;
-  height: 2.5rem;
-  border-radius: 0.75rem;
-  background: var(--wl-primary-light);
-  color: var(--wl-primary-dark);
-  margin-bottom: 0.75rem;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 0.85rem;
+  background: rgba(15, 118, 110, 0.12);
+  color: var(--wl-primary);
 }
 
 .stat-card .stat-value {
   font-size: 1.75rem;
   font-weight: 600;
-  margin-bottom: 0.25rem;
+  margin: 0;
 }
 
 .stat-card .stat-label {
@@ -246,6 +250,9 @@ main {
   border: 1px solid var(--wl-border);
   box-shadow: var(--wl-shadow-sm);
   padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
 }
 
 .info-card + .info-card {
@@ -415,17 +422,47 @@ main {
 }
 
 .quick-link-bar {
-  background: var(--wl-surface);
-  border-radius: 999px;
-  padding: 0.75rem 1.25rem;
-  box-shadow: var(--wl-shadow-sm);
-  display: inline-flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   gap: 0.75rem;
 }
 
-.quick-link-bar .btn {
-  border-radius: 999px;
+.action-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.65rem 1rem;
+  border-radius: 0.85rem;
+  border: 1px solid var(--wl-border);
+  background: #f9fafb;
+  color: #0f172a;
+  font-weight: 500;
+  text-decoration: none;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.action-chip .material-icons {
+  font-size: 1.1rem;
+}
+
+.action-chip:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--wl-shadow-sm);
+  background: #eef2f7;
+  color: var(--wl-primary-dark);
+}
+
+.action-chip--primary {
+  background: var(--wl-primary);
+  border-color: var(--wl-primary);
+  color: #fff;
+  box-shadow: var(--wl-shadow-sm);
+}
+
+.action-chip--primary:hover {
+  background: var(--wl-primary-dark);
+  color: #fff;
 }
 
 .table-avatar {
