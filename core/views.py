@@ -934,6 +934,8 @@ def download_sample_report_view(request, pk):
     styles.add(ParagraphStyle(name='ReportTitle', parent=styles['h1'], alignment=TA_CENTER, spaceAfter=12))
     styles.add(ParagraphStyle(name='SectionTitle', parent=styles['h2'], spaceAfter=6))
     styles.add(ParagraphStyle(name='TableHead', parent=styles['Normal'], fontName='Helvetica-Bold', alignment=TA_CENTER))
+    styles.add(ParagraphStyle(name='TableCell', parent=styles['Normal'], alignment=TA_LEFT, wordWrap='LTR', leading=12))
+    styles.add(ParagraphStyle(name='TableCellBold', parent=styles['TableCell'], fontName='Helvetica-Bold'))
 
     elements = []
     
@@ -957,28 +959,28 @@ def download_sample_report_view(request, pk):
     elements.append(Paragraph("PART - A: PARTICULARS OF SAMPLE SUBMITTED", styles['SectionTitle']))
 
     part_a_data = [
-        [Paragraph('*Sample Described by customer as', styles['Normal']), ':', Paragraph(sample.sample_type, styles['Normal'])],
-        [Paragraph('*Customer Name', styles['Normal']), ':', Paragraph(sample.customer.name, styles['Normal'])],
-        [Paragraph('*Customer Address', styles['Normal']), ':', Paragraph(sample.customer.address, styles['Normal'])],
-        [Paragraph('Sample Code No', styles['Normal']), ':', Paragraph(sample.display_id, styles['Normal'])],
-        [Paragraph('Sample Type', styles['Normal']), ':', Paragraph(sample.sample_type, styles['Normal'])],
-        [Paragraph('Sample Received Date', styles['Normal']), ':', Paragraph(sample.date_received_at_lab.strftime('%d.%m.%Y') if sample.date_received_at_lab else 'N/A', styles['Normal'])],
-        [Paragraph('Sample Qty. Recd.', styles['Normal']), ':', Paragraph(sample.quantity_received or 'N/A', styles['Normal'])],
-        [Paragraph('Reference to sampling procedure', styles['Normal']), ':', Paragraph(sample.sampling_procedure or 'N/A', styles['Normal'])],
-        [Paragraph('Sample drawn by', styles['Normal']), ':', Paragraph(sample.collected_by, styles['Normal'])],
-        [Paragraph('Date of Sampling', styles['Normal']), ':', Paragraph(sample.collection_datetime.strftime('%d.%m.%Y'), styles['Normal'])],
-        [Paragraph('Location of Sampling', styles['Normal']), ':', Paragraph(sample.sampling_location or 'N/A', styles['Normal'])],
-        [Paragraph('Any Deviation from the Test methods', styles['Normal']), ':', Paragraph(sample.deviations or 'NIL', styles['Normal'])],
-        [Paragraph('Test Commenced On', styles['Normal']), ':', Paragraph(sample.test_commenced_on.strftime('%d.%m.%Y') if sample.test_commenced_on else 'N/A', styles['Normal'])],
-        [Paragraph('Test Completed On', styles['Normal']), ':', Paragraph(sample.test_completed_on.strftime('%d.%m.%Y') if sample.test_completed_on else 'N/A', styles['Normal'])],
+        [Paragraph('*Sample Described by customer as', styles['TableCellBold']), Paragraph(':', styles['TableCell']), Paragraph(sample.sample_type or 'N/A', styles['TableCell'])],
+        [Paragraph('*Customer Name', styles['TableCellBold']), Paragraph(':', styles['TableCell']), Paragraph(sample.customer.name or 'N/A', styles['TableCell'])],
+        [Paragraph('*Customer Address', styles['TableCellBold']), Paragraph(':', styles['TableCell']), Paragraph(sample.customer.address or 'N/A', styles['TableCell'])],
+        [Paragraph('Sample Code No', styles['TableCellBold']), Paragraph(':', styles['TableCell']), Paragraph(sample.display_id or 'N/A', styles['TableCell'])],
+        [Paragraph('Sample Type', styles['TableCellBold']), Paragraph(':', styles['TableCell']), Paragraph(sample.sample_type or 'N/A', styles['TableCell'])],
+        [Paragraph('Sample Received Date', styles['TableCellBold']), Paragraph(':', styles['TableCell']), Paragraph(sample.date_received_at_lab.strftime('%d.%m.%Y') if sample.date_received_at_lab else 'N/A', styles['TableCell'])],
+        [Paragraph('Sample Qty. Recd.', styles['TableCellBold']), Paragraph(':', styles['TableCell']), Paragraph(sample.quantity_received or 'N/A', styles['TableCell'])],
+        [Paragraph('Reference to sampling procedure', styles['TableCellBold']), Paragraph(':', styles['TableCell']), Paragraph(sample.sampling_procedure or 'N/A', styles['TableCell'])],
+        [Paragraph('Sample drawn by', styles['TableCellBold']), Paragraph(':', styles['TableCell']), Paragraph(sample.collected_by or 'N/A', styles['TableCell'])],
+        [Paragraph('Date of Sampling', styles['TableCellBold']), Paragraph(':', styles['TableCell']), Paragraph(sample.collection_datetime.strftime('%d.%m.%Y') if sample.collection_datetime else 'N/A', styles['TableCell'])],
+        [Paragraph('Location of Sampling', styles['TableCellBold']), Paragraph(':', styles['TableCell']), Paragraph(sample.sampling_location or 'N/A', styles['TableCell'])],
+        [Paragraph('Any Deviation from the Test methods', styles['TableCellBold']), Paragraph(':', styles['TableCell']), Paragraph(sample.deviations or 'NIL', styles['TableCell'])],
+        [Paragraph('Test Commenced On', styles['TableCellBold']), Paragraph(':', styles['TableCell']), Paragraph(sample.test_commenced_on.strftime('%d.%m.%Y') if sample.test_commenced_on else 'N/A', styles['TableCell'])],
+        [Paragraph('Test Completed On', styles['TableCellBold']), Paragraph(':', styles['TableCell']), Paragraph(sample.test_completed_on.strftime('%d.%m.%Y') if sample.test_completed_on else 'N/A', styles['TableCell'])],
     ]
     part_a_table = Table(part_a_data, colWidths=[60*mm, 5*mm, 100*mm])
     part_a_table.setStyle(TableStyle([
         ('ALIGN', (0,0), (-1,-1), 'LEFT'),
         ('VALIGN', (0,0), (-1,-1), 'TOP'),
-        ('FONTNAME', (0,0), (0,-1), 'Helvetica-Bold'),
         ('LEFTPADDING', (0,0), (-1,-1), 0),
         ('RIGHTPADDING', (0,0), (-1,-1), 0),
+        ('WORDWRAP', (0,0), (-1,-1), 'CJK'),
     ]))
     elements.append(part_a_table)
     elements.append(Spacer(1, 12))
@@ -989,6 +991,15 @@ def download_sample_report_view(request, pk):
     results = TestResult.objects.filter(sample=sample).select_related('parameter').order_by('parameter__category', 'parameter__name')
     
     from itertools import groupby
+    available_width = doc.width
+    results_col_widths = [
+        available_width * 0.07,  # S.No
+        available_width * 0.24,  # Test Parameters
+        available_width * 0.20,  # Test Method
+        available_width * 0.12,  # Result
+        available_width * 0.15,  # Unit
+        available_width * 0.22,  # Acceptable Limit
+    ]
     grouped_results = groupby(results, key=lambda x: x.parameter.category or "Uncategorized")
 
     for category, group in grouped_results:
@@ -1013,25 +1024,32 @@ def download_sample_report_view(request, pk):
                 limit = f"Max {result.parameter.max_permissible_limit}"
 
             table_data.append([
-                i,
-                Paragraph(result.parameter.name, styles['Normal']),
-                Paragraph(result.parameter.method or 'N/A', styles['Normal']),
-                result_display,
-                unit_display,
-                Paragraph(limit, styles['Normal']),
+                Paragraph(str(i), styles['TableCell']),
+                Paragraph(result.parameter.name or 'N/A', styles['TableCell']),
+                Paragraph(result.parameter.method or 'N/A', styles['TableCell']),
+                Paragraph(str(result_display) if result_display is not None else 'N/A', styles['TableCell']),
+                Paragraph(unit_display or '', styles['TableCell']),
+                Paragraph(limit or 'N/A', styles['TableCell']),
             ])
             
-        results_table = Table(table_data, colWidths=[10*mm, 40*mm, 40*mm, 25*mm, 20*mm, 40*mm], repeatRows=1)
+        results_table = Table(table_data, colWidths=results_col_widths, repeatRows=1)
         results_table.setStyle(TableStyle([
             ('BACKGROUND', (0,0), (-1,0), primary_color),
             ('TEXTCOLOR', (0,0), (-1,0), colors.whitesmoke),
-            ('ALIGN', (0,0), (-1,-1), 'CENTER'),
-            ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+            ('ALIGN', (0,0), (0,-1), 'CENTER'),
+            ('ALIGN', (3,1), (3,-1), 'CENTER'),
+            ('ALIGN', (4,1), (4,-1), 'LEFT'),
+            ('ALIGN', (1,1), (2,-1), 'LEFT'),
+            ('ALIGN', (5,1), (5,-1), 'LEFT'),
+            ('VALIGN', (0,0), (-1,-1), 'TOP'),
             ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
             ('BOTTOMPADDING', (0,0), (-1,0), 8),
             ('TOPPADDING', (0,0), (-1,0), 8),
             ('GRID', (0,0), (-1,-1), 1, colors.HexColor('#cccccc')),
             ('BACKGROUND', (0,1), (-1,-1), colors.HexColor('#f0f8ff')),
+            ('LEFTPADDING', (0,1), (-1,-1), 4),
+            ('RIGHTPADDING', (0,1), (-1,-1), 4),
+            ('WORDWRAP', (0,1), (-1,-1), 'LTR'),
         ]))
         elements.append(results_table)
         elements.append(Spacer(1, 12))
