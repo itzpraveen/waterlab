@@ -60,11 +60,16 @@ main {
   margin-bottom: 2rem;
 }
 
+.page-shell {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
 .summary-grid {
   display: grid;
   gap: 1rem;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  margin-bottom: 1.75rem;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  margin-bottom: 2rem;
 }
 
 .summary-card {
@@ -75,8 +80,10 @@ main {
   background: linear-gradient(135deg, rgba(15, 118, 110, 0.08), transparent 40%), var(--wl-surface);
   box-shadow: var(--wl-shadow-sm);
   padding: 1.25rem;
-  display: grid;
-  gap: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  min-height: 180px;
 }
 
 .summary-card::after {
@@ -91,15 +98,15 @@ main {
 }
 
 .summary-card .summary-icon {
-  width: 2.5rem;
-  height: 2.5rem;
+  width: 2.75rem;
+  height: 2.75rem;
   border-radius: 0.85rem;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   background: rgba(15, 118, 110, 0.12);
   color: var(--wl-primary-dark);
-  font-size: 1.3rem;
+  font-size: 1.4rem;
   z-index: 1;
 }
 
@@ -121,10 +128,11 @@ main {
 }
 
 .summary-card .summary-meta {
+  margin-top: auto;
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  font-size: 0.78rem;
+  font-size: 0.8rem;
   color: var(--wl-muted);
   z-index: 1;
 }

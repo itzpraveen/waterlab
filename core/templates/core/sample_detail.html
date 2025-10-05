@@ -28,6 +28,7 @@
 {% endblock %}
 
 {% block content %}
+<div class="page-shell">
 <div class="summary-grid">
     {% with status=sample.current_status %}
     <div class="summary-card">
@@ -294,5 +295,7 @@
         </div>
         {% endif %}
     </div>
+</div>
+
 </div>
 {% endblock %}
