@@ -1,130 +1,134 @@
 {% extends 'core/base.html' %}
 {% load static %}
 
-{% block title %}{{ page_title|default:"Test Results" }} - Water Lab LIMS{% endblock %}
+{% block title %}{{ page_title|default:"Test Results" }} - WaterLab LIMS{% endblock %}
 
-{% block breadcrumbs %}
-<div class="col s12 breadcrumb-container">
-    <nav>
-        <div class="nav-wrapper">
-            <a href="{% url 'core:home' %}" class="breadcrumb">Home</a>
-            <span class="breadcrumb active">{{ page_title|default:"Test Results" }}</span>
-        </div>
-    </nav>
-</div>
-{% endblock breadcrumbs %}
-
-{% block content %}
-<div class="row">
-    <div class="col s12">
-        <div class="card">
-            <div class="card-content">
-                <span class="card-title" style="font-size: 2rem; display: flex; align-items: center; color: var(--primary-color-dark);">
-                    <i class="material-icons" style="font-size: 2.5rem; margin-right: 10px; color: var(--primary-color);">science</i>
-                    {{ page_title|default:"Samples with Test Results" }}
-                </span>
-                <p class="grey-text text-darken-1" style="margin-top: -5px; margin-bottom: 20px;">Browse samples and click to view their detailed test results.</p>
-
-                {% if samples_with_results %}
-                {% for sample in samples_with_results %}
-                <div class="card">
-                    <div class="card-content">
-                        <span class="card-title">Sample ID: {{ sample.display_id }}</span>
-                        <p>Customer: {{ sample.customer.name }}</p>
-                        <p>Collection Date: {{ sample.collection_datetime|date:"M d, Y H:i" }}</p>
-                    </div>
-                    <div class="card-action">
-                        <a href="{% url 'core:sample_detail' pk=sample.pk %}">View Sample Details</a>
-                    </div>
-                </div>
-                {% regroup sample.results.all by parameter.category as results_by_category %}
-                <div class="table-container">
-                    <table class="responsive-table highlight striped">
-                        <thead>
-                            <tr>
-                                <th>S.No</th>
-                                <th>Test Parameters</th>
-                                <th>Test Method</th>
-                                <th>Result</th>
-                                <th>Unit</th>
-                                <th>Acceptable Limit as per IS 10500 : 2012</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for category in results_by_category %}
-                            <tr>
-                                <td colspan="6" style="background-color: #f0f0f0;"><strong>Table - {{ category.grouper }}</strong></td>
-                            </tr>
-                            {% for result in category.list %}
-                            <tr>
-                                <td>{{ forloop.counter }}</td>
-                                <td>{{ result.parameter.name }}</td>
-                                <td>{{ result.parameter.method }}</td>
-                                <td>{{ result.result_value }}</td>
-                                <td>{{ result.parameter.unit }}</td>
-                                <td>
-                                    {% if result.parameter.max_permissible_limit and not result.parameter.min_permissible_limit %}
-                                        Max {{ result.parameter.max_permissible_limit }}
-                                    {% else %}
-                                        {{ result.parameter.min_permissible_limit|default:"" }} - {{ result.parameter.max_permissible_limit|default:"" }}
-                                    {% endif %}
-                                </td>
-                            </tr>
-                            {% endfor %}
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-                {% endfor %}
->>>>>>> REPLACE
-
-                {% if is_paginated %}
-                <div class="pagination center-align" style="margin-top: 30px;">
-                    <ul class="pagination">
-                        {% if page_obj.has_previous %}
-                        <li class="waves-effect"><a href="?page={{ page_obj.previous_page_number }}"><i class="material-icons">chevron_left</i></a></li>
-                        {% else %}
-                        <li class="disabled"><a href="#!"><i class="material-icons">chevron_left</i></a></li>
-                        {% endif %}
-
-                        {% for num in page_obj.paginator.page_range %}
-                        {% if page_obj.number == num %}
-                        <li class="active" style="background-color: var(--primary-color);"><a href="?page={{ num }}">{{ num }}</a></li>
-                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
-                        <li class="waves-effect"><a href="?page={{ num }}">{{ num }}</a></li>
-                        {% elif num == 1 or num == page_obj.paginator.num_pages %}
-                        <li class="waves-effect"><a href="?page={{ num }}">{{ num }}</a></li>
-                        {% elif num == page_obj.number|add:'-3' or num == page_obj.number|add:'3' %}
-                        <li class="disabled"><a href="#!">...</a></li>
-                        {% endif %}
-                        {% endfor %}
-
-                        {% if page_obj.has_next %}
-                        <li class="waves-effect"><a href="?page={{ page_obj.next_page_number }}"><i class="material-icons">chevron_right</i></a></li>
-                        {% else %}
-                        <li class="disabled"><a href="#!"><i class="material-icons">chevron_right</i></a></li>
-                        {% endif %}
-                    </ul>
-                </div>
-                {% endif %}
-
-                {% else %}
-                <div class="card-panel alert alert-info" style="margin-top: 20px;">
-                    <i class="material-icons left">info_outline</i> No test results found.
-                </div>
-                {% endif %}
-            </div>
-        </div>
+{% block page_header %}
+<div class="page-header">
+    <div class="page-heading">
+        <h1 class="page-title">
+            <i class="material-icons align-middle me-2">science</i>
+            {{ page_title|default:"Samples with Test Results" }}
+        </h1>
+        <p class="page-subtitle">Browse completed samples and review their recorded laboratory measurements.</p>
     </div>
 </div>
 {% endblock %}
 
-{% block extra_js %}
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Initialize any Materialize components if needed, e.g., tooltips for observations
-    var tooltippedElems = document.querySelectorAll('.tooltipped'); // If you add 'tooltipped' class
-    M.Tooltip.init(tooltippedElems);
-});
-</script>
+{% block content %}
+<div class="results-shell">
+    {% if samples_with_results %}
+        {% for sample in samples_with_results %}
+        <article class="results-card">
+            <header class="results-card__header">
+                <div>
+                    <div class="results-card__headline">
+                        <span class="results-card__id">{{ sample.display_id }}</span>
+                        {% with status=sample.current_status %}
+                        <span class="badge-soft {% if status == 'REPORT_APPROVED' or status == 'REPORT_SENT' %}success{% elif status == 'RESULTS_ENTERED' or status == 'REVIEW_PENDING' %}warning{% elif status == 'TESTING_IN_PROGRESS' %}info{% else %}info{% endif %}">
+                            {{ sample.get_current_status_display }}
+                        </span>
+                        {% endwith %}
+                    </div>
+                    <ul class="results-card__meta">
+                        <li><i class="material-icons" aria-hidden="true">person</i>{{ sample.customer.name }}</li>
+                        <li><i class="material-icons" aria-hidden="true">event</i>{{ sample.collection_datetime|date:"M d, Y H:i" }}</li>
+                        {% if sample.test_completed_on %}
+                        <li><i class="material-icons" aria-hidden="true">done_all</i>{{ sample.test_completed_on|date:"M d, Y" }}</li>
+                        {% endif %}
+                        <li><i class="material-icons" aria-hidden="true">biotech</i>{{ sample.results.count }} result{{ sample.results.count|pluralize }}</li>
+                    </ul>
+                </div>
+                <a href="{% url 'core:sample_detail' pk=sample.pk %}" class="btn btn-outline-primary btn-sm">View sample</a>
+            </header>
+
+            {% regroup sample.results.all by parameter.category as results_by_category %}
+            {% for category in results_by_category %}
+            <section class="results-block" aria-label="{{ category.grouper|default:'General Parameters' }}">
+                <div class="results-block__header">
+                    <h3 class="results-block__title">{{ category.grouper|default:"General Parameters" }}</h3>
+                    <span class="results-block__count">{{ category.list|length }} parameter{{ category.list|length|pluralize }}</span>
+                </div>
+                <div class="table-responsive results-table-wrapper">
+                    <table class="table table-modern align-middle results-table">
+                        <thead>
+                            <tr>
+                                <th scope="col" class="text-center">#</th>
+                                <th scope="col">Test parameter</th>
+                                <th scope="col" class="d-none d-lg-table-cell">Method</th>
+                                <th scope="col" class="text-center">Result</th>
+                                <th scope="col">Unit</th>
+                                <th scope="col">Acceptable range</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for result in category.list %}
+                            <tr>
+                                <td class="text-center text-muted">{{ forloop.counter }}</td>
+                                <td>
+                                    <div class="results-param">
+                                        <span class="results-param__name">{{ result.parameter.name }}</span>
+                                        {% if result.parameter.method %}
+                                        <span class="results-param__method d-lg-none">{{ result.parameter.method }}</span>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                <td class="text-muted d-none d-lg-table-cell">{{ result.parameter.method|default:"--" }}</td>
+                                <td class="text-center fw-semibold">{{ result.result_value }}</td>
+                                <td>{{ result.parameter.unit|default:"--" }}</td>
+                                <td>
+                                    {% if result.parameter.min_permissible_limit and result.parameter.max_permissible_limit %}
+                                        <span class="results-range">{{ result.parameter.min_permissible_limit }} – {{ result.parameter.max_permissible_limit }}</span>
+                                    {% elif result.parameter.max_permissible_limit %}
+                                        <span class="results-range">Max {{ result.parameter.max_permissible_limit }}</span>
+                                    {% elif result.parameter.min_permissible_limit %}
+                                        <span class="results-range">Min {{ result.parameter.min_permissible_limit }}</span>
+                                    {% else %}
+                                        <span class="text-muted">Not specified</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+            {% empty %}
+            <p class="text-muted mb-0">No test results available for this sample.</p>
+            {% endfor %}
+        </article>
+        {% endfor %}
+
+        {% if is_paginated %}
+        <nav aria-label="Results pagination" class="results-pagination">
+            <ul class="pagination pagination-modern justify-content-center">
+                <li class="page-item {% if not page_obj.has_previous %}disabled{% endif %}">
+                    <a class="page-link" href="{% if page_obj.has_previous %}?page={{ page_obj.previous_page_number }}{% else %}#!{% endif %}" aria-label="Previous">
+                        <span aria-hidden="true">&laquo;</span>
+                    </a>
+                </li>
+                {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                        <li class="page-item active" aria-current="page"><span class="page-link">{{ num }}</span></li>
+                    {% elif num == 1 or num == page_obj.paginator.num_pages or (num >= page_obj.number|add:'-2' and num <= page_obj.number|add:'2') %}
+                        <li class="page-item"><a class="page-link" href="?page={{ num }}">{{ num }}</a></li>
+                    {% elif num == page_obj.number|add:'-3' or num == page_obj.number|add:'3' %}
+                        <li class="page-item disabled"><span class="page-link">…</span></li>
+                    {% endif %}
+                {% endfor %}
+                <li class="page-item {% if not page_obj.has_next %}disabled{% endif %}">
+                    <a class="page-link" href="{% if page_obj.has_next %}?page={{ page_obj.next_page_number }}{% else %}#!{% endif %}" aria-label="Next">
+                        <span aria-hidden="true">&raquo;</span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+        {% endif %}
+    {% else %}
+        <div class="alert alert-info d-flex align-items-center gap-2" role="status">
+            <i class="material-icons">info_outline</i>
+            <span>No test results found.</span>
+        </div>
+    {% endif %}
+</div>
 {% endblock %}

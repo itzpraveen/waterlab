@@ -31,8 +31,7 @@
     <nav class="navbar navbar-expand-lg navbar-light" aria-label="Primary navigation">
         <div class="container-fluid px-4 page-shell">
             <a class="navbar-brand d-flex align-items-center gap-2" href="{% if user.is_authenticated %}{% url 'core:dashboard' %}{% else %}{% url 'core:home' %}{% endif %}">
-                <img src="{% static 'images/biofix_logo.png' %}" alt="Biofix Research Institute" class="rounded" height="40">
-                <span class="fw-semibold">WaterLab LIMS</span>
+                <img src="{% static 'images/biofix_logo.png' %}" alt="Biofix Research Institute · WaterLab LIMS" class="rounded" height="40">
             </a>
             {% if user.is_authenticated %}
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav" aria-controls="mainNav" aria-expanded="false" aria-label="Toggle navigation">

@@ -10,9 +10,9 @@
         <p class="page-subtitle">Collected {{ sample.collection_datetime|date:"M d, Y H:i" }} for {{ sample.customer.name }}.</p>
         <div class="d-flex flex-wrap gap-2 mt-2">
             {% with status=sample.current_status %}
-                {% if status in ['REPORT_APPROVED', 'REPORT_SENT'] %}
+                {% if status == 'REPORT_APPROVED' or status == 'REPORT_SENT' %}
                     <span class="badge-soft success"><i class="material-icons">check_circle</i>{{ sample.get_current_status_display }}</span>
-                {% elif status in ['RESULTS_ENTERED', 'REVIEW_PENDING'] %}
+                {% elif status == 'RESULTS_ENTERED' or status == 'REVIEW_PENDING' %}
                     <span class="badge-soft warning"><i class="material-icons">hourglass_empty</i>{{ sample.get_current_status_display }}</span>
                 {% elif status == 'TESTING_IN_PROGRESS' %}
                     <span class="badge-soft info"><i class="material-icons">science</i>{{ sample.get_current_status_display }}</span>
@@ -179,9 +179,11 @@
                             <td>{{ result.parameter.unit }}</td>
                             <td class="text-center">
                                 {% if result.parameter.min_permissible_limit is not None and result.parameter.max_permissible_limit is not None %}
-                                    {% with result.result_value|stringformat:'f'|add:0 as numeric_value %}
-                                        {% if numeric_value >= result.parameter.min_permissible_limit and numeric_value <= result.parameter.max_permissible_limit %}
+                                    {% with status=result.get_limit_status %}
+                                        {% if status == 'WITHIN_LIMITS' %}
                                             <span class="badge-soft success">Within limits</span>
+                                        {% elif status == 'NON_NUMERIC' %}
+                                            <span class="badge-soft warning">Result not numeric</span>
                                         {% else %}
                                             <span class="badge-soft danger">Out of range</span>
                                         {% endif %}
@@ -191,7 +193,13 @@
                                 {% endif %}
                             </td>
                             <td>{{ result.test_date|date:"M d, Y H:i" }}</td>
-                            <td>{{ result.technician.first_name|default:result.technician.username|default:"N/A" }}</td>
+                            <td>
+                                {% if result.technician %}
+                                    {{ result.technician.first_name|default:result.technician.username }}
+                                {% else %}
+                                    N/A
+                                {% endif %}
+                            </td>
                         </tr>
                         {% endfor %}
                     </tbody>

@@ -3,42 +3,107 @@
 
 {% block title %}Sign In - Water Lab LIMS{% endblock %}
 
-{% block page_header %}
-<div class="page-header">
-    <div class="page-heading">
-        <h1 class="page-title">Sign in to WaterLab</h1>
-        <p class="page-subtitle">Access dashboards, manage samples, and collaborate with your laboratory team.</p>
-    </div>
+{% block page_header %}{% endblock %}
+
+{% block content %}
+<div class="auth-layout">
+    <section class="auth-panel" aria-label="Welcome to WaterLab LIMS">
+        <div class="auth-panel-inner">
+            <img src="{% static 'images/biofix_logo.png' %}" alt="Biofix Research Institute · WaterLab LIMS" class="auth-panel-logo">
+            <h1 class="auth-headline">Welcome back to WaterLab</h1>
+            <p class="auth-subheadline">Track sample progress, capture test results, and keep your team aligned in one secure workspace.</p>
+
+            <ul class="auth-benefits">
+                <li>
+                    <i class="material-icons" aria-hidden="true">schedule</i>
+                    Real-time dashboards for every role
+                </li>
+                <li>
+                    <i class="material-icons" aria-hidden="true">task_alt</i>
+                    Guided workflows that reduce data entry errors
+                </li>
+                <li>
+                    <i class="material-icons" aria-hidden="true">verified_user</i>
+                    Secure, role-based access for consultants and staff
+                </li>
+            </ul>
+
+            <div class="auth-support" role="note">
+                <span class="auth-support-label">Need access?</span>
+                Email <a href="mailto:support@biofix.in">support@biofix.in</a> or call +91-97472-12345 for help resetting credentials.
+            </div>
+        </div>
+    </section>
+
+    <section class="auth-card info-card" aria-labelledby="login-heading">
+        <div class="auth-card-header">
+            <h2 id="login-heading">Sign in</h2>
+            <p class="text-muted mb-0">Use the username issued by the front desk. Your password is case sensitive.</p>
+        </div>
+
+        <form method="post" novalidate class="auth-form">
+            {% csrf_token %}
+
+            {% if form.non_field_errors %}
+            <div class="alert alert-danger" role="alert">
+                {% for error in form.non_field_errors %}
+                    <div>{{ error }}</div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <div class="mb-3">
+                <label for="{{ form.username.id_for_label }}" class="form-label">Username</label>
+                {{ form.username.as_widget(attrs={'class': 'form-control form-control-lg', 'placeholder': 'your.username'}) }}
+                {% if form.username.errors %}
+                <div class="invalid-feedback d-block small">{{ form.username.errors.0 }}</div>
+                {% endif %}
+            </div>
+
+            <div class="mb-3">
+                <label for="{{ form.password.id_for_label }}" class="form-label">Password</label>
+                <div class="input-group password-input-group">
+                    {{ form.password.as_widget(attrs={'class': 'form-control form-control-lg password-field', 'placeholder': '********'}) }}
+                    <button type="button" class="btn btn-outline-secondary password-toggle" data-target="#{{ form.password.id_for_label }}" aria-label="Show password">
+                        <i class="material-icons" aria-hidden="true">visibility</i>
+                    </button>
+                </div>
+                {% if form.password.errors %}
+                <div class="invalid-feedback d-block small">{{ form.password.errors.0 }}</div>
+                {% endif %}
+            </div>
+
+            <div class="d-flex align-items-center justify-content-between mb-4">
+                <span class="text-muted small">Locked out? Contact your administrator.</span>
+                <a class="small text-decoration-none" href="mailto:support@biofix.in">Email support</a>
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100 btn-lg">
+                <i class="material-icons me-1" aria-hidden="true">login</i>
+                Sign in to dashboard
+            </button>
+        </form>
+    </section>
 </div>
 {% endblock %}
 
-{% block content %}
-<div class="auth-section info-card">
-    <form method="post" novalidate>
-        {% csrf_token %}
-
-        {% if form.non_field_errors %}
-        <div class="alert alert-danger" role="alert">
-            {% for error in form.non_field_errors %}
-                <div>{{ error }}</div>
-            {% endfor %}
-        </div>
-        {% endif %}
-
-        <div class="mb-3">
-            <label for="{{ form.username.id_for_label }}" class="form-label">Username</label>
-            {{ form.username }}
-            {% if form.username.errors %}<div class="invalid-feedback d-block small">{{ form.username.errors.0 }}</div>{% endif %}
-        </div>
-        <div class="mb-3">
-            <label for="{{ form.password.id_for_label }}" class="form-label">Password</label>
-            {{ form.password }}
-            {% if form.password.errors %}<div class="invalid-feedback d-block small">{{ form.password.errors.0 }}</div>{% endif %}
-        </div>
-
-        <button type="submit" class="btn btn-primary w-100">
-            <i class="material-icons me-1">login</i>Sign in
-        </button>
-    </form>
-</div>
+{% block extra_js %}
+{{ block.super }}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  document.querySelectorAll('.password-toggle').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      const field = document.querySelector(btn.getAttribute('data-target'));
+      if (!field) return;
+      const isHidden = field.getAttribute('type') === 'password';
+      field.setAttribute('type', isHidden ? 'text' : 'password');
+      btn.setAttribute('aria-label', isHidden ? 'Hide password' : 'Show password');
+      const icon = btn.querySelector('.material-icons');
+      if (icon) {
+        icon.textContent = isHidden ? 'visibility_off' : 'visibility';
+      }
+    });
+  });
+});
+</script>
 {% endblock %}
