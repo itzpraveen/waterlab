@@ -220,7 +220,6 @@ class SampleModelTests(TestCase):
                         f"Expected ID to end with -0002, got {second_sample_current_year.display_id}")
 
 
->>>>>>> REPLACE
 
     def test_sample_clean_date_received_before_collection(self):
         """Test validation for date_received_at_lab being before collection_datetime."""
