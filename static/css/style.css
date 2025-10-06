@@ -25,6 +25,21 @@ body.app-body {
   font-family: "Inter", "Roboto", "Segoe UI", sans-serif;
 }
 
+.material-icons {
+  font-size: 1.1rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+  line-height: 1;
+}
+
+.btn .material-icons,
+.nav-link .material-icons,
+.badge-soft .material-icons {
+  margin-top: -0.05rem;
+}
+
 .form-control {
   width: 100%;
   padding: 0.65rem 0.9rem;
