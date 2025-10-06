@@ -19,6 +19,19 @@ class UserLoginView(LoginView):
         context['page_title'] = 'Sign In'
         context['login_type'] = 'user'
         return context
+
+    def get_form(self, form_class=None):
+        form = super().get_form(form_class)
+        form.fields['username'].widget.attrs.update({
+            'class': 'form-control form-control-lg',
+            'placeholder': 'your.username'
+        })
+        form.fields['password'].widget.attrs.update({
+            'class': 'form-control form-control-lg password-field',
+            'placeholder': '********',
+            'id': form.fields['password'].widget.attrs.get('id', form.add_prefix('password'))
+        })
+        return form
     
     def form_valid(self, form):
         response = super().form_valid(form)

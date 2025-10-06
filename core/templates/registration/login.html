@@ -54,7 +54,7 @@
 
             <div class="mb-3">
                 <label for="{{ form.username.id_for_label }}" class="form-label">Username</label>
-                {{ form.username.as_widget(attrs={'class': 'form-control form-control-lg', 'placeholder': 'your.username'}) }}
+                {{ form.username }}
                 {% if form.username.errors %}
                 <div class="invalid-feedback d-block small">{{ form.username.errors.0 }}</div>
                 {% endif %}
@@ -63,7 +63,7 @@
             <div class="mb-3">
                 <label for="{{ form.password.id_for_label }}" class="form-label">Password</label>
                 <div class="input-group password-input-group">
-                    {{ form.password.as_widget(attrs={'class': 'form-control form-control-lg password-field', 'placeholder': '********'}) }}
+                    {{ form.password }}
                     <button type="button" class="btn btn-outline-secondary password-toggle" data-target="#{{ form.password.id_for_label }}" aria-label="Show password">
                         <i class="material-icons" aria-hidden="true">visibility</i>
                     </button>
