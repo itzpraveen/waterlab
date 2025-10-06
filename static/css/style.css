@@ -591,25 +591,34 @@ main {
   box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.15);
 }
 
+
 .auth-layout {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap: 2rem;
-  align-items: stretch;
+  grid-template-columns: minmax(320px, 480px) minmax(320px, 420px);
+  gap: 3rem;
+  align-items: center;
+  justify-content: center;
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 2rem 0 3rem;
 }
 
 .auth-panel {
   background: linear-gradient(150deg, rgba(15, 118, 110, 0.18), rgba(15, 118, 110, 0.05));
   border-radius: 1.5rem;
-  padding: 2.5rem;
+  padding: 2.75rem;
   position: relative;
   overflow: hidden;
+  min-height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .auth-panel::after {
   content: "";
   position: absolute;
-  inset: 1.5rem;
+  inset: 1.75rem;
   border-radius: 1.25rem;
   border: 1px solid rgba(12, 74, 110, 0.15);
   pointer-events: none;
@@ -621,13 +630,23 @@ main {
   max-width: 420px;
 }
 
-.auth-panel-logo {
-  height: 48px;
-  margin-bottom: 1.5rem;
+.auth-tagline {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.85rem;
+  border-radius: 999px;
+  background: rgba(15, 118, 110, 0.14);
+  color: #0f766e;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  margin-bottom: 1.25rem;
 }
 
 .auth-headline {
-  font-size: clamp(2rem, 3vw, 2.5rem);
+  font-size: clamp(2.2rem, 3vw, 2.8rem);
   font-weight: 700;
   color: #0f172a;
   margin-bottom: 1rem;
@@ -687,7 +706,7 @@ main {
 }
 
 .auth-card {
-  padding: 2.5rem;
+  padding: 2.75rem;
   border-radius: 1.5rem;
   box-shadow: 0 24px 45px rgba(15, 23, 42, 0.08);
   border: 1px solid rgba(148, 163, 184, 0.25);
@@ -731,19 +750,26 @@ main {
 }
 
 @media (max-width: 992px) {
+  .auth-layout {
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 2rem;
+    padding: 1.5rem 0 2.5rem;
+  }
+
   .auth-panel,
   .auth-card {
-    padding: 2rem;
+    padding: 2.25rem;
   }
 
   .auth-panel::after {
-    inset: 1rem;
+    inset: 1.25rem;
   }
 }
 
 @media (max-width: 576px) {
   .auth-layout {
     gap: 1.5rem;
+    padding: 1rem 0 2rem;
   }
 
   .auth-card {
