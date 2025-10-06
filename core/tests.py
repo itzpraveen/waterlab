@@ -14,7 +14,7 @@ class CustomerModelTests(TestCase):
             "village_town_city": "Testville",
             "panchayat_municipality": "Test Panchayat",
             "taluk": "Test Taluk",
-            "district": "ernakulam",
+            "district": "Ernakulam",
             "pincode": "682001" 
         }
 
@@ -100,7 +100,7 @@ class SampleModelTests(TestCase):
             email="testsamplecustomer@example.com",
             street_locality_landmark="456 Sample Avenue",
             village_town_city="Sampleburg",
-            district="kozhikode",
+            district="Kozhikode",
             pincode="673001"
         )
         self.lab_user = CustomUser.objects.create_user(
