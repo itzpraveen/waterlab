@@ -10,9 +10,9 @@
         <p class="page-subtitle">Collected {{ sample.collection_datetime|date:"M d, Y H:i" }} for {{ sample.customer.name }}.</p>
         <div class="d-flex flex-wrap gap-2 mt-2">
             {% with status=sample.current_status %}
-                {% if status in ('REPORT_APPROVED', 'REPORT_SENT') %}
+                {% if status in ['REPORT_APPROVED', 'REPORT_SENT'] %}
                     <span class="badge-soft success"><i class="material-icons">check_circle</i>{{ sample.get_current_status_display }}</span>
-                {% elif status in ('RESULTS_ENTERED', 'REVIEW_PENDING') %}
+                {% elif status in ['RESULTS_ENTERED', 'REVIEW_PENDING'] %}
                     <span class="badge-soft warning"><i class="material-icons">hourglass_empty</i>{{ sample.get_current_status_display }}</span>
                 {% elif status == 'TESTING_IN_PROGRESS' %}
                     <span class="badge-soft info"><i class="material-icons">science</i>{{ sample.get_current_status_display }}</span>
