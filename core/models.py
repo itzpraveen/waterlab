@@ -77,20 +77,20 @@ class KeralaLocation(models.Model):
 
 class Customer(models.Model):
     KERALA_DISTRICTS = [
-        ('thiruvananthapuram', 'Thiruvananthapuram'),
-        ('kollam', 'Kollam'),
-        ('pathanamthitta', 'Pathanamthitta'),
-        ('alappuzha', 'Alappuzha'),
-        ('kottayam', 'Kottayam'),
-        ('idukki', 'Idukki'),
-        ('ernakulam', 'Ernakulam'),
-        ('thrissur', 'Thrissur'),
-        ('palakkad', 'Palakkad'),
-        ('malappuram', 'Malappuram'),
-        ('kozhikode', 'Kozhikode'),
-        ('wayanad', 'Wayanad'),
-        ('kannur', 'Kannur'),
-        ('kasaragod', 'Kasaragod'),
+        ('Thiruvananthapuram', 'Thiruvananthapuram'),
+        ('Kollam', 'Kollam'),
+        ('Pathanamthitta', 'Pathanamthitta'),
+        ('Alappuzha', 'Alappuzha'),
+        ('Kottayam', 'Kottayam'),
+        ('Idukki', 'Idukki'),
+        ('Ernakulam', 'Ernakulam'),
+        ('Thrissur', 'Thrissur'),
+        ('Palakkad', 'Palakkad'),
+        ('Malappuram', 'Malappuram'),
+        ('Kozhikode', 'Kozhikode'),
+        ('Wayanad', 'Wayanad'),
+        ('Kannur', 'Kannur'),
+        ('Kasaragod', 'Kasaragod'),
     ]
     
     customer_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
