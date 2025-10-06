@@ -221,6 +221,10 @@ class SampleForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         
         from .models import TestParameter
+        # Provide descriptive empty labels so search-enhanced dropdowns display helpful placeholders
+        self.fields['customer'].empty_label = 'Select a customer'
+        self.fields['sample_source'].choices = [('', 'Select a sample source')] + list(Sample.SAMPLE_SOURCE_CHOICES)
+        self.fields['collected_by'].choices = [('', 'Select who collected the sample')] + list(Sample.COLLECTED_BY_CHOICES)
         
         # Group parameters by category
         self.grouped_parameters = {}
