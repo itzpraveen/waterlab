@@ -970,10 +970,10 @@ def download_sample_report_view(request, pk):
 
             canvas.setFont('Helvetica-Bold', 11)
             canvas.setFillColor(colors.HexColor('#0F172A'))
-            canvas.drawString(doc.leftMargin + 55*mm, page_height - 28*mm, 'Biofix Laboratory')
+            canvas.drawRightString(page_width - doc.rightMargin, page_height - 28*mm, 'Biofix Laboratory')
             canvas.setFont('Helvetica', 9)
-            canvas.drawString(doc.leftMargin + 55*mm, page_height - 32*mm, '123 Science Avenue, Research City, 12345')
-            canvas.drawString(doc.leftMargin + 55*mm, page_height - 36*mm, 'Phone: (123) 456-7890  |  Email: contact@biofixlab.com')
+            canvas.drawRightString(page_width - doc.rightMargin, page_height - 32*mm, '123 Science Avenue, Research City, 12345')
+            canvas.drawRightString(page_width - doc.rightMargin, page_height - 36*mm, 'Phone: (123) 456-7890  |  Email: contact@biofixlab.com')
 
             canvas.setFont('Helvetica-Bold', 16)
             canvas.setFillColor(colors.HexColor('#0F766E'))
