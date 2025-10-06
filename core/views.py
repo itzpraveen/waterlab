@@ -710,7 +710,7 @@ def test_result_entry(request, sample_id):
                 all_forms_valid = True
                 form_errors = {} # Not currently used to re-render, but good for debugging
 
-                for test_param_model in sample.tests_requested.all():
+                for test_param_model in sample.tests_requested.all().order_by('display_order', 'name'):
                     form_prefix = f'param_{test_param_model.parameter_id}'
                     form = TestResultEntryForm(request.POST, prefix=form_prefix)
 
@@ -789,7 +789,7 @@ def test_result_entry(request, sample_id):
     
     # GET request - show form
     form_data = {}
-    for test_param_model in sample.tests_requested.all():
+    for test_param_model in sample.tests_requested.all().order_by('display_order', 'name'):
         form_prefix = f'param_{test_param_model.parameter_id}'
         
         # Check if result already exists
@@ -1066,7 +1066,7 @@ def download_sample_report_view(request, pk):
 
     elements.append(Paragraph("TEST OBSERVATIONS", styles['SectionTitle']))
 
-    results = sample.results.select_related('parameter').all()
+    results = sample.results.select_related('parameter').order_by('parameter__display_order', 'parameter__name')
     if not results:
         elements.append(Paragraph("No test results recorded for this sample.", styles['Normal']))
     else:
@@ -1243,7 +1243,7 @@ def setup_test_parameters(request):
     """
 
     # List existing parameters and show a form for manual add/edit
-    parameters = TestParameter.objects.all().order_by('name')
+    parameters = TestParameter.objects.all().order_by('display_order', 'name')
     form = TestParameterForm()
 
     if request.method == 'POST':

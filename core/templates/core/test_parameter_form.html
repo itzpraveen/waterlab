@@ -86,10 +86,17 @@
                     {% if form.category.errors %}<p class="form-error">{{ form.category.errors.0 }}</p>{% endif %}
                 </div>
                 <div class="form-field">
-                    <label for="{{ form.parent.id_for_label }}">Parent parameter</label>
-                    {{ form.parent }}
-                    {% if form.parent.errors %}<p class="form-error">{{ form.parent.errors.0 }}</p>{% endif %}
+                    <label for="{{ form.display_order.id_for_label }}">Display order</label>
+                    {{ form.display_order }}
+                    <small class="form-hint">Lower numbers appear first in entry forms, reports, and PDFs.</small>
+                    {% if form.display_order.errors %}<p class="form-error">{{ form.display_order.errors.0 }}</p>{% endif %}
                 </div>
+            </div>
+
+            <div class="form-field">
+                <label for="{{ form.parent.id_for_label }}">Parent parameter</label>
+                {{ form.parent }}
+                {% if form.parent.errors %}<p class="form-error">{{ form.parent.errors.0 }}</p>{% endif %}
             </div>
 
             {% if form.non_field_errors %}

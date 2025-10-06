@@ -325,6 +325,7 @@ class TestParameter(models.Model):
     max_permissible_limit = models.DecimalField(max_digits=10, decimal_places=3, null=True, blank=True)
     category = models.CharField(max_length=100, blank=True, null=True)
     parent = models.ForeignKey('self', null=True, blank=True, on_delete=models.CASCADE, related_name='children')
+    display_order = models.PositiveIntegerField(default=0, help_text="Lower numbers appear earlier in lists and reports")
     
     # New fields for professional PDF report
     group = models.CharField(max_length=100, blank=True, null=True, verbose_name="Group")
@@ -334,6 +335,9 @@ class TestParameter(models.Model):
 
     def __str__(self):
         return f"{self.name} ({self.unit})"
+
+    class Meta:
+        ordering = ['display_order', 'name']
 
     def clean(self):
         from django.core.exceptions import ValidationError

@@ -81,6 +81,7 @@
             <thead>
                 <tr>
                     <th>Parameter</th>
+                    <th>Order</th>
                     <th>Unit</th>
                     <th>Min limit</th>
                     <th>Max limit</th>
@@ -97,6 +98,7 @@
                 {% for param in parameters %}
                 <tr>
                     <td class="fw-semibold">{{ param.name }}</td>
+                    <td>{{ param.display_order }}</td>
                     <td>{{ param.unit }}</td>
                     <td>{{ param.min_permissible_limit|default:"-" }}</td>
                     <td>{{ param.max_permissible_limit|default:"-" }}</td>

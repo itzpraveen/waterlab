@@ -13,7 +13,7 @@ def _standard_parameter_definitions():
     view, a management command, or post-migrate hooks. Values are chosen to
     align with common drinking-water standards and can be extended safely.
     """
-    return [
+    definitions = [
         {"name": "pH", "unit": "pH", "min": Decimal("6.5"), "max": Decimal("8.5"), "method": "IS 3025 (Part 11)"},
         {"name": "Total Dissolved Solids", "unit": "mg/L", "min": Decimal("0"), "max": Decimal("500"), "method": "IS 3025 (Part 16)"},
         {"name": "Turbidity", "unit": "NTU", "min": Decimal("0"), "max": Decimal("1"), "method": "IS 3025 (Part 10)"},
@@ -27,6 +27,11 @@ def _standard_parameter_definitions():
         {"name": "Total Coliform", "unit": "CFU/100mL", "min": Decimal("0"), "max": Decimal("0"), "method": "IS 5401 (Part 1)"},
         {"name": "E. Coli", "unit": "CFU/100mL", "min": Decimal("0"), "max": Decimal("0"), "method": "IS 5887 (Part 1)"},
     ]
+
+    for index, definition in enumerate(definitions, start=1):
+        definition['order'] = index * 10
+
+    return definitions
 
 
 def seed_standard_parameters(user=None) -> Tuple[int, int]:
@@ -52,6 +57,9 @@ def seed_standard_parameters(user=None) -> Tuple[int, int]:
                     existing.min_permissible_limit = p.get("min"); updated = True
                 if existing.max_permissible_limit != p.get("max"):
                     existing.max_permissible_limit = p.get("max"); updated = True
+                if existing.display_order != p["order"]:
+                    existing.display_order = p["order"]; updated = True
+
                 if updated:
                     existing.save()
                 skipped += 1
@@ -63,10 +71,10 @@ def seed_standard_parameters(user=None) -> Tuple[int, int]:
                 method=p.get("method"),
                 min_permissible_limit=p.get("min"),
                 max_permissible_limit=p.get("max"),
+                display_order=p["order"],
             )
             created += 1
             if user:
                 AuditTrail.log_change(user=user, action='CREATE', instance=obj)
 
     return created, skipped
-

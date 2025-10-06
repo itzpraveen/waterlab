@@ -1,8 +1,12 @@
 import json # Added for loading address data
+from collections import OrderedDict
+from types import SimpleNamespace
+
 from django import forms
 from django.contrib.auth.forms import PasswordChangeForm
 from django.core.exceptions import ValidationError
 from django.utils import timezone
+from django.db.models import Prefetch
 from .models import Customer, Sample, TestParameter # Added TestParameter
 
 class CustomerForm(forms.ModelForm):
@@ -227,16 +231,25 @@ class SampleForm(forms.ModelForm):
         self.fields['collected_by'].choices = [('', 'Select who collected the sample')] + list(Sample.COLLECTED_BY_CHOICES)
         
         # Group parameters by category
-        self.grouped_parameters = {}
-        parameters = TestParameter.objects.filter(parent__isnull=True).prefetch_related('children')
-        
-        for parent in parameters:
-            self.grouped_parameters[parent] = parent.children.all()
-            
-        # Also get parameters that have no parent and no category (standalone)
-        standalone_params = TestParameter.objects.filter(parent__isnull=True, category__isnull=True)
-        if standalone_params.exists():
-            self.grouped_parameters['Standalone'] = standalone_params
+        self.grouped_parameters = OrderedDict()
+        child_queryset = TestParameter.objects.all()
+        parent_parameters = (
+            TestParameter.objects
+            .filter(parent__isnull=True)
+            .prefetch_related(Prefetch('children', queryset=child_queryset))
+        )
+
+        standalone_parameters = []
+
+        for parent in parent_parameters:
+            children = parent.children.all()
+            if children.exists():
+                self.grouped_parameters[parent] = children
+            else:
+                standalone_parameters.append(parent)
+
+        if standalone_parameters:
+            self.grouped_parameters[SimpleNamespace(name='Standalone parameters')] = standalone_parameters
 
         # Set choices for the field
         self.fields['tests_requested'].queryset = TestParameter.objects.all()
@@ -276,7 +289,7 @@ class TestParameterForm(forms.ModelForm):
         model = TestParameter
         fields = [
             'name', 'unit', 'method', 'min_permissible_limit', 'max_permissible_limit',
-            'group', 'discipline', 'fssai_limit', 'category', 'parent'
+            'group', 'discipline', 'fssai_limit', 'category', 'display_order', 'parent'
         ]
         widgets = {
             'name': forms.TextInput(attrs={'class': 'validate'}),
@@ -288,6 +301,7 @@ class TestParameterForm(forms.ModelForm):
             'discipline': forms.TextInput(attrs={'class': 'validate'}),
             'fssai_limit': forms.TextInput(attrs={'class': 'validate'}),
             'category': forms.TextInput(attrs={'class': 'validate'}),
+            'display_order': forms.NumberInput(attrs={'class': 'validate', 'min': '0'}),
             'parent': forms.Select(attrs={'class': 'form-control'}),
         }
         labels = {
