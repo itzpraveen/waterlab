@@ -1108,7 +1108,16 @@ def download_sample_report_view(request, pk):
                 Paragraph(result.observation or result.remarks or '—', styles['TableCell'])
             ])
 
-        column_widths = [45*mm, 22*mm, 15*mm, 32*mm, 32*mm, 25*mm, doc.width - 171*mm]
+        available_width = doc.width
+        column_widths = [
+            available_width * 0.22,
+            available_width * 0.12,
+            available_width * 0.08,
+            available_width * 0.18,
+            available_width * 0.18,
+            available_width * 0.08,
+            available_width * 0.14,
+        ]
         results_table = Table(table_data, colWidths=column_widths, repeatRows=1)
         results_table.setStyle(TableStyle([
             ('BACKGROUND', (0,0), (-1,0), primary),
