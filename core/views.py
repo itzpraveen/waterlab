@@ -953,24 +953,32 @@ def download_sample_report_view(request, pk):
 
         def header(self, canvas, doc):
             canvas.saveState()
-            styles = getSampleStyleSheet()
-            
-            # Logo
+            page_width, page_height = doc.pagesize
             logo_path = os.path.join(settings.BASE_DIR, 'static', 'images', 'biofix_logo.png')
+            top_band_y = page_height - 25*mm
+
             if os.path.exists(logo_path):
                 logo = ImageReader(logo_path)
-                canvas.drawImage(logo, doc.leftMargin, doc.height + 10*mm, width=40*mm, height=15*mm, preserveAspectRatio=True)
+                canvas.drawImage(
+                    logo,
+                    doc.leftMargin,
+                    page_height - 38*mm,
+                    width=45*mm,
+                    height=17*mm,
+                    preserveAspectRatio=True,
+                )
 
-            # Company Details
-            header_text = """
-            <b>Biofix Laboratory</b><br/>
-            123 Science Avenue, Research City, 12345<br/>
-            Phone: (123) 456-7890 | Email: contact@biofixlab.com
-            """
-            p = Paragraph(header_text, styles['Normal'])
-            p.wrapOn(canvas, doc.width - 60*mm, doc.topMargin)
-            p.drawOn(canvas, doc.leftMargin + 50*mm, doc.height + 10*mm)
-            
+            canvas.setFont('Helvetica-Bold', 11)
+            canvas.setFillColor(colors.HexColor('#0F172A'))
+            canvas.drawString(doc.leftMargin + 55*mm, page_height - 28*mm, 'Biofix Laboratory')
+            canvas.setFont('Helvetica', 9)
+            canvas.drawString(doc.leftMargin + 55*mm, page_height - 32*mm, '123 Science Avenue, Research City, 12345')
+            canvas.drawString(doc.leftMargin + 55*mm, page_height - 36*mm, 'Phone: (123) 456-7890  |  Email: contact@biofixlab.com')
+
+            canvas.setFont('Helvetica-Bold', 16)
+            canvas.setFillColor(colors.HexColor('#0F766E'))
+            canvas.drawCentredString(page_width / 2, page_height - 52*mm, 'WATER QUALITY ANALYSIS REPORT')
+
             canvas.restoreState()
 
         def footer(self, canvas, doc):
@@ -989,7 +997,7 @@ def download_sample_report_view(request, pk):
         pagesize=A4,
         rightMargin=18*mm,
         leftMargin=18*mm,
-        topMargin=28*mm,
+        topMargin=60*mm,
         bottomMargin=22*mm
     )
 
@@ -1013,8 +1021,7 @@ def download_sample_report_view(request, pk):
     styles['Normal'].textColor = text_color
 
     elements = []
-    elements.append(Spacer(1, 18))
-    elements.append(Paragraph("WATER QUALITY ANALYSIS REPORT", styles['ReportTitle']))
+    elements.append(Spacer(1, 8))
 
     meta_rows = [
         [Paragraph('<b>Sample Code</b>', styles['Label']), Paragraph(sample.display_id or 'N/A', styles['Value']),
