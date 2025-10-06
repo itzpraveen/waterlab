@@ -11,13 +11,15 @@ from django.db import transaction
 from django.core.exceptions import ValidationError
 from datetime import timedelta
 
+from django.conf import settings
+
 from .models import Customer, Sample, TestParameter, TestResult, ConsultantReview, CustomUser, AuditTrail
 from .forms import CustomerForm, SampleForm, CustomPasswordChangeForm, TestResultEntryForm, TestParameterForm # Added TestParameterForm
 from .decorators import admin_required, lab_required, frontdesk_required, consultant_required
 from .mixins import AdminRequiredMixin, LabRequiredMixin, FrontDeskRequiredMixin, ConsultantRequiredMixin, RoleRequiredMixin, AuditMixin
 
 # Health check endpoint for deployment monitoring
-from django.http import HttpResponse, FileResponse
+from django.http import HttpResponse, FileResponse, HttpResponseNotFound
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.units import inch
@@ -29,6 +31,9 @@ def health_check(request):
 
 def debug_admin(request):
     """Debug endpoint to check admin user - REMOVE IN PRODUCTION"""
+    if not settings.DEBUG:
+        return HttpResponseNotFound()
+
     from django.contrib.auth import get_user_model
     User = get_user_model()
     
@@ -47,6 +52,9 @@ def debug_admin(request):
 
 def create_admin_web(request):
     """Web endpoint to create admin user - REMOVE IN PRODUCTION"""
+    if not settings.DEBUG:
+        return HttpResponseNotFound()
+
     from django.contrib.auth import get_user_model
     User = get_user_model()
     
@@ -68,7 +76,8 @@ def create_admin_web(request):
 
 def debug_view(request):
     """Debug endpoint to check configuration and functionality"""
-    from django.conf import settings
+    if not settings.DEBUG:
+        return HttpResponseNotFound()
     import os
     
     debug_info = []
@@ -111,6 +120,8 @@ def debug_view(request):
 
 def form_test(request):
     """Simple form test to debug form submission issues"""
+    if not settings.DEBUG:
+        return HttpResponseNotFound()
     if request.method == 'POST':
         name = request.POST.get('name', 'No name provided')
         return HttpResponse(f"Form submitted successfully! Name: {name}", content_type="text/plain")
@@ -146,6 +157,8 @@ def form_test(request):
 
 def fix_admin_role_web(request):
     """Web endpoint to fix admin role case sensitivity - REMOVE IN PRODUCTION"""
+    if not settings.DEBUG:
+        return HttpResponseNotFound()
     from django.contrib.auth import get_user_model
     User = get_user_model()
     
@@ -625,6 +638,13 @@ class SampleDetailView(DetailView): # New DetailView for Sample
     model = Sample
     template_name = 'core/sample_detail.html'
     context_object_name = 'sample'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        sample = context['sample']
+        context['ordered_tests'] = sample.tests_requested.all().order_by('display_order', 'name')
+        context['ordered_results'] = sample.results.select_related('parameter').order_by('parameter__display_order', 'parameter__name')
+        return context
 
 class SampleCreateView(AuditMixin, FrontDeskRequiredMixin, CreateView):
     model = Sample

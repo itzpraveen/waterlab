@@ -135,7 +135,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        {% for test in sample.tests_requested.all %}
+                        {% for test in ordered_tests %}
                         <tr>
                             <td>{{ test.name }}</td>
                             <td>{{ test.unit }}</td>
@@ -172,7 +172,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        {% for result in sample.results.all %}
+                        {% for result in ordered_results %}
                         <tr>
                             <td>{{ result.parameter.name }}</td>
                             <td class="text-center fw-semibold">{{ result.result_value }}</td>

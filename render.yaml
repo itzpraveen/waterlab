@@ -14,13 +14,13 @@ services:
       - key: WEB_CONCURRENCY
         value: 4
       - key: SECRET_KEY
-        value: zq2l3m(e!kxeoraihpp980_y+a)b(l%)$__h1b90v9&!02hyug  # Replace with a secure key
+        sync: false
       - key: ADMIN_USERNAME
         value: admin
       - key: ADMIN_EMAIL
         value: admin@waterlab.com
       - key: ADMIN_PASSWORD
-        value: WaterLab2024!
+        sync: false
       - key: DATABASE_URL
         fromDatabase:
           name: waterlab-db
