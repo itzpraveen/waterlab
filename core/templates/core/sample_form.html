@@ -3,6 +3,12 @@
 
 {% block title %}{% if form.instance.pk %}Edit Sample{% else %}Add Sample{% endif %} - Water Lab LIMS{% endblock %}
 
+{% block extra_css %}
+{{ block.super }}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tom-select/dist/css/tom-select.bootstrap5.min.css">
+{% endblock %}
+
 {% block page_header %}
 <div class="page-header">
     <div class="page-heading">
@@ -39,7 +45,7 @@
                 {% if form.collection_datetime.errors %}
                     <div class="invalid-feedback d-block small">{{ form.collection_datetime.errors.0 }}</div>
                 {% else %}
-                    <div class="form-text">Format: DD/MM/YYYY HH:MM:SS</div>
+                    <div class="form-text">Format: DD/MM/YYYY HH:MM</div>
                 {% endif %}
             </div>
             <div class="col-md-6">
@@ -100,6 +106,8 @@
 
 {% block extra_js %}
 {{ block.super }}
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://cdn.jsdelivr.net/npm/tom-select/dist/js/tom-select.complete.min.js"></script>
 <script>
 (function() {
     const parentBoxes = document.querySelectorAll('.parent-checkbox');
@@ -128,5 +136,47 @@
         child.addEventListener('change', () => syncParent(child.dataset.group));
     });
 })();
+
+document.addEventListener('DOMContentLoaded', function() {
+    const dateInput = document.querySelector('.js-datetime-picker');
+    if (dateInput && window.flatpickr) {
+        flatpickr(dateInput, {
+            enableTime: true,
+            time_24hr: true,
+            allowInput: true,
+            minuteIncrement: 1,
+            altInput: true,
+            altInputClass: 'form-control',
+            altFormat: dateInput.dataset.altFormat || 'j M Y, h:i K',
+            dateFormat: dateInput.dataset.dateFormat || 'd/m/Y H:i',
+            defaultDate: dateInput.value || null
+        });
+    }
+
+    const enhanceSelect = (select) => {
+        if (!window.TomSelect || select.tomselect) {
+            return;
+        }
+
+        const placeholder = select.dataset.placeholder || 'Search options...';
+        new TomSelect(select, {
+            create: false,
+            maxItems: 1,
+            allowEmptyOption: true,
+            sortField: {
+                field: 'text',
+                direction: 'asc'
+            },
+            searchField: ['text'],
+            placeholder: placeholder,
+            plugins: ['dropdown_input'],
+            render: {
+                no_results: (data, escape) => '<div class="no-results">No matches found for "' + escape(data.input) + '"</div>'
+            }
+        });
+    };
+
+    document.querySelectorAll('.js-searchable-select').forEach(enhanceSelect);
+});
 </script>
 {% endblock %}

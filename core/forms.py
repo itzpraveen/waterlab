@@ -146,11 +146,12 @@ class SampleForm(forms.ModelForm):
         input_formats=_input_formats,
         widget=forms.DateTimeInput(
             attrs={
-                'class': 'form-control',
-                'type': 'datetime-local',
-                'step': '60'
+                'class': 'form-control js-datetime-picker',
+                'type': 'text',
+                'data-alt-format': 'j M Y, h:i K',
+                'data-date-format': 'd/m/Y H:i'
             },
-            format='%Y-%m-%dT%H:%M'
+            format='%d/%m/%Y %H:%M'
         )
     )
     class Meta:
@@ -159,9 +160,12 @@ class SampleForm(forms.ModelForm):
             'customer', 'collection_datetime', 'sample_source', 'collected_by', 'referred_by', 'tests_requested'
         ]
         widgets = {
-            'customer': forms.Select(attrs={'class': 'form-control'}),
-            'sample_source': forms.Select(attrs={'class': 'form-control'}),
-            'collected_by': forms.Select(attrs={'class': 'form-control'}),
+            'customer': forms.Select(attrs={
+                'class': 'form-control js-searchable-select',
+                'data-placeholder': 'Search customers...'
+            }),
+            'sample_source': forms.Select(attrs={'class': 'form-control js-searchable-select'}),
+            'collected_by': forms.Select(attrs={'class': 'form-control js-searchable-select'}),
             'referred_by': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Name of person who referred the sample'}),
             'tests_requested': forms.CheckboxSelectMultiple(attrs={'class': 'form-check-input'}),
         }
