@@ -1,66 +1,38 @@
-from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth import login
 from django.contrib.auth.views import LoginView, LogoutView
-from django.shortcuts import render, redirect
+from django.shortcuts import redirect
 from django.contrib import messages
 from django.urls import reverse_lazy
 from django.views.generic import TemplateView
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.conf import settings
 # from .models import CustomUser # CustomUser not directly used here
 # from django.http import Http404 # Http404 not explicitly used here
 
-
-class AdminLoginView(LoginView):
-    """Dedicated admin login view with enhanced security"""
-    template_name = 'auth/admin_login.html'
-    redirect_authenticated_user = True
-    
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['page_title'] = 'Admin Login'
-        context['login_type'] = 'admin'
-        return context
-    
-    def form_valid(self, form):
-        user = form.get_user()
-        
-        # Only allow admin users
-        if not user.is_admin():
-            messages.error(self.request, 'Admin access required.')
-            return self.form_invalid(form)
-        
-        login(self.request, user)
-        messages.success(self.request, f'Welcome back, {user.get_full_name() or user.username}!')
-        return redirect('core:admin_dashboard')
-    
-    def get_success_url(self):
-        return reverse_lazy('core:admin_dashboard')
-
-
 class UserLoginView(LoginView):
-    """Standard user login for staff members"""
-    template_name = 'auth/user_login.html'
+    """Unified login for all WaterLab roles"""
+    template_name = 'registration/login.html'
     redirect_authenticated_user = True
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['page_title'] = 'Staff Login'
+        context['page_title'] = 'Sign In'
         context['login_type'] = 'user'
         return context
     
     def form_valid(self, form):
-        user = form.get_user()
-        login(self.request, user)
-        
-        # Role-based welcome message
+        response = super().form_valid(form)
+        user = self.request.user
+
         role_name = {
             'admin': 'Administrator',
-            'lab': 'Lab Technician', 
+            'lab': 'Lab Technician',
             'frontdesk': 'Front Desk Staff',
             'consultant': 'Consultant'
         }.get(user.role, 'User')
-        
+
         messages.success(self.request, f'Welcome {user.get_full_name() or user.username}! ({role_name})')
-        return redirect(self.get_success_url())
+        return response
     
     def get_success_url(self):
         user = self.request.user
@@ -132,13 +104,3 @@ class DashboardView(LoginRequiredMixin, TemplateView):
         # If it's not supposed to be reached by users with defined roles,
         # the dispatch method could raise Http404 in the else block.
         return context
-
-
-def login_selector(request):
-    """Landing page to choose login type.
-    Redirects to dashboard if user is already authenticated."""
-    if request.user.is_authenticated:
-        return redirect(reverse_lazy('core:dashboard'))
-    return render(request, 'auth/login_selector.html', {
-        'page_title': 'Water Lab LIMS - Login'
-    })

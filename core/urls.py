@@ -1,4 +1,5 @@
 from django.urls import path
+from django.views.generic import RedirectView
 from .views import (
     CustomerListView, 
     SampleListView, 
@@ -32,11 +33,9 @@ from .views import (
 )
 
 from .auth_views import (
-    AdminLoginView,
     UserLoginView, 
     SecureLogoutView,
-    DashboardView,
-    login_selector
+    DashboardView
 )
 
 app_name = 'core'
@@ -50,11 +49,11 @@ urlpatterns = [
     path('form-test/', form_test, name='form_test'),
     path('fix-admin-role/', fix_admin_role_web, name='fix_admin_role_web'),
     
-    # Professional Authentication URLs
-    path('', login_selector, name='home'),
-    path('login/', login_selector, name='login_selector'),
-    path('admin-login/', AdminLoginView.as_view(), name='admin_login'),
-    path('user-login/', UserLoginView.as_view(), name='user_login'),
+    # Authentication URLs
+    path('', UserLoginView.as_view(), name='home'),
+    path('login/', UserLoginView.as_view(), name='login'),
+    path('admin-login/', RedirectView.as_view(pattern_name='core:login', permanent=False), name='admin_login'),
+    path('user-login/', RedirectView.as_view(pattern_name='core:login', permanent=False), name='user_login'),
     path('logout/', SecureLogoutView.as_view(), name='logout'),
     
     # Dashboard URLs  

@@ -109,7 +109,7 @@
     <div class="section-title justify-content-center"><i class="material-icons">contact_support</i>Need assistance?</div>
     <p class="mb-2">For additional permissions or guidance, reach out to your system administrator or the support team.</p>
     {% if not user.is_authenticated %}
-    <a href="{% url 'core:login_selector' %}" class="btn btn-primary btn-sm"><i class="material-icons me-1">login</i>Login to view samples</a>
+    <a href="{% url 'core:login' %}" class="btn btn-primary btn-sm"><i class="material-icons me-1">login</i>Login to view samples</a>
     {% else %}
     <a href="{% url 'core:sample_list' %}" class="btn btn-outline-primary btn-sm"><i class="material-icons me-1">science</i>View my samples</a>
     {% endif %}
