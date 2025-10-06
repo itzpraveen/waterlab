@@ -3,259 +3,207 @@
 
 {% block title %}Test Result Entry - {{ sample.sample_id }}{% endblock %}
 
-{% block breadcrumbs %}
-<div class="col s12 breadcrumb-container">
-    <nav>
-        <div class="nav-wrapper">
-            <a href="{% url 'core:home' %}" class="breadcrumb">Home</a>
-            <a href="{% url 'core:sample_list' %}" class="breadcrumb">Sample Management</a>
-            <a href="{% url 'core:sample_detail' pk=sample.sample_id %}" class="breadcrumb">Sample {{ sample.sample_id|truncatechars:12 }}</a>
-            <span class="breadcrumb active">Test Result Entry</span>
-        </div>
-    </nav>
+{% block page_header %}
+<div class="page-header">
+    <div class="page-heading">
+        <span class="page-eyebrow">Result entry</span>
+        <h1 class="page-title">Test Result Entry</h1>
+        <p class="page-subtitle">Capture results for {{ sample.display_id|default:sample.sample_id }}.</p>
+    </div>
+    <div class="page-actions">
+        <a href="{% url 'core:sample_detail' pk=sample.sample_id %}" class="btn btn-outline-secondary">
+            <i class="material-icons align-middle me-1">arrow_back</i>
+            Back to sample
+        </a>
+    </div>
 </div>
-{% endblock breadcrumbs %}
+{% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col s12">
-        <div class="card">
-            <div class="card-content">
-                <span class="card-title" style="font-size: 2rem; display: flex; align-items: center; color: var(--primary-color-dark);">
-                    <i class="material-icons" style="font-size: 2.5rem; margin-right: 10px; color: var(--primary-color);">biotech</i>
-                    Test Result Entry
-                </span>
-                <p class="grey-text text-darken-1" style="margin-top: -5px; margin-bottom: 10px;">Enter test results for sample parameters.</p>
-                
-                <div class="row" style="border-top: 1px solid var(--primary-color-light); border-bottom: 1px solid var(--primary-color-light); padding: 15px 0; margin-bottom: 20px;">
-                    <div class="col s12 m6 l3"><strong>Sample ID:</strong><br><code class="black-text">{{ sample.sample_id }}</code></div>
-                    <div class="col s12 m6 l3"><strong>Customer:</strong><br><a href="{% url 'core:customer_detail' pk=sample.customer.customer_id %}" style="color: var(--primary-color);">{{ sample.customer.name }}</a></div>
-                    <div class="col s12 m6 l3"><strong>Source:</strong><br><span class="chip" style="background-color: var(--primary-color-light); color: var(--primary-color-dark);">{{ sample.get_sample_source_display }}</span></div>
-                    <div class="col s12 m6 l3"><strong>Collection Date:</strong><br>{{ sample.collection_datetime|date:"M d, Y H:i" }}</div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<form method="post">
+<form method="post" class="result-entry-shell">
     {% csrf_token %}
-    <div class="row">
-        <div class="col s12">
-            <div class="card">
-                <div class="card-content">
-                    <span class="card-title" style="color: var(--primary-color-dark);"><i class="material-icons left tiny" style="color: var(--primary-color);">science</i>Test Parameters</span>
-                    <p class="grey-text text-darken-1" style="margin-top:-5px; margin-bottom:15px;">Enter results for each requested test parameter.</p>
 
-                    {% if form.non_field_errors %}
-                        {% for error in form.non_field_errors %}
-                        <div class="card-panel alert alert-danger">{{ error }}</div>
-                        {% endfor %}
-                    {% endif %}
-
-                    <ul class="collapsible" data-collapsible="accordion" style="margin-bottom: 20px;">
-                        <li>
-                            <div class="collapsible-header grey lighten-4"><i class="material-icons">bug_report</i>Debug Information</div>
-                            <div class="collapsible-body card-panel blue lighten-5 blue-text text-darken-4" style="padding:15px;">
-                                Tests Requested (from sample model): {{ sample.tests_requested.count }}<br>
-                                Number of forms in form_data: {{ form_data|length }}<br>
-                                Can Edit: {{ can_edit }}<br>
-                                Sample Status: {{ sample.current_status }}
-                            </div>
-                        </li>
-                    </ul>
-                    
-                    {% if sample.tests_requested.count == 0 %}
-                        <div class="card-panel alert alert-warning">
-                            <strong>⚠️ No Test Parameters Requested</strong><br>
-                            This sample has no test parameters assigned. Please edit the sample to add test parameters first.
-                            <br><br>
-                            <a href="{% url 'core:sample_edit' pk=sample.sample_id %}" class="btn waves-effect waves-light orange darken-1"><i class="material-icons left">edit</i>Edit Sample</a>
-                        </div>
-                    {% endif %}
-                    
-                    {% for test_param_data in form_data.values %} {# Iterate over dictionary values #}
-                    <div class="card" style="margin-bottom: 20px;">
-                        <div class="card-content">
-                            <span class="card-title" style="color: var(--primary-color-dark); font-size:1.5rem;">{{ test_param_data.parameter.name }}</span>
-                            <div class="grey-text text-darken-2" style="font-size: 0.9rem; margin-bottom:10px;">
-                                <span><strong>Unit:</strong> {{ test_param_data.parameter.unit }}</span>
-                                {% if test_param_data.parameter.method %}
-                                    <span style="margin-left:15px;"><strong>Method:</strong> {{ test_param_data.parameter.method }}</span>
-                                {% endif %}
-                                {% if test_param_data.existing_result %}
-                                    <span class="green-text text-darken-1" style="margin-left:15px;"><strong>✓ Result Entered:</strong> {{ test_param_data.existing_result.result_value }}</span>
-                                {% endif %}
-                            </div>
-
-                            {% if test_param_data.parameter.unit or test_param_data.parameter.name == 'pH' %}
-                            <div class="card-panel teal lighten-5" style="padding: 10px; margin-bottom:15px;">
-                                <strong class="teal-text text-darken-3">Acceptable Limit:</strong>
-                                {% if test_param_data.parameter.min_permissible_limit is not None and test_param_data.parameter.max_permissible_limit is not None %}
-                                    <span class="chip teal white-text">{{ test_param_data.parameter.min_permissible_limit }} - {{ test_param_data.parameter.max_permissible_limit }} {{ test_param_data.parameter.unit }}</span>
-                                {% elif test_param_data.parameter.max_permissible_limit is not None %}
-                                    <span class="chip teal white-text">< {{ test_param_data.parameter.max_permissible_limit }} {{ test_param_data.parameter.unit }}</span>
-                                {% elif test_param_data.parameter.min_permissible_limit is not None %}
-                                    <span class="chip teal white-text">> {{ test_param_data.parameter.min_permissible_limit }} {{ test_param_data.parameter.unit }}</span>
-                                {% else %}
-                                    <span class="chip teal white-text">{{ test_param_data.parameter.unit }}</span>
-                                {% endif %}
-                            </div>
-                            {% endif %}
-
-                            {% if test_param_data.parameter.unit == 'Agreeable' or test_param_data.parameter.unit == 'Colourless' or test_param_data.parameter.unit == 'Absent/ml' %}
-                            <div style="margin-bottom: 10px;">
-                                <button type="button" class="btn-small waves-effect waves-light blue lighten-1 autofill-btn" data-target="{{ test_param_data.form.result_value.id_for_label }}" data-value="{{ test_param_data.parameter.unit }}">{{ test_param_data.parameter.unit }}</button>
-                                {% if test_param_data.parameter.unit == 'Absent/ml' %}
-                                <button type="button" class="btn-small waves-effect waves-light green lighten-1 autofill-btn" data-target="{{ test_param_data.form.result_value.id_for_label }}" data-value="Present">Present</button>
-                                {% endif %}
-                            </div>
-                            {% endif %}
-
-                            <div class="row" style="margin-bottom:0;">
-                                <div class="input-field col s12 m6">
-                                    {{ test_param_data.form.result_value }}
-                                    <label for="{{ test_param_data.form.result_value.id_for_label }}">Result Value <span class="red-text">*</span></label>
-                                    {% if test_param_data.form.result_value.errors %}<span class="helper-text red-text">{{ test_param_data.form.result_value.errors.0 }}</span>{% endif %}
-                                    <span class="helper-text" id="status-{{ test_param_data.form.result_value.id_for_label }}">Unit: {{ test_param_data.parameter.unit }}</span>
-                                </div>
-                                <div class="input-field col s12 m6">
-                                    {{ test_param_data.form.observation }}
-                                    <label for="{{ test_param_data.form.observation.id_for_label }}">Observation/Notes</label>
-                                    {% if test_param_data.form.observation.errors %}<span class="helper-text red-text">{{ test_param_data.form.observation.errors.0 }}</span>{% endif %}
-                                </div>
-                                <div class="input-field col s12 m6">
-                                    {{ test_param_data.form.remarks }}
-                                    <label for="{{ test_param_data.form.remarks.id_for_label }}">Remarks</label>
-                                    {% if test_param_data.form.remarks.errors %}<span class="helper-text red-text">{{ test_param_data.form.remarks.errors.0 }}</span>{% endif %}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    {% endfor %}
-                    
-                    {% if sample.tests_requested.count > 0 %}
-                    <div class="card-action right-align">
-                        <a href="{% url 'core:sample_detail' pk=sample.sample_id %}" class="btn-flat waves-effect">Cancel</a>
-                        <button type="submit" class="btn waves-effect waves-light">
-                            <i class="material-icons left">save</i>Save Test Results
-                        </button>
-                    </div>
-                    {% endif %}
-                </div>
+    <section class="info-card result-summary">
+        <div class="section-title d-flex align-items-center justify-content-between">
+            <span><i class="material-icons">science</i> Sample overview</span>
+            <span class="badge-soft info">{{ sample.get_current_status_display }}</span>
+        </div>
+        <div class="result-summary-grid">
+            <div class="summary-item">
+                <span class="summary-label">Sample ID</span>
+                <span class="summary-value">{{ sample.display_id|default:sample.sample_id }}</span>
+            </div>
+            <div class="summary-item">
+                <span class="summary-label">Customer</span>
+                <span class="summary-value"><a href="{% url 'core:customer_detail' pk=sample.customer.customer_id %}" class="link-muted">{{ sample.customer.name }}</a></span>
+            </div>
+            <div class="summary-item">
+                <span class="summary-label">Source</span>
+                <span class="summary-value">{{ sample.get_sample_source_display }}</span>
+            </div>
+            <div class="summary-item">
+                <span class="summary-label">Collection Date</span>
+                <span class="summary-value">{{ sample.collection_datetime|date:"M d, Y H:i" }}</span>
             </div>
         </div>
+    </section>
+
+    {% if form.non_field_errors %}
+    <div class="alert alert-danger" role="alert">
+        {% for error in form.non_field_errors %}
+            <div>{{ error }}</div>
+        {% endfor %}
     </div>
+    {% endif %}
+
+    {% if sample.tests_requested.count == 0 %}
+    <section class="info-card alert-card warning">
+        <div class="alert-icon"><i class="material-icons" aria-hidden="true">warning</i></div>
+        <div>
+            <h2>No test parameters found</h2>
+            <p>Add test parameters to this sample before entering results.</p>
+            <a href="{% url 'core:sample_edit' pk=sample.sample_id %}" class="btn btn-primary btn-sm"><i class="material-icons align-middle me-1">edit</i>Edit sample</a>
+        </div>
+    </section>
+    {% endif %}
+
+    {% for item in form_data.values %}
+    {% with param=item.parameter form=item.form existing=item.existing_result %}
+    <section class="info-card result-parameter-card">
+        <header class="result-parameter-header">
+            <div>
+                <h2>{{ param.name }}</h2>
+                <p class="text-muted small mb-0">
+                    Unit: {{ param.unit|default:"--" }}
+                    {% if param.method %} · Method: {{ param.method }}{% endif %}
+                    {% if param.min_permissible_limit is not None or param.max_permissible_limit is not None %}
+                        · Acceptable:
+                        {% if param.min_permissible_limit is not None %}{{ param.min_permissible_limit }}{% else %}–∞{% endif %}
+                        –
+                        {% if param.max_permissible_limit is not None %}{{ param.max_permissible_limit }}{% else %}+∞{% endif %}
+                        {{ param.unit|default:"" }}
+                    {% endif %}
+                </p>
+            </div>
+            {% if existing %}
+            <div class="result-existing">Last saved: {{ existing.result_value }} {{ param.unit }}</div>
+            {% endif %}
+        </header>
+
+        <div class="result-parameter-fields">
+            {% with field=form.result_value %}
+            <div class="form-field">
+                <label for="{{ field.id_for_label }}">Result value<span class="required">*</span></label>
+                {{ field }}
+                {% if field.errors %}
+                <p class="form-error">{{ field.errors.0 }}</p>
+                {% endif %}
+                <small id="status-{{ field.id_for_label }}" class="form-hint" data-unit="{{ param.unit|default:"" }}">
+                    {% if param.unit %}Unit: {{ param.unit }}{% endif %}
+                </small>
+            </div>
+            {% endwith %}
+
+            {% with field=form.observation %}
+            <div class="form-field">
+                <label for="{{ field.id_for_label }}">Observations / Notes</label>
+                {{ field }}
+                {% if field.errors %}
+                <p class="form-error">{{ field.errors.0 }}</p>
+                {% endif %}
+            </div>
+            {% endwith %}
+
+            {% with field=form.remarks %}
+            <div class="form-field">
+                <label for="{{ field.id_for_label }}">Automated remarks</label>
+                {{ field }}
+                {% if field.errors %}
+                <p class="form-error">{{ field.errors.0 }}</p>
+                {% endif %}
+            </div>
+            {% endwith %}
+        </div>
+    </section>
+    {% endwith %}
+    {% endfor %}
+
+    {% if sample.tests_requested.count > 0 %}
+    <div class="form-actions">
+        <a href="{% url 'core:sample_detail' pk=sample.sample_id %}" class="btn btn-light">Cancel</a>
+        <button type="submit" class="btn btn-primary">
+            <i class="material-icons align-middle me-1">save</i>
+            Save test results
+        </button>
+    </div>
+    {% endif %}
 </form>
 
-<div class="row">
-    <div class="col s12">
-        <div class="card">
-            <div class="card-content">
-                <span class="card-title" style="color: var(--primary-color-dark);"><i class="material-icons left tiny" style="color: var(--primary-color);">info_outline</i>Instructions</span>
-                <ul class="collection">
-                    <li class="collection-item">Enter precise numerical values for quantitative tests.</li>
-                    <li class="collection-item">For qualitative tests, use standard terms (e.g., "Present", "Absent", "Positive", "Negative").</li>
-                    <li class="collection-item">Include relevant observations that might affect interpretation.</li>
-                    <li class="collection-item">All result values for requested tests are required before submission.</li>
-                    <li class="collection-item">Double-check all entries before saving.</li>
-                </ul>
-            </div>
-        </div>
-    </div>
-</div>
+<section class="info-card result-guidelines">
+    <div class="section-title"><i class="material-icons">help_outline</i>Entry guidelines</div>
+    <ul class="guideline-list">
+        <li>Use numeric values for quantitative tests. Provide the correct unit if it differs from the default.</li>
+        <li>For qualitative tests, record standard terms such as “Present”, “Absent”, “Positive”, or “Negative”.</li>
+        <li>Observations help consultants understand anomalies—add brief context when limits are exceeded.</li>
+        <li>All requested parameters must have a result before the sample can progress.</li>
+        <li>Review entries before saving; updates immediately appear in the audit trail.</li>
+    </ul>
+</section>
 {% endblock %}
 
 {% block extra_js %}
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Initialize Materialize Collapsibles
-    var collapsibleElems = document.querySelectorAll('.collapsible');
-    M.Collapsible.init(collapsibleElems);
+(() => {
+  const autoResize = (textarea) => {
+    textarea.style.height = 'auto';
+    textarea.style.height = textarea.scrollHeight + 'px';
+  };
 
-    // Initialize Materialize Textareas (for auto-resize and character counter if used)
-    var textareas = document.querySelectorAll('textarea');
-    M.textareaAutoResize(textareas); // For auto-resize
-    // M.CharacterCounter.init(textareas); // If you add data-length
-
-    // Re-initialize labels if form fields have values (e.g., on edit or after validation error)
-    M.updateTextFields();
-
-    // Handle autofill buttons
-    const autofillButtons = document.querySelectorAll('.autofill-btn');
-    autofillButtons.forEach(button => {
-        button.addEventListener('click', function() {
-            const targetId = this.dataset.target;
-            const value = this.dataset.value;
-            const targetInput = document.getElementById(targetId);
-            if (targetInput) {
-                targetInput.value = value;
-                M.updateTextFields(); // Update Materialize label
-                targetInput.dispatchEvent(new Event('input')); // Trigger validation
-            }
-        });
+  document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('textarea.form-control').forEach(textarea => {
+      autoResize(textarea);
+      textarea.addEventListener('input', () => autoResize(textarea));
     });
 
-    // Live validation for result values
-    const resultInputs = document.querySelectorAll('input[data-min-limit], input[data-max-limit]');
-    resultInputs.forEach(input => {
-        input.addEventListener('input', function() {
-            const value = parseFloat(this.value);
-            const minLimit = this.dataset.minLimit !== 'None' ? parseFloat(this.dataset.minLimit) : null;
-            const maxLimit = this.dataset.maxLimit !== 'None' ? parseFloat(this.dataset.maxLimit) : null;
-            const statusEl = document.getElementById('status-' + this.id);
-            const remarksInput = document.getElementById(this.id.replace('result_value', 'remarks'));
+    document.querySelectorAll('.result-input').forEach(input => {
+      const minLimit = input.dataset.minLimit !== 'None' ? parseFloat(input.dataset.minLimit) : null;
+      const maxLimit = input.dataset.maxLimit !== 'None' ? parseFloat(input.dataset.maxLimit) : null;
+      const statusEl = document.getElementById('status-' + input.id);
+      const remarksInput = document.getElementById(input.id.replace('result_value', 'remarks'));
 
-            if (isNaN(value)) {
-                statusEl.textContent = 'Unit: ' + statusEl.textContent.split('Unit: ')[1];
-                statusEl.className = 'helper-text';
-                if(remarksInput) remarksInput.value = '';
-                return;
-            }
+      const updateStatus = () => {
+        const value = parseFloat(input.value);
+        if (isNaN(value)) {
+          statusEl.textContent = statusEl.dataset.unit ? `Unit: ${statusEl.dataset.unit}` : '';
+          statusEl.className = 'form-hint';
+          if (remarksInput) remarksInput.value = '';
+          return;
+        }
 
-            let statusText = 'Within Limits';
-            let statusClass = 'green-text';
-            let remarksText = 'Complies with IS 10500:2012';
+        let statusText = 'Within limits';
+        let statusClass = 'form-hint success';
+        let remarksText = 'Complies with reference limits';
 
-            if (minLimit !== null && value < minLimit) {
-                statusText = 'Below Minimum Limit';
-                statusClass = 'red-text';
-                remarksText = 'Below Acceptable Limit';
-            } else if (maxLimit !== null && value > maxLimit) {
-                statusText = 'Exceeds Maximum Limit';
-                statusClass = 'red-text';
-                remarksText = 'Above Acceptable Limit';
-            }
+        if (minLimit !== null && value < minLimit) {
+          statusText = `Below minimum (${minLimit})`;
+          statusClass = 'form-hint warning';
+          remarksText = `Below acceptable minimum of ${minLimit}`;
+        }
+        if (maxLimit !== null && value > maxLimit) {
+          statusText = `Above maximum (${maxLimit})`;
+          statusClass = 'form-hint danger';
+          remarksText = `Exceeds acceptable maximum of ${maxLimit}`;
+        }
 
-            statusEl.textContent = statusText;
-            statusEl.className = 'helper-text ' + statusClass;
-            if(remarksInput) {
-                remarksInput.value = remarksText;
-                M.updateTextFields();
-            }
-        });
+        statusEl.textContent = statusEl.dataset.unit ? `${statusText} · Unit: ${statusEl.dataset.unit}` : statusText;
+        statusEl.className = statusClass;
+        if (remarksInput) remarksInput.value = remarksText;
+      };
+
+      input.addEventListener('input', updateStatus);
+      updateStatus();
     });
-
-    // Basic client-side validation hint (server-side is primary)
-    const form = document.querySelector('form');
-    if (form) {
-        form.addEventListener('submit', function(e) {
-            let allRequiredFilled = true;
-            const requiredInputs = form.querySelectorAll('input[required], textarea[required]');
-            requiredInputs.forEach(input => {
-                if (!input.value.trim()) {
-                    allRequiredFilled = false;
-                    // Materialize adds 'invalid' class via HTML5 validation or custom JS
-                    // For simplicity, we rely on HTML5 'required' and Django server-side validation
-                }
-            });
-
-            if (!allRequiredFilled) {
-                // M.toast({html: 'Please fill all required fields marked with *'}); // Optional toast
-                // e.preventDefault(); // Prevent submission if client-side check fails
-            }
-        });
-    }
-});
+  });
+})();
 </script>
-{% endblock %}
+{% endblock extra_js %}

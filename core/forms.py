@@ -232,15 +232,15 @@ class SampleForm(forms.ModelForm):
 class TestResultEntryForm(forms.Form):
     result_value = forms.CharField(
         required=True,
-        widget=forms.TextInput(attrs={'class': 'form-control'})
+        widget=forms.TextInput(attrs={'class': 'form-control result-input'})
     )
     observation = forms.CharField(
         required=False,
-        widget=forms.Textarea(attrs={'class': 'materialize-textarea', 'rows': 2})
+        widget=forms.Textarea(attrs={'class': 'form-control form-control-sm', 'rows': 2})
     )
     remarks = forms.CharField(
         required=False,
-        widget=forms.TextInput(attrs={'class': 'form-control', 'readonly': True})
+        widget=forms.TextInput(attrs={'class': 'form-control form-control-sm', 'readonly': True})
     )
 
     def __init__(self, *args, **kwargs):
