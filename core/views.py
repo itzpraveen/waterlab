@@ -555,9 +555,25 @@ class SampleListView(LoginRequiredMixin, ListView):  # Added LoginRequiredMixin
             .prefetch_related('tests_requested')
             .order_by('-collection_datetime')
         )
-        status = self.request.GET.get('status')
-        if status:
-            qs = qs.filter(current_status=status)
+        status_param = self.request.GET.get('status')
+        if status_param:
+            status_key = status_param.upper()
+            status_map = {
+                'PENDING': ['RECEIVED_FRONT_DESK'],
+                'IN_LAB': ['SENT_TO_LAB', 'TESTING_IN_PROGRESS'],
+                'AWAITING_REVIEW': ['REVIEW_PENDING'],
+                'COMPLETED': ['REPORT_APPROVED', 'REPORT_SENT'],
+            }
+            if status_key in status_map:
+                qs = qs.filter(current_status__in=status_map[status_key])
+            else:
+                qs = qs.filter(current_status=status_key)
+
+        collected_scope = self.request.GET.get('collected')
+        if collected_scope == 'today':
+            qs = qs.filter(collection_datetime__date=timezone.now().date())
+        elif collected_scope == 'week':
+            qs = qs.filter(collection_datetime__gte=timezone.now() - timedelta(days=7))
         return qs
 
 class SampleDetailView(DetailView): # New DetailView for Sample

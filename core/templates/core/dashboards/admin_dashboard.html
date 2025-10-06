@@ -14,46 +14,46 @@
 
 {% block content %}
 <section class="stat-grid mb-4">
-    <div class="stat-card">
+    <a class="stat-card stat-card--link" href="{% url 'core:customer_list' %}">
         <div class="stat-icon"><i class="material-icons">people</i></div>
         <div class="stat-value">{{ total_customers }}</div>
         <p class="stat-label mb-0">Total customers</p>
-    </div>
-    <div class="stat-card">
+    </a>
+    <a class="stat-card stat-card--link" href="{% url 'core:sample_list' %}">
         <div class="stat-icon"><i class="material-icons">science</i></div>
         <div class="stat-value">{{ total_samples }}</div>
         <p class="stat-label mb-0">Total samples</p>
-    </div>
-    <div class="stat-card">
+    </a>
+    <a class="stat-card stat-card--link" href="{% url 'core:sample_list' %}?status=PENDING">
         <div class="stat-icon"><i class="material-icons">hourglass_top</i></div>
         <div class="stat-value">{{ pending_samples_count }}</div>
         <p class="stat-label mb-0">Pending samples</p>
-    </div>
-    <div class="stat-card">
+    </a>
+    <a class="stat-card stat-card--link" href="{% url 'core:sample_list' %}?status=IN_LAB">
         <div class="stat-icon"><i class="material-icons">experiment</i></div>
         <div class="stat-value">{{ testing_samples_count }}</div>
         <p class="stat-label mb-0">In lab</p>
-    </div>
-    <div class="stat-card">
+    </a>
+    <a class="stat-card stat-card--link" href="{% url 'core:sample_list' %}?status=AWAITING_REVIEW">
         <div class="stat-icon"><i class="material-icons">fact_check</i></div>
         <div class="stat-value">{{ review_pending_count }}</div>
         <p class="stat-label mb-0">Awaiting review</p>
-    </div>
-    <div class="stat-card">
+    </a>
+    <a class="stat-card stat-card--link" href="{% url 'core:sample_list' %}?status=COMPLETED">
         <div class="stat-icon"><i class="material-icons">task_alt</i></div>
         <div class="stat-value">{{ completed_samples_count }}</div>
         <p class="stat-label mb-0">Completed</p>
-    </div>
-    <div class="stat-card">
+    </a>
+    <a class="stat-card stat-card--link" href="{% url 'core:sample_list' %}?collected=today">
         <div class="stat-icon"><i class="material-icons">calendar_month</i></div>
         <div class="stat-value">{{ today_samples_count }}</div>
         <p class="stat-label mb-0">Collected today</p>
-    </div>
-    <div class="stat-card">
+    </a>
+    <a class="stat-card stat-card--link" href="{% url 'core:sample_list' %}?collected=week">
         <div class="stat-icon"><i class="material-icons">date_range</i></div>
         <div class="stat-value">{{ week_samples_count }}</div>
         <p class="stat-label mb-0">Last 7 days</p>
-    </div>
+    </a>
 </section>
 
 <section class="info-card mb-4">
