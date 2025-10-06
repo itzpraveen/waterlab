@@ -1,237 +1,177 @@
 {% extends 'core/base.html' %}
-{% load static %}
 
-{% block title %}Audit Trail - Water Lab LIMS{% endblock %}
+{% block title %}Audit Trail - WaterLab LIMS{% endblock %}
 
-{% block breadcrumbs %}
-<div class="col s12 breadcrumb-container">
-    <nav>
-        <div class="nav-wrapper">
-            <a href="{% url 'core:home' %}" class="breadcrumb">Home</a>
-            {% if request.user.is_admin %}
-            <a href="{% url 'core:admin_dashboard' %}" class="breadcrumb">Admin Dashboard</a>
-            {% endif %}
-            <span class="breadcrumb active">Audit Trail</span>
-        </div>
-    </nav>
+{% block page_header %}
+<div class="page-header">
+    <div class="page-heading">
+        <span class="page-eyebrow">System activity</span>
+        <h1 class="page-title">Audit Trail</h1>
+        <p class="page-subtitle">Review every change across samples, customers, and configuration to keep operations compliant.</p>
+    </div>
+    <div class="page-actions">
+        <a href="{% url 'core:admin_dashboard' %}" class="btn btn-outline-secondary">
+            <i class="material-icons align-middle me-1">arrow_back</i>Dashboard
+        </a>
+    </div>
 </div>
-{% endblock breadcrumbs %}
+{% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col s12">
-        <div class="card">
-            <div class="card-content">
-                <span class="card-title" style="font-size: 2rem; display: flex; align-items: center; color: var(--primary-color-dark);">
-                    <i class="material-icons" style="font-size: 2.5rem; margin-right: 10px; color: var(--primary-color);">manage_history</i>
-                    Audit Trail
-                </span>
-                <p class="grey-text text-darken-1" style="margin-top: -5px; margin-bottom: 20px;">Track all system changes and user activities.</p>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Filters -->
-<div class="row">
-    <div class="col s12">
-        <div class="card">
-            <div class="card-content">
-                <span class="card-title" style="color: var(--primary-color-dark);"><i class="material-icons left tiny" style="color: var(--primary-color);">filter_list</i>Filters</span>
-                <form method="get" class="filter-form">
-                    <div class="row" style="margin-bottom: 0;">
-                        <div class="input-field col s12 m6 l3">
-                            <select name="model" id="model">
-                                <option value="" {% if not filters.model %}selected{% endif %}>All Models</option>
-                                {% for model_name_opt in model_choices %} {# Renamed variable to avoid conflict #}
-                                    <option value="{{ model_name_opt }}" {% if filters.model == model_name_opt %}selected{% endif %}>
-                                        {{ model_name_opt }}
-                                    </option>
-                                {% endfor %}
-                            </select>
-                            <label for="model">Model Type</label>
-                        </div>
-                        
-                        <div class="input-field col s12 m6 l3">
-                            <select name="action" id="action">
-                                <option value="" {% if not filters.action %}selected{% endif %}>All Actions</option>
-                                {% for action_opt in action_choices %} {# Renamed variable #}
-                                    <option value="{{ action_opt }}" {% if filters.action == action_opt %}selected{% endif %}>
-                                        {{ action_opt|capfirst }}
-                                    </option>
-                                {% endfor %}
-                            </select>
-                            <label for="action">Action</label>
-                        </div>
-                        
-                        <div class="input-field col s12 m6 l3">
-                            <select name="user" id="user_filter"> {# Changed id to avoid conflict with user variable #}
-                                <option value="" {% if not filters.user %}selected{% endif %}>All Users</option>
-                                {% for user_opt in users %} {# Renamed variable #}
-                                    <option value="{{ user_opt.pk }}" {% if filters.user == user_opt.pk|stringformat:"s" %}selected{% endif %}>
-                                        {{ user_opt.first_name|default:user_opt.username }} ({{ user_opt.get_role_display }})
-                                    </option>
-                                {% endfor %}
-                            </select>
-                            <label for="user_filter">User</label>
-                        </div>
-                        
-                        <div class="input-field col s12 m6 l3">
-                            <input type="text" name="object_id" id="object_id" value="{{ filters.object_id }}" class="validate">
-                            <label for="object_id">Object ID</label>
-                        </div>
-                    </div>
-                    
-                    <div class="card-action right-align" style="border-top: none; padding-top:0;">
-                        <a href="{% url 'core:audit_trail' %}" class="btn-flat waves-effect">
-                            <i class="material-icons left">clear_all</i>Clear Filters
-                        </a>
-                        <button type="submit" class="btn waves-effect waves-light" style="background-color: var(--primary-color);">
-                            <i class="material-icons left">search</i>Apply Filters
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Audit Logs Table -->
-<div class="row">
-    <div class="col s12">
-        <div class="card">
-            <div class="card-content">
-                {% if audit_logs %}
-                <div class="table-container">
-                    <table class="responsive-table highlight striped">
-                        <thead>
-                            <tr>
-                                <th>Timestamp</th>
-                                <th>User</th>
-                                <th>Action</th>
-                                <th>Model</th>
-                                <th>Object (ID / Repr)</th>
-                                <th>Changes</th>
-                                <th>IP Address</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for log in audit_logs %}
-                            <tr>
-                                <td>{{ log.timestamp|date:"M d, Y H:i:s" }}</td>
-                                <td>
-                                    {% if log.user %}
-                                        {{ log.user.first_name|default:log.user.username }}
-                                        <span class="chip role-badge {{ log.user.role }}">{{ log.user.get_role_display }}</span>
-                                    {% else %}
-                                        <span class="grey-text">System</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    {% if log.action == 'CREATE' %} <span class="chip" style="background-color: var(--success-color); color: var(--text-on-primary);">{{ log.get_action_display }}</span>
-                                    {% elif log.action == 'UPDATE' %} <span class="chip" style="background-color: var(--warning-color); color: var(--text-color-dark);">{{ log.get_action_display }}</span>
-                                    {% elif log.action == 'DELETE' %} <span class="chip" style="background-color: var(--error-color); color: var(--text-on-primary);">{{ log.get_action_display }}</span>
-                                    {% else %} <span class="chip" style="background-color: var(--info-color); color: var(--text-on-primary);">{{ log.get_action_display }}</span>
-                                    {% endif %}
-                                </td>
-                                <td>{{ log.model_name }}</td>
-                                <td>
-                                    <div style="font-family: monospace; font-size: 0.9em;">{{ log.object_id|truncatechars:15 }}</div>
-                                    <div>{{ log.object_repr|truncatechars:35 }}</div>
-                                </td>
-                                <td>
-                                    {% if log.changes %}
-                                        <button class="btn-small waves-effect waves-light blue lighten-1" onclick="toggleChanges('{{ log.audit_id }}')">
-                                            <i class="material-icons tiny left">visibility</i>({{ log.changes|length }})
-                                        </button>
-                                        <div id="changes-{{ log.audit_id }}" class="changes-detail card-panel teal lighten-5" style="display: none; margin-top: 10px; padding: 10px; border-radius: var(--m3-border-radius-small);">
-                                            <pre style="white-space: pre-wrap; word-break: break-all; font-size: 0.85rem;">{% for field, change in log.changes.items %}<strong>{{ field|capfirst }}:</strong> {{ change.old|default:"(empty)" }} → {{ change.new|default:"(empty)" }}<br>{% endfor %}</pre>
-                                        </div>
-                                    {% else %}
-                                        <span class="grey-text text-lighten-1">-</span>
-                                    {% endif %}
-                                </td>
-                                <td>{{ log.ip_address|default:"N/A" }}</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-
-                {% if is_paginated %}
-                <div class="pagination center-align" style="margin-top: 30px;">
-                    <ul class="pagination">
-                        {% if page_obj.has_previous %}
-                            <li class="waves-effect"><a href="?page=1{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}"><i class="material-icons">first_page</i></a></li>
-                            <li class="waves-effect"><a href="?page={{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}"><i class="material-icons">chevron_left</i></a></li>
-                        {% else %}
-                            <li class="disabled"><a href="#!"><i class="material-icons">first_page</i></a></li>
-                            <li class="disabled"><a href="#!"><i class="material-icons">chevron_left</i></a></li>
-                        {% endif %}
-
-                        {% for num in page_obj.paginator.page_range %}
-                            {% if page_obj.number == num %}
-                                <li class="active" style="background-color: var(--primary-color);"><a href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ num }}</a></li>
-                            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
-                                <li class="waves-effect"><a href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ num }}</a></li>
-                            {% elif num == 1 or num == page_obj.paginator.num_pages %}
-                                {% if page_obj.number|add:'-3' == num or page_obj.number|add:'3' == num %} {# Avoid double '...' #}
-                                {% else %}
-                                <li class="disabled"><a href="#!">...</a></li>
-                                {% endif %}
-                                <li class="waves-effect"><a href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ num }}</a></li>
-                            {% endif %}
+<div class="audit-shell">
+    <section class="info-card">
+        <div class="section-title"><i class="material-icons">filter_list</i>Filters</div>
+        <form method="get" class="audit-filters">
+            <div class="filter-grid">
+                <div class="form-field">
+                    <label for="model">Model type</label>
+                    <select name="model" id="model" class="form-control">
+                        <option value="" {% if not filters.model %}selected{% endif %}>All models</option>
+                        {% for model_name_opt in model_choices %}
+                        <option value="{{ model_name_opt }}" {% if filters.model == model_name_opt %}selected{% endif %}>{{ model_name_opt }}</option>
                         {% endfor %}
-
-                        {% if page_obj.has_next %}
-                            <li class="waves-effect"><a href="?page={{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}"><i class="material-icons">chevron_right</i></a></li>
-                            <li class="waves-effect"><a href="?page={{ page_obj.paginator.num_pages }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}"><i class="material-icons">last_page</i></a></li>
-                        {% else %}
-                            <li class="disabled"><a href="#!"><i class="material-icons">chevron_right</i></a></li>
-                            <li class="disabled"><a href="#!"><i class="material-icons">last_page</i></a></li>
-                        {% endif %}
-                    </ul>
+                    </select>
                 </div>
-                {% endif %}
-
-                {% else %}
-                <div class="card-panel alert alert-info" style="margin-top: 20px;">
-                    <i class="material-icons left">info_outline</i> No audit logs found matching your criteria.
+                <div class="form-field">
+                    <label for="action">Action</label>
+                    <select name="action" id="action" class="form-control">
+                        <option value="" {% if not filters.action %}selected{% endif %}>All actions</option>
+                        {% for action_opt in action_choices %}
+                        <option value="{{ action_opt }}" {% if filters.action == action_opt %}selected{% endif %}>{{ action_opt|capfirst }}</option>
+                        {% endfor %}
+                    </select>
                 </div>
-                {% endif %}
+                <div class="form-field">
+                    <label for="user_filter">User</label>
+                    <select name="user" id="user_filter" class="form-control">
+                        <option value="" {% if not filters.user %}selected{% endif %}>All users</option>
+                        {% for user_opt in users %}
+                        <option value="{{ user_opt.pk }}" {% if filters.user == user_opt.pk|stringformat:"s" %}selected{% endif %}>{{ user_opt.first_name|default:user_opt.username }} ({{ user_opt.get_role_display }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-field">
+                    <label for="object_id">Object ID</label>
+                    <input type="text" name="object_id" id="object_id" class="form-control" value="{{ filters.object_id }}" placeholder="e.g. WL2025-0008">
+                </div>
             </div>
-        </div>
-    </div>
-</div>
+            <div class="filter-actions">
+                <a href="{% url 'core:audit_trail' %}" class="btn btn-light">Clear filters</a>
+                <button type="submit" class="btn btn-primary"><i class="material-icons align-middle me-1">search</i>Apply filters</button>
+            </div>
+        </form>
+    </section>
 
-<div class="row">
-    <div class="col s12 center-align">
-         <a href="{% url 'core:admin_dashboard' %}" class="btn-flat waves-effect"><i class="material-icons left">arrow_back</i>Back to Admin Dashboard</a>
-    </div>
+    <section class="info-card">
+        <div class="section-title"><i class="material-icons">history</i>Activity log</div>
+
+        {% if page_obj.object_list %}
+        <div class="table-responsive">
+            <table class="table table-modern align-middle audit-table">
+                <thead>
+                    <tr>
+                        <th>When</th>
+                        <th>User</th>
+                        <th>Action</th>
+                        <th>Model</th>
+                        <th>Object</th>
+                        <th>Details</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for log in page_obj.object_list %}
+                    <tr>
+                        <td class="text-muted small">
+                            <div class="fw-semibold">{{ log.timestamp|date:"d M Y, H:i" }}</div>
+                            <div>{{ log.ip_address|default:"N/A" }}</div>
+                        </td>
+                        <td>
+                            <div class="fw-semibold">{{ log.user.first_name|default:log.user.username }}</div>
+                            <div class="text-muted small">{{ log.user.get_role_display }}</div>
+                        </td>
+                        <td><span class="badge-soft {% if log.action == 'CREATE' %}success{% elif log.action == 'DELETE' %}danger{% elif log.action == 'UPDATE' %}info{% endif %}">{{ log.action|title }}</span></td>
+                        <td>{{ log.model_name|default:"—" }}</td>
+                        <td>
+                            {% if log.object_id %}
+                                <div class="fw-semibold">{{ log.object_repr|default:"–" }}</div>
+                                <div class="text-muted small">ID: {{ log.object_id }}</div>
+                            {% else %}
+                                —
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if log.changes %}
+                            <button type="button" class="btn btn-light btn-sm change-toggle" data-target="changes-{{ log.pk }}">
+                                <i class="material-icons align-middle me-1">unfold_more</i><span class="toggle-label">View changes</span>
+                            </button>
+                            <div id="changes-{{ log.pk }}" class="change-panel" hidden>
+                                <dl>
+                                    {% for field, change in log.changes.items %}
+                                    <div class="change-row">
+                                        <dt>{{ field|capfirst }}</dt>
+                                        <dd>{{ change.old|default:"(empty)" }} → {{ change.new|default:"(empty)" }}</dd>
+                                    </div>
+                                    {% endfor %}
+                                </dl>
+                            </div>
+                            {% else %}
+                            <span class="text-muted small">—</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if is_paginated %}
+        <nav class="results-pagination" aria-label="Audit pagination">
+            <ul class="pagination pagination-modern justify-content-center">
+                <li class="page-item {% if not page_obj.has_previous %}disabled{% endif %}">
+                    <a class="page-link" href="{% if page_obj.has_previous %}?page={{ page_obj.previous_page_number }}{{ querystring_without_page }}{% else %}#!{% endif %}">&laquo;</a>
+                </li>
+                {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                        <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                    {% elif num == 1 or num == page_obj.paginator.num_pages or (num >= page_obj.number|add:'-2' and num <= page_obj.number|add:'2') %}
+                        <li class="page-item"><a class="page-link" href="?page={{ num }}{{ querystring_without_page }}">{{ num }}</a></li>
+                    {% elif num == page_obj.number|add:'-3' or num == page_obj.number|add:'3' %}
+                        <li class="page-item disabled"><span class="page-link">…</span></li>
+                    {% endif %}
+                {% endfor %}
+                <li class="page-item {% if not page_obj.has_next %}disabled{% endif %}">
+                    <a class="page-link" href="{% if page_obj.has_next %}?page={{ page_obj.next_page_number }}{{ querystring_without_page }}{% else %}#!{% endif %}">&raquo;</a>
+                </li>
+            </ul>
+        </nav>
+        {% endif %}
+
+        {% else %}
+        <div class="alert alert-info" role="status">
+            <i class="material-icons align-middle me-2">info_outline</i>No audit logs found for the selected criteria.
+        </div>
+        {% endif %}
+    </section>
 </div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
-function toggleChanges(auditId) {
-    const element = document.getElementById('changes-' + auditId);
-    const button = element.previousElementSibling; // Get the button
-    if (element.style.display === 'none') {
-        element.style.display = 'block';
-        button.innerHTML = '<i class="material-icons tiny left">visibility_off</i>(' + element.querySelectorAll('strong').length + ')';
-    } else {
-        element.style.display = 'none';
-        button.innerHTML = '<i class="material-icons tiny left">visibility</i>(' + element.querySelectorAll('strong').length + ')';
-    }
-}
-
-document.addEventListener('DOMContentLoaded', function() {
-    var selectElems = document.querySelectorAll('select');
-    M.FormSelect.init(selectElems);
-
-    // Initialize collapsible for changes if any are initially visible (though they start hidden)
-    var collapsibleElems = document.querySelectorAll('.collapsible');
-    M.Collapsible.init(collapsibleElems);
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.change-toggle').forEach(button => {
+    button.addEventListener('click', () => {
+      const targetId = button.getAttribute('data-target');
+      const panel = document.getElementById(targetId);
+      if (!panel) return;
+      const isHidden = panel.hasAttribute('hidden');
+      panel.toggleAttribute('hidden', !isHidden);
+      const icon = button.querySelector('.material-icons');
+      const label = button.querySelector('.toggle-label');
+      if (icon) icon.textContent = isHidden ? 'unfold_less' : 'unfold_more';
+      if (label) label.textContent = isHidden ? 'Hide changes' : 'View changes';
+      button.classList.toggle('active', isHidden);
+    });
+  });
 });
 </script>
 {% endblock %}

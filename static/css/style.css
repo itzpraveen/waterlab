@@ -1515,3 +1515,79 @@ main {
 .info-card.muted {
   background: rgba(248, 250, 252, 0.85);
 }
+
+/* Audit trail layout */
+.audit-shell {
+  display: grid;
+  gap: 1.75rem;
+}
+
+.audit-filters {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.audit-filters .filter-grid {
+  display: grid;
+  gap: 1.25rem;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.audit-filters .filter-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.audit-table td {
+  vertical-align: top;
+}
+
+.change-panel {
+  margin-top: 0.75rem;
+  padding: 0.9rem 1rem;
+  border-radius: 0.9rem;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  background: rgba(248, 250, 252, 0.9);
+}
+
+.change-panel dl {
+  margin: 0;
+}
+
+.change-panel dt {
+  font-weight: 600;
+  color: rgba(15, 23, 42, 0.8);
+}
+
+.change-panel dd {
+  margin: 0 0 0.75rem 0;
+  font-size: 0.9rem;
+  color: rgba(15, 23, 42, 0.75);
+}
+
+.change-panel dd:last-child {
+  margin-bottom: 0;
+}
+
+.change-row {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.change-toggle.active {
+  background: rgba(15, 118, 110, 0.12);
+  border-color: rgba(15, 118, 110, 0.35);
+}
+
+@media (max-width: 576px) {
+  .audit-filters .filter-actions {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+
+  .audit-filters .filter-actions .btn {
+    width: 100%;
+  }
+}
