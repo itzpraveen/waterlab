@@ -143,8 +143,14 @@ main {
 
 .page-shell {
   width: 100%;
-  max-width: 1200px;
+  max-width: 1360px;
   margin: 0 auto;
+}
+
+@media (min-width: 1800px) {
+  .page-shell {
+    max-width: 1480px;
+  }
 }
 
 .summary-grid {
