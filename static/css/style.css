@@ -29,8 +29,89 @@ main {
   flex: 1 0 auto;
 }
 
+.app-header {
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(15, 118, 110, 0.08);
+  box-shadow: 0 10px 30px rgba(15, 118, 110, 0.08);
+}
+
+.app-header .navbar {
+  padding-block: 0.75rem;
+}
+
+@media (min-width: 992px) {
+  .app-header .navbar {
+    padding-block: 1rem;
+  }
+}
+
+.app-header .navbar-brand {
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: #0f172a;
+}
+
+.app-header .navbar-brand:hover,
+.app-header .navbar-brand:focus {
+  color: var(--wl-primary-dark);
+}
+
+.app-header .navbar-nav {
+  gap: 0.35rem;
+}
+
+.app-header .nav-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.55rem 0.95rem;
+  border-radius: 0.75rem;
+  color: #1f2937;
+  font-weight: 500;
+  transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.app-header .nav-link:hover,
+.app-header .nav-link:focus {
+  background: rgba(15, 118, 110, 0.08);
+  color: var(--wl-primary-dark);
+}
+
+.app-header .nav-link.active {
+  background: rgba(15, 118, 110, 0.12);
+  box-shadow: var(--wl-shadow-sm);
+  color: var(--wl-primary-dark) !important;
+}
+
+.app-header .navbar-toggler {
+  border: none;
+  padding: 0.45rem 0.55rem;
+  background-color: rgba(15, 118, 110, 0.1);
+}
+
+.app-header .navbar-toggler:focus {
+  box-shadow: 0 0 0 0.2rem rgba(15, 118, 110, 0.2);
+}
+
+.app-footer {
+  padding: 2.75rem 0;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.97) 0%, rgba(222, 242, 239, 0.92) 100%);
+  border-top: 1px solid rgba(15, 118, 110, 0.08);
+  box-shadow: 0 -12px 32px rgba(15, 118, 110, 0.08);
+}
+
+.app-footer .footer-inner {
+  padding-inline: 0;
+}
+
+.app-footer .row {
+  align-items: center;
+  row-gap: 1.5rem;
+}
+
 .navbar .nav-link.active {
-  color: var(--wl-primary) !important;
+  color: var(--wl-primary-dark) !important;
   font-weight: 600;
 }
 
@@ -479,7 +560,7 @@ main {
 
 .footer p,
 .footer a {
-  color: var(--wl-muted);
+  color: #4b5563;
 }
 
 .footer a:hover {
