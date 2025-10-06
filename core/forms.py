@@ -135,12 +135,23 @@ class CustomerForm(forms.ModelForm):
 class SampleForm(forms.ModelForm):
     # Accept formats configured in settings for consistency across the app
     from django.conf import settings as _settings
+    _input_formats = getattr(_settings, 'DATETIME_INPUT_FORMATS', None) or (
+        '%d/%m/%Y %H:%M:%S',
+        '%d/%m/%Y %H:%M',
+        '%d/%m/%Y',
+        '%Y-%m-%dT%H:%M',
+        '%Y-%m-%dT%H:%M:%S',
+    )
     collection_datetime = forms.DateTimeField(
-        input_formats=getattr(_settings, 'DATETIME_INPUT_FORMATS', None),
-        widget=forms.TextInput(attrs={
-            'class': 'form-control datepicker',
-            'placeholder': 'dd/mm/yyyy HH:MM[:SS]'
-        })
+        input_formats=_input_formats,
+        widget=forms.DateTimeInput(
+            attrs={
+                'class': 'form-control',
+                'type': 'datetime-local',
+                'step': '60'
+            },
+            format='%Y-%m-%dT%H:%M'
+        )
     )
     class Meta:
         model = Sample
@@ -166,7 +177,7 @@ class SampleForm(forms.ModelForm):
         # If the input is a string from the form widget, parse it
         if isinstance(collection_datetime, str):
             dt = None
-            for fmt in ('%d/%m/%Y %H:%M:%S', '%d/%m/%Y %H:%M', '%d/%m/%Y'):
+            for fmt in self._input_formats:
                 try:
                     dt = datetime.datetime.strptime(collection_datetime, fmt)
                     break
