@@ -1,86 +1,125 @@
 {% extends 'core/base.html' %}
-{% load static %}
 
-{% block title %}{{ page_title|default:"Manage Test Parameter" }} - Water Lab LIMS{% endblock %}
+{% block title %}{{ page_title|default:"Manage Test Parameter" }} - WaterLab LIMS{% endblock %}
 
-{% block breadcrumbs %}
-<div class="col s12 breadcrumb-container">
-    <nav>
-        <div class="nav-wrapper">
-            <a href="{% url 'core:home' %}" class="breadcrumb">Home</a>
-            {% if request.user.is_admin %}
-            <a href="{% url 'core:admin_dashboard' %}" class="breadcrumb">Admin Dashboard</a>
-            <a href="{% url 'core:setup_test_parameters' %}" class="breadcrumb">Setup Test Parameters</a>
-            {% endif %}
-            <span class="breadcrumb active">{{ page_title|default:"Manage Test Parameter" }}</span>
-        </div>
-    </nav>
-</div>
-{% endblock breadcrumbs %}
-
-{% block content %}
-<div class="row">
-    <div class="col s12 m10 offset-m1 l8 offset-l2">
-        <div class="card">
-            <div class="card-content">
-                <span class="card-title" style="font-size: 2rem; display: flex; align-items: center; color: var(--primary-color-dark);">
-                    <i class="material-icons" style="font-size: 2.5rem; margin-right: 10px; color: var(--primary-color);">edit_attributes</i>
-                    {{ page_title|default:"Manage Test Parameter" }}
-                </span>
-                <p class="grey-text text-darken-1" style="margin-top: -5px; margin-bottom: 20px;">
-                    {% if is_edit %}Update the details for this test parameter.{% else %}Create a new test parameter.{% endif %}
-                </p>
-
-                <form method="post">
-                    {% csrf_token %}
-                    <div class="row">
-                        {% for field in form %}
-                        <div class="input-field col s12 {% if field.name == 'min_permissible_limit' or field.name == 'max_permissible_limit' %}m6{% endif %}">
-                            {{ field }}
-                            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-                            {% if field.help_text %}
-                                <span class="helper-text">{{ field.help_text }}</span>
-                            {% endif %}
-                            {% if field.errors %}
-                                {% for error in field.errors %}
-                                <span class="helper-text red-text">{{ error }}</span>
-                                {% endfor %}
-                            {% endif %}
-                        </div>
-                        {% endfor %}
-                    </div>
-                    
-                    {% if form.non_field_errors %}
-                        <div class="card-panel red lighten-4 red-text text-darken-4" style="margin-top: 10px; padding: 10px;">
-                            {% for error in form.non_field_errors %}
-                                <p>{{ error }}</p>
-                            {% endfor %}
-                        </div>
-                    {% endif %}
-                    
-                    <div class="card-action right-align" style="border-top: 1px solid rgba(0,0,0,0.1); margin-top: 20px; padding-top: 20px;">
-                        <a href="{% url 'core:setup_test_parameters' %}" class="btn-flat waves-effect">Cancel</a>
-                        <button type="submit" class="btn waves-effect waves-light" style="background-color: var(--primary-color);">
-                            <i class="material-icons left">save</i>
-                            {% if is_edit %}Save Changes{% else %}Create Parameter{% endif %}
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
+{% block page_header %}
+<div class="page-header">
+    <div class="page-heading">
+        <span class="page-eyebrow">Test library</span>
+        <h1 class="page-title">{{ page_title|default:"Manage Test Parameter" }}</h1>
+        <p class="page-subtitle">Update the configuration for this laboratory test parameter.</p>
+    </div>
+    <div class="page-actions">
+        <a href="{% url 'core:setup_test_parameters' %}" class="btn btn-outline-secondary">
+            <i class="material-icons align-middle me-1">arrow_back</i>
+            Back to parameters
+        </a>
     </div>
 </div>
 {% endblock %}
 
-{% block extra_js %}
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Initialize Materialize select dropdowns if any are added to the form
-    var selectElems = document.querySelectorAll('select');
-    M.FormSelect.init(selectElems);
+{% block content %}
+<div class="parameter-form-shell">
+    <section class="info-card">
+        <div class="section-title"><i class="material-icons">edit_attributes</i>{{ page_title|default:"Manage Test Parameter" }}</div>
+        <form method="post" class="parameter-form">
+            {% csrf_token %}
+            <div class="grid-two">
+                <div class="form-field">
+                    <label for="{{ form.name.id_for_label }}">Name<span class="required">*</span></label>
+                    {{ form.name }}
+                    {% if form.name.help_text %}<small class="form-hint">{{ form.name.help_text }}</small>{% endif %}
+                    {% if form.name.errors %}<p class="form-error">{{ form.name.errors.0 }}</p>{% endif %}
+                </div>
+                <div class="form-field">
+                    <label for="{{ form.unit.id_for_label }}">Unit<span class="required">*</span></label>
+                    {{ form.unit }}
+                    {% if form.unit.errors %}<p class="form-error">{{ form.unit.errors.0 }}</p>{% endif %}
+                </div>
+            </div>
 
-    // Ensure labels are active if fields have values (e.g., on edit page load)
-    M.updateTextFields();
-});
-</script>
+            <div class="grid-two">
+                <div class="form-field">
+                    <label for="{{ form.method.id_for_label }}">Method</label>
+                    {{ form.method }}
+                    {% if form.method.errors %}<p class="form-error">{{ form.method.errors.0 }}</p>{% endif %}
+                </div>
+                <div class="form-field">
+                    <label for="{{ form.group.id_for_label }}">Group</label>
+                    {{ form.group }}
+                    {% if form.group.errors %}<p class="form-error">{{ form.group.errors.0 }}</p>{% endif %}
+                </div>
+            </div>
+
+            <div class="grid-two">
+                <div class="form-field">
+                    <label for="{{ form.min_permissible_limit.id_for_label }}">Min. permissible limit</label>
+                    {{ form.min_permissible_limit }}
+                    {% if form.min_permissible_limit.help_text %}<small class="form-hint">{{ form.min_permissible_limit.help_text }}</small>{% endif %}
+                    {% if form.min_permissible_limit.errors %}<p class="form-error">{{ form.min_permissible_limit.errors.0 }}</p>{% endif %}
+                </div>
+                <div class="form-field">
+                    <label for="{{ form.max_permissible_limit.id_for_label }}">Max. permissible limit</label>
+                    {{ form.max_permissible_limit }}
+                    {% if form.max_permissible_limit.help_text %}<small class="form-hint">{{ form.max_permissible_limit.help_text }}</small>{% endif %}
+                    {% if form.max_permissible_limit.errors %}<p class="form-error">{{ form.max_permissible_limit.errors.0 }}</p>{% endif %}
+                </div>
+            </div>
+
+            <div class="grid-two">
+                <div class="form-field">
+                    <label for="{{ form.discipline.id_for_label }}">Discipline</label>
+                    {{ form.discipline }}
+                    {% if form.discipline.errors %}<p class="form-error">{{ form.discipline.errors.0 }}</p>{% endif %}
+                </div>
+                <div class="form-field">
+                    <label for="{{ form.fssai_limit.id_for_label }}">FSSAI limit</label>
+                    {{ form.fssai_limit }}
+                    {% if form.fssai_limit.errors %}<p class="form-error">{{ form.fssai_limit.errors.0 }}</p>{% endif %}
+                </div>
+            </div>
+
+            <div class="grid-two">
+                <div class="form-field">
+                    <label for="{{ form.category.id_for_label }}">Category</label>
+                    {{ form.category }}
+                    {% if form.category.errors %}<p class="form-error">{{ form.category.errors.0 }}</p>{% endif %}
+                </div>
+                <div class="form-field">
+                    <label for="{{ form.parent.id_for_label }}">Parent parameter</label>
+                    {{ form.parent }}
+                    {% if form.parent.errors %}<p class="form-error">{{ form.parent.errors.0 }}</p>{% endif %}
+                </div>
+            </div>
+
+            {% if form.non_field_errors %}
+            <div class="alert alert-danger" role="alert">
+                {% for error in form.non_field_errors %}
+                    <div>{{ error }}</div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <div class="form-actions">
+                <a href="{% url 'core:setup_test_parameters' %}" class="btn btn-light">Cancel</a>
+                <button type="submit" class="btn btn-primary">
+                    <i class="material-icons align-middle me-1">save</i>
+                    {% if is_edit %}Save changes{% else %}Create parameter{% endif %}
+                </button>
+            </div>
+        </form>
+    </section>
+
+    <section class="info-card muted">
+        <div class="section-title"><i class="material-icons">info_outline</i>Parameter tips</div>
+        <ul class="guideline-list">
+            <li>Use the official BIS or IS method references where available.</li>
+            <li>Leave min/max limits blank if the parameter is qualitative.</li>
+            <li>Group and discipline help organise the report layout.</li>
+            <li>Assign a parent parameter only when this entry is a sub-measure.</li>
+        </ul>
+    </section>
+</div>
 {% endblock %}
+
+{% block extra_js %}{% endblock extra_js %}

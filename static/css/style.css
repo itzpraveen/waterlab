@@ -1471,3 +1471,47 @@ main {
 .result-guidelines {
   margin-top: 1.5rem;
 }
+
+.parameter-form-shell {
+  display: grid;
+  gap: 1.75rem;
+}
+
+.parameter-form {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.parameter-form .grid-two {
+  display: grid;
+  gap: 1.25rem;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.parameter-form .form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.parameter-form label {
+  font-weight: 600;
+  color: rgba(15, 23, 42, 0.85);
+}
+
+.parameter-form .required {
+  color: var(--wl-danger);
+  margin-left: 0.25rem;
+}
+
+.parameter-form select.form-control {
+  appearance: none;
+  padding-right: 2.25rem;
+  background-image: url("data:image/svg+xml,%3Csvg width='16' height='16' viewBox='0 0 16 16' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M4 6L8 10L12 6' stroke='%2315293F' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+}
+
+.info-card.muted {
+  background: rgba(248, 250, 252, 0.85);
+}
