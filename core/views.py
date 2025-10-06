@@ -939,159 +939,175 @@ def download_sample_report_view(request, pk):
             
             canvas.restoreState()
 
-    doc = ReportDocTemplate(buffer, pagesize=A4,
-                            rightMargin=20*mm, leftMargin=20*mm,
-                            topMargin=30*mm, bottomMargin=20*mm)
-    
+    doc = ReportDocTemplate(
+        buffer,
+        pagesize=A4,
+        rightMargin=18*mm,
+        leftMargin=18*mm,
+        topMargin=28*mm,
+        bottomMargin=22*mm
+    )
+
     styles = getSampleStyleSheet()
     styles.add(ParagraphStyle(name='Center', alignment=TA_CENTER))
     styles.add(ParagraphStyle(name='Right', alignment=TA_RIGHT))
     styles.add(ParagraphStyle(name='Left', alignment=TA_LEFT))
-    styles.add(ParagraphStyle(name='ReportTitle', parent=styles['h1'], alignment=TA_CENTER, spaceAfter=12))
-    styles.add(ParagraphStyle(name='SectionTitle', parent=styles['h2'], spaceAfter=6))
-    styles.add(ParagraphStyle(name='TableHead', parent=styles['Normal'], fontName='Helvetica-Bold', alignment=TA_CENTER))
-    styles.add(ParagraphStyle(name='TableCell', parent=styles['Normal'], alignment=TA_LEFT, wordWrap='LTR', leading=12))
-    styles.add(ParagraphStyle(name='TableCellBold', parent=styles['TableCell'], fontName='Helvetica-Bold'))
+    styles.add(ParagraphStyle(name='ReportTitle', parent=styles['h1'], alignment=TA_CENTER, spaceAfter=14, fontSize=18))
+    styles.add(ParagraphStyle(name='SectionTitle', parent=styles['h2'], spaceAfter=10, fontSize=12, leading=14))
+    styles.add(ParagraphStyle(name='Label', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=9, textColor=colors.HexColor('#6B7280')))
+    styles.add(ParagraphStyle(name='Value', parent=styles['Normal'], fontSize=10, textColor=colors.HexColor('#0F172A')))
+    styles.add(ParagraphStyle(name='TableHead', parent=styles['Normal'], fontName='Helvetica-Bold', alignment=TA_CENTER, textColor=colors.white, fontSize=9))
+    styles.add(ParagraphStyle(name='TableCell', parent=styles['Normal'], alignment=TA_LEFT, leading=12, fontSize=9))
 
-    elements = []
-    
-    # Define colors from application theme
-    primary_color = colors.HexColor('#4a90e2') # A nice blue
-    secondary_color = colors.HexColor('#50e3c2') # A teal/green color
-    text_color = colors.HexColor('#333333')
-    
-    # Update styles with theme colors
-    styles['ReportTitle'].textColor = primary_color
-    styles['SectionTitle'].textColor = primary_color
-    styles['h3'].textColor = secondary_color
+    surface = colors.HexColor('#F8FAFC')
+    primary = colors.HexColor('#0F766E')
+    text_color = colors.HexColor('#0F172A')
+
+    styles['ReportTitle'].textColor = primary
+    styles['SectionTitle'].textColor = primary
     styles['Normal'].textColor = text_color
 
+    elements = []
+    elements.append(Spacer(1, 18))
+    elements.append(Paragraph("WATER QUALITY ANALYSIS REPORT", styles['ReportTitle']))
 
-    # Header
-    elements.append(Spacer(1, 15*mm))
-    elements.append(Paragraph("TEST REPORT", styles['ReportTitle']))
-
-    # Part A: Particulars of Sample Submitted
-    elements.append(Paragraph("PART - A: PARTICULARS OF SAMPLE SUBMITTED", styles['SectionTitle']))
-
-    part_a_data = [
-        [Paragraph('*Sample Described by customer as', styles['TableCellBold']), Paragraph(':', styles['TableCell']), Paragraph(sample.sample_type or 'N/A', styles['TableCell'])],
-        [Paragraph('*Customer Name', styles['TableCellBold']), Paragraph(':', styles['TableCell']), Paragraph(sample.customer.name or 'N/A', styles['TableCell'])],
-        [Paragraph('*Customer Address', styles['TableCellBold']), Paragraph(':', styles['TableCell']), Paragraph(sample.customer.address or 'N/A', styles['TableCell'])],
-        [Paragraph('Sample Code No', styles['TableCellBold']), Paragraph(':', styles['TableCell']), Paragraph(sample.display_id or 'N/A', styles['TableCell'])],
-        [Paragraph('Sample Type', styles['TableCellBold']), Paragraph(':', styles['TableCell']), Paragraph(sample.sample_type or 'N/A', styles['TableCell'])],
-        [Paragraph('Sample Received Date', styles['TableCellBold']), Paragraph(':', styles['TableCell']), Paragraph(sample.date_received_at_lab.strftime('%d.%m.%Y') if sample.date_received_at_lab else 'N/A', styles['TableCell'])],
-        [Paragraph('Sample Qty. Recd.', styles['TableCellBold']), Paragraph(':', styles['TableCell']), Paragraph(sample.quantity_received or 'N/A', styles['TableCell'])],
-        [Paragraph('Reference to sampling procedure', styles['TableCellBold']), Paragraph(':', styles['TableCell']), Paragraph(sample.sampling_procedure or 'N/A', styles['TableCell'])],
-        [Paragraph('Sample drawn by', styles['TableCellBold']), Paragraph(':', styles['TableCell']), Paragraph(sample.collected_by or 'N/A', styles['TableCell'])],
-        [Paragraph('Date of Sampling', styles['TableCellBold']), Paragraph(':', styles['TableCell']), Paragraph(sample.collection_datetime.strftime('%d.%m.%Y') if sample.collection_datetime else 'N/A', styles['TableCell'])],
-        [Paragraph('Location of Sampling', styles['TableCellBold']), Paragraph(':', styles['TableCell']), Paragraph(sample.sampling_location or 'N/A', styles['TableCell'])],
-        [Paragraph('Any Deviation from the Test methods', styles['TableCellBold']), Paragraph(':', styles['TableCell']), Paragraph(sample.deviations or 'NIL', styles['TableCell'])],
-        [Paragraph('Test Commenced On', styles['TableCellBold']), Paragraph(':', styles['TableCell']), Paragraph(sample.test_commenced_on.strftime('%d.%m.%Y') if sample.test_commenced_on else 'N/A', styles['TableCell'])],
-        [Paragraph('Test Completed On', styles['TableCellBold']), Paragraph(':', styles['TableCell']), Paragraph(sample.test_completed_on.strftime('%d.%m.%Y') if sample.test_completed_on else 'N/A', styles['TableCell'])],
+    meta_rows = [
+        [Paragraph('<b>Sample Code</b>', styles['Label']), Paragraph(sample.display_id or 'N/A', styles['Value']),
+         Paragraph('<b>ULR Number</b>', styles['Label']), Paragraph(sample.ulr_number or 'N/A', styles['Value'])],
+        [Paragraph('<b>Customer</b>', styles['Label']), Paragraph(sample.customer.name or 'N/A', styles['Value']),
+         Paragraph('<b>Report Number</b>', styles['Label']), Paragraph(sample.report_number or 'N/A', styles['Value'])],
+        [Paragraph('<b>Sample Source</b>', styles['Label']), Paragraph(sample.get_sample_source_display() or 'N/A', styles['Value']),
+         Paragraph('<b>Collected On</b>', styles['Label']), Paragraph(sample.collection_datetime.strftime('%d %b %Y %H:%M') if sample.collection_datetime else 'N/A', styles['Value'])],
+        [Paragraph('<b>Received At Lab</b>', styles['Label']), Paragraph(sample.date_received_at_lab.strftime('%d %b %Y %H:%M') if sample.date_received_at_lab else 'N/A', styles['Value']),
+         Paragraph('<b>Location</b>', styles['Label']), Paragraph(sample.sampling_location or 'N/A', styles['Value'])],
+        [Paragraph('<b>Test Commenced</b>', styles['Label']), Paragraph(sample.test_commenced_on.strftime('%d %b %Y') if sample.test_commenced_on else 'N/A', styles['Value']),
+         Paragraph('<b>Test Completed</b>', styles['Label']), Paragraph(sample.test_completed_on.strftime('%d %b %Y') if sample.test_completed_on else 'N/A', styles['Value'])]
     ]
-    part_a_table = Table(part_a_data, colWidths=[60*mm, 5*mm, 100*mm])
-    part_a_table.setStyle(TableStyle([
-        ('ALIGN', (0,0), (-1,-1), 'LEFT'),
+    meta_table = Table(meta_rows, colWidths=[32*mm, 55*mm, 32*mm, doc.width - 119*mm])
+    meta_table.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,-1), surface),
+        ('BOX', (0,0), (-1,-1), 0.75, colors.HexColor('#E2E8F0')),
+        ('INNERGRID', (0,0), (-1,-1), 0.25, colors.HexColor('#E2E8F0')),
         ('VALIGN', (0,0), (-1,-1), 'TOP'),
-        ('LEFTPADDING', (0,0), (-1,-1), 0),
-        ('RIGHTPADDING', (0,0), (-1,-1), 0),
-        ('WORDWRAP', (0,0), (-1,-1), 'CJK'),
+        ('LEFTPADDING', (0,0), (-1,-1), 6),
+        ('RIGHTPADDING', (0,0), (-1,-1), 6),
+        ('TOPPADDING', (0,0), (-1,-1), 6),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 6),
     ]))
-    elements.append(part_a_table)
-    elements.append(Spacer(1, 12))
+    elements.append(meta_table)
+    elements.append(Spacer(1, 16))
 
-    # Test Results
-    elements.append(Paragraph("TEST RESULTS", styles['SectionTitle']))
+    address_table = Table([
+        [Paragraph('<b>Customer Address</b>', styles['Label'])],
+        [Paragraph(sample.customer.address or 'N/A', styles['Value'])]
+    ], colWidths=[doc.width])
+    address_table.setStyle(TableStyle([
+        ('BOX', (0,0), (-1,-1), 0.75, colors.HexColor('#E2E8F0')),
+        ('LEFTPADDING', (0,0), (-1,-1), 8),
+        ('RIGHTPADDING', (0,0), (-1,-1), 8),
+        ('TOPPADDING', (0,0), (-1,-1), 6),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 6),
+        ('BACKGROUND', (0,0), (-1,-1), colors.white),
+    ]))
+    elements.append(address_table)
+    elements.append(Spacer(1, 20))
 
-    results = TestResult.objects.filter(sample=sample).select_related('parameter').order_by('parameter__category', 'parameter__name')
-    
-    from itertools import groupby
-    available_width = doc.width
-    results_col_widths = [
-        available_width * 0.07,  # S.No
-        available_width * 0.24,  # Test Parameters
-        available_width * 0.20,  # Test Method
-        available_width * 0.12,  # Result
-        available_width * 0.15,  # Unit
-        available_width * 0.22,  # Acceptable Limit
-    ]
-    grouped_results = groupby(results, key=lambda x: x.parameter.category or "Uncategorized")
+    elements.append(Paragraph("TEST OBSERVATIONS", styles['SectionTitle']))
 
-    for category, group in grouped_results:
-        elements.append(Paragraph(f"<b>Table - {category}</b>", styles['h3']))
-        elements.append(Spacer(1, 4))
-        
-        table_data = [
-            [Paragraph(h, styles['TableHead']) for h in ["S.No", "Test Parameters", "Test Method", "Result", "Unit", "Acceptable Limit as per IS 10500 : 2012"]]
+    results = sample.results.select_related('parameter').all()
+    if not results:
+        elements.append(Paragraph("No test results recorded for this sample.", styles['Normal']))
+    else:
+        header = [
+            Paragraph('Parameter', styles['TableHead']),
+            Paragraph('Result', styles['TableHead']),
+            Paragraph('Unit', styles['TableHead']),
+            Paragraph('Method', styles['TableHead']),
+            Paragraph('Limits', styles['TableHead']),
+            Paragraph('Status', styles['TableHead']),
+            Paragraph('Observation', styles['TableHead'])
         ]
-        
-        for i, result in enumerate(group, 1):
-            unit_display = result.parameter.unit
-            result_display = result.result_value
+        table_data = [header]
 
-            # Handle cases where the unit might be a qualitative result
-            if unit_display and unit_display.isalpha() and len(unit_display) > 3:
-                result_display = unit_display
-                unit_display = ''
+        def format_limits(param):
+            if param.min_permissible_limit is None and param.max_permissible_limit is None:
+                return '—'
+            if param.min_permissible_limit is None:
+                return f"≤ {param.max_permissible_limit} {param.unit or ''}".strip()
+            if param.max_permissible_limit is None:
+                return f"≥ {param.min_permissible_limit} {param.unit or ''}".strip()
+            return f"{param.min_permissible_limit} – {param.max_permissible_limit} {param.unit or ''}".strip()
 
-            limit = f"{result.parameter.min_permissible_limit or ''} - {result.parameter.max_permissible_limit or ''}"
-            if result.parameter.max_permissible_limit and not result.parameter.min_permissible_limit:
-                limit = f"Max {result.parameter.max_permissible_limit}"
+        for result in results:
+            param = result.parameter
+            limits_text = format_limits(param)
+            status = getattr(result, 'get_limit_status', lambda: None)()
+            if status == 'WITHIN_LIMITS':
+                status_label = '<font color="#0F766E">Within limits</font>'
+            elif status == 'BELOW_LIMIT':
+                status_label = '<font color="#B45309">Below minimum</font>'
+            elif status == 'ABOVE_LIMIT':
+                status_label = '<font color="#DC2626">Above maximum</font>'
+            elif status == 'NON_NUMERIC':
+                status_label = 'Non-numeric'
+            else:
+                status_label = '—'
 
             table_data.append([
-                Paragraph(str(i), styles['TableCell']),
-                Paragraph(result.parameter.name or 'N/A', styles['TableCell']),
-                Paragraph(result.parameter.method or 'N/A', styles['TableCell']),
-                Paragraph(str(result_display) if result_display is not None else 'N/A', styles['TableCell']),
-                Paragraph(unit_display or '', styles['TableCell']),
-                Paragraph(limit or 'N/A', styles['TableCell']),
+                Paragraph(param.name or '—', styles['TableCell']),
+                Paragraph(result.result_value or '—', styles['TableCell']),
+                Paragraph(param.unit or '—', styles['TableCell']),
+                Paragraph(param.method or '—', styles['TableCell']),
+                Paragraph(limits_text, styles['TableCell']),
+                Paragraph(status_label, styles['TableCell']),
+                Paragraph(result.observation or result.remarks or '—', styles['TableCell'])
             ])
-            
-        results_table = Table(table_data, colWidths=results_col_widths, repeatRows=1)
+
+        column_widths = [45*mm, 22*mm, 15*mm, 32*mm, 32*mm, 25*mm, doc.width - 171*mm]
+        results_table = Table(table_data, colWidths=column_widths, repeatRows=1)
         results_table.setStyle(TableStyle([
-            ('BACKGROUND', (0,0), (-1,0), primary_color),
-            ('TEXTCOLOR', (0,0), (-1,0), colors.whitesmoke),
-            ('ALIGN', (0,0), (0,-1), 'CENTER'),
-            ('ALIGN', (3,1), (3,-1), 'CENTER'),
-            ('ALIGN', (4,1), (4,-1), 'LEFT'),
-            ('ALIGN', (1,1), (2,-1), 'LEFT'),
-            ('ALIGN', (5,1), (5,-1), 'LEFT'),
-            ('VALIGN', (0,0), (-1,-1), 'TOP'),
+            ('BACKGROUND', (0,0), (-1,0), primary),
+            ('TEXTCOLOR', (0,0), (-1,0), colors.white),
             ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
-            ('BOTTOMPADDING', (0,0), (-1,0), 8),
-            ('TOPPADDING', (0,0), (-1,0), 8),
-            ('GRID', (0,0), (-1,-1), 1, colors.HexColor('#cccccc')),
-            ('BACKGROUND', (0,1), (-1,-1), colors.HexColor('#f0f8ff')),
-            ('LEFTPADDING', (0,1), (-1,-1), 4),
-            ('RIGHTPADDING', (0,1), (-1,-1), 4),
-            ('WORDWRAP', (0,1), (-1,-1), 'LTR'),
+            ('ALIGN', (0,0), (-1,0), 'CENTER'),
+            ('VALIGN', (0,0), (-1,-1), 'TOP'),
+            ('ROWBACKGROUNDS', (0,1), (-1,-1), (colors.white, colors.HexColor('#F1F5F9'))),
+            ('GRID', (0,0), (-1,-1), 0.4, colors.HexColor('#E2E8F0')),
+            ('LEFTPADDING', (0,0), (-1,-1), 6),
+            ('RIGHTPADDING', (0,0), (-1,-1), 6),
+            ('TOPPADDING', (0,0), (-1,-1), 6),
+            ('BOTTOMPADDING', (0,0), (-1,-1), 6),
         ]))
         elements.append(results_table)
-        elements.append(Spacer(1, 12))
+        elements.append(Spacer(1, 18))
 
-    # Remarks
-    elements.append(Paragraph("Remarks:", styles['h3']))
-    elements.append(Paragraph("The above sample complies with Requirement as per FSSAI Drinking Water 2.10.9 complies to IS 10500: 2012 (Acceptable Limit) Amendment No:4 Drinking Water Specification for above tested parameter.", styles['Normal']))
-    elements.append(Spacer(1, 12))
-    
-    elements.append(Paragraph("********** End of Report**********", styles['Center']))
-    elements.append(Spacer(1, 24))
+    elements.append(Paragraph("REMARKS", styles['SectionTitle']))
+    elements.append(Paragraph(
+        "The sample has been analysed in accordance with IS 10500:2012 guidelines. Observations above include automated compliance status for each parameter.",
+        styles['Normal']
+    ))
+    elements.append(Spacer(1, 18))
 
-    # Signatories
-    signatory_data = [
-        [
-            Paragraph(f"<b>{sample.food_analyst.get_full_name() if sample.food_analyst else 'N/A'}</b><br/>Food Analyst", styles['Center']),
-            Paragraph(f"<b>{sample.reviewed_by.get_full_name() if sample.reviewed_by else 'N/A'}</b><br/>Deputy Technical Manager – Biological", styles['Center']),
-            Paragraph(f"<b>{sample.lab_manager.get_full_name() if sample.lab_manager else 'N/A'}</b><br/>Technical Manager – Chemical", styles['Center']),
-        ]
+    elements.append(Paragraph("AUTHORISED SIGNATORIES", styles['SectionTitle']))
+    signatory_names = [
+        sample.food_analyst.get_full_name() if sample.food_analyst else 'Food Analyst',
+        sample.reviewed_by.get_full_name() if sample.reviewed_by else 'Deputy Technical Manager – Biological',
+        sample.lab_manager.get_full_name() if sample.lab_manager else 'Technical Manager – Chemical'
     ]
-    signatory_table = Table(signatory_data, colWidths=[55*mm, 55*mm, 55*mm])
-    signatory_table.setStyle(TableStyle([
+    signatory_roles = ['Food Analyst', 'Deputy Technical Manager – Biological', 'Technical Manager – Chemical']
+
+    sign_rows = [[
+        Paragraph(f"<b>{signatory_names[0]}</b><br/>{signatory_roles[0]}", styles['Center']),
+        Paragraph(f"<b>{signatory_names[1]}</b><br/>{signatory_roles[1]}", styles['Center']),
+        Paragraph(f"<b>{signatory_names[2]}</b><br/>{signatory_roles[2]}", styles['Center'])
+    ]]
+    sign_table = Table(sign_rows, colWidths=[58*mm, 58*mm, 58*mm])
+    sign_table.setStyle(TableStyle([
         ('ALIGN', (0,0), (-1,-1), 'CENTER'),
         ('VALIGN', (0,0), (-1,-1), 'TOP'),
+        ('TOPPADDING', (0,0), (-1,-1), 12)
     ]))
-    elements.append(signatory_table)
+    elements.append(sign_table)
 
     doc.build(elements)
 
