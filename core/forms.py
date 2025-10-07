@@ -7,7 +7,7 @@ from django.contrib.auth.forms import PasswordChangeForm
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 from django.db.models import Prefetch
-from .models import Customer, Sample, TestParameter # Added TestParameter
+from .models import Customer, Sample, TestParameter, CustomUser # Added TestParameter, CustomUser
 
 class CustomerForm(forms.ModelForm):
     class Meta:
@@ -297,16 +297,16 @@ class TestParameterForm(forms.ModelForm):
             'group', 'discipline', 'fssai_limit', 'category', 'display_order', 'parent'
         ]
         widgets = {
-            'name': forms.TextInput(attrs={'class': 'validate'}),
-            'unit': forms.TextInput(attrs={'class': 'validate'}),
-            'method': forms.TextInput(attrs={'class': 'validate'}),
-            'min_permissible_limit': forms.NumberInput(attrs={'class': 'validate', 'step': 'any'}),
-            'max_permissible_limit': forms.NumberInput(attrs={'class': 'validate', 'step': 'any'}),
-            'group': forms.TextInput(attrs={'class': 'validate'}),
-            'discipline': forms.TextInput(attrs={'class': 'validate'}),
-            'fssai_limit': forms.TextInput(attrs={'class': 'validate'}),
-            'category': forms.TextInput(attrs={'class': 'validate'}),
-            'display_order': forms.NumberInput(attrs={'class': 'validate', 'min': '0'}),
+            'name': forms.TextInput(attrs={'class': 'form-control'}),
+            'unit': forms.TextInput(attrs={'class': 'form-control'}),
+            'method': forms.TextInput(attrs={'class': 'form-control'}),
+            'min_permissible_limit': forms.NumberInput(attrs={'class': 'form-control', 'step': 'any'}),
+            'max_permissible_limit': forms.NumberInput(attrs={'class': 'form-control', 'step': 'any'}),
+            'group': forms.TextInput(attrs={'class': 'form-control'}),
+            'discipline': forms.TextInput(attrs={'class': 'form-control'}),
+            'fssai_limit': forms.TextInput(attrs={'class': 'form-control'}),
+            'category': forms.TextInput(attrs={'class': 'form-control'}),
+            'display_order': forms.NumberInput(attrs={'class': 'form-control', 'min': '0'}),
             'parent': forms.Select(attrs={'class': 'form-control'}),
         }
         labels = {
@@ -325,6 +325,108 @@ class TestParameterForm(forms.ModelForm):
         if commit:
             instance.save()
         return instance
+
+
+class _BaseAdminUserForm(forms.ModelForm):
+    role = forms.ChoiceField(choices=CustomUser.ROLE_CHOICES, widget=forms.Select(attrs={'class': 'form-select'}))
+    is_active = forms.BooleanField(required=False, initial=True)
+
+    class Meta:
+        model = CustomUser
+        fields = ['username', 'first_name', 'last_name', 'email', 'phone', 'department', 'role', 'is_active']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for name, field in self.fields.items():
+            if isinstance(field.widget, (forms.CheckboxInput, forms.Select)):
+                continue
+            existing_classes = field.widget.attrs.get('class', '')
+            field.widget.attrs['class'] = (existing_classes + ' form-control').strip()
+        if isinstance(self.fields['is_active'].widget, forms.CheckboxInput):
+            self.fields['is_active'].widget.attrs.setdefault('class', 'form-check-input')
+        self.fields['role'].widget.attrs.setdefault('class', 'form-select')
+
+    def clean_role(self):
+        role = self.cleaned_data.get('role')
+        valid_roles = {choice[0] for choice in CustomUser.ROLE_CHOICES}
+        if role not in valid_roles:
+            raise ValidationError('Invalid role selected.')
+        return role
+
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        user.is_staff = user.role == 'admin'
+        if commit:
+            user.save()
+            self.save_m2m()
+        return user
+
+
+class AdminUserCreateForm(_BaseAdminUserForm):
+    password1 = forms.CharField(
+        label='Temporary password',
+        widget=forms.PasswordInput(attrs={'class': 'form-control'}),
+        help_text='Provide a starter password. The user will be prompted to change it after signing in.'
+    )
+    password2 = forms.CharField(
+        label='Confirm password',
+        widget=forms.PasswordInput(attrs={'class': 'form-control'})
+    )
+
+    class Meta(_BaseAdminUserForm.Meta):
+        fields = _BaseAdminUserForm.Meta.fields
+
+    def clean(self):
+        cleaned_data = super().clean()
+        password1 = cleaned_data.get('password1')
+        password2 = cleaned_data.get('password2')
+        if password1 != password2:
+            self.add_error('password2', ValidationError('Passwords do not match.'))
+        return cleaned_data
+
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        user.set_password(self.cleaned_data['password1'])
+        if commit:
+            user.save()
+            self.save_m2m()
+        return user
+
+
+class AdminUserUpdateForm(_BaseAdminUserForm):
+    password1 = forms.CharField(
+        label='New password',
+        widget=forms.PasswordInput(attrs={'class': 'form-control'}),
+        required=False,
+        help_text='Leave blank to keep the current password.'
+    )
+    password2 = forms.CharField(
+        label='Confirm new password',
+        widget=forms.PasswordInput(attrs={'class': 'form-control'}),
+        required=False
+    )
+
+    class Meta(_BaseAdminUserForm.Meta):
+        fields = _BaseAdminUserForm.Meta.fields
+
+    def clean(self):
+        cleaned_data = super().clean()
+        password1 = cleaned_data.get('password1')
+        password2 = cleaned_data.get('password2')
+        if password1 or password2:
+            if password1 != password2:
+                self.add_error('password2', ValidationError('Passwords do not match.'))
+        return cleaned_data
+
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        password1 = self.cleaned_data.get('password1')
+        if password1:
+            user.set_password(password1)
+        if commit:
+            user.save()
+            self.save_m2m()
+        return user
 
 class CustomPasswordChangeForm(PasswordChangeForm):
     def __init__(self, *args, **kwargs):

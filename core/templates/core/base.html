@@ -72,6 +72,12 @@
                     {% endif %}
                     {% if user.is_admin %}
                     <li class="nav-item">
+                        <a class="nav-link {% if 'user_' in request.resolver_match.url_name %}active{% endif %}" href="{% url 'core:user_list' %}">
+                            <i class="material-icons align-middle me-1">group</i>
+                            Users
+                        </a>
+                    </li>
+                    <li class="nav-item">
                         <a class="nav-link {% if 'setup_test_parameters' == request.resolver_match.url_name %}active{% endif %}" href="{% url 'core:setup_test_parameters' %}">
                             <i class="material-icons align-middle me-1">tune</i>
                             Test Setup

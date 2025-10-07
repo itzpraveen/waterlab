@@ -71,24 +71,56 @@
         {% if form.tests_requested.help_text %}
         <div class="alert alert-info" role="alert">{{ form.tests_requested.help_text }}</div>
         {% endif %}
-        <div class="checkbox-grid">
-            {% for group, parameters in form.grouped_parameters.items %}
-            <div class="checkbox-card">
-                <div class="group-title">
-                    <input type="checkbox" class="form-check-input parent-checkbox" data-group="{{ group.name|slugify }}" id="group-{{ forloop.counter }}">
-                    <label class="form-check-label fw-semibold" for="group-{{ forloop.counter }}">{{ group.name }}</label>
+
+        <div class="test-selector">
+            <div class="test-toolbar">
+                <div class="test-counter" aria-live="polite" data-role="selected-overall">0 selected</div>
+                <div class="test-filter">
+                    <i class="material-icons" aria-hidden="true">search</i>
+                    <input type="search" id="test-parameter-search" class="form-control" placeholder="Search parameters, units or methods..." autocomplete="off">
                 </div>
-                <div class="checkbox-list">
-                    {% for parameter in parameters %}
-                    <div class="form-check">
-                        <input class="form-check-input child-checkbox" type="checkbox" name="{{ form.tests_requested.name }}" value="{{ parameter.pk }}" data-group="{{ group.name|slugify }}" id="param-{{ parameter.pk }}" {% if parameter.pk in form.tests_requested.value %}checked{% endif %}>
-                        <label class="form-check-label" for="param-{{ parameter.pk }}">{{ parameter.name }}</label>
-                    </div>
-                    {% endfor %}
-                </div>
+                <button type="button" class="btn btn-outline-secondary btn-sm" data-action="clear-selection" disabled>
+                    <i class="material-icons align-middle me-1">clear_all</i>Clear selection
+                </button>
             </div>
-            {% endfor %}
+
+            <div class="test-groups" data-role="test-groups">
+                {% for group, parameters in form.grouped_parameters.items %}
+                <details class="test-group" open data-group="{{ group.name|slugify }}">
+                    <summary>
+                        <span class="test-group-title">{{ group.name }}</span>
+                        <span class="test-group-meta">
+                            <span class="badge-soft info" data-role="group-count">0/{{ parameters|length }}</span>
+                            <i class="material-icons" aria-hidden="true">expand_more</i>
+                        </span>
+                    </summary>
+                    <div class="test-group-actions">
+                        <button type="button" class="btn btn-link btn-sm" data-action="toggle-group" data-group="{{ group.name|slugify }}">Select all</button>
+                    </div>
+                    <div class="test-options" role="group" aria-label="{{ group.name }} tests">
+                        {% for parameter in parameters %}
+                        <label class="test-option" data-group="{{ group.name|slugify }}" data-search="{{ parameter.name }} {{ parameter.unit|default:'' }} {{ parameter.method|default:'' }}" for="param-{{ parameter.pk }}">
+                            <input class="form-check-input" type="checkbox" name="{{ form.tests_requested.name }}" value="{{ parameter.pk }}" id="param-{{ parameter.pk }}" {% if parameter.pk in form.tests_requested.value %}checked{% endif %}>
+                            <span class="test-option-body">
+                                <span class="test-option-name">{{ parameter.name }}</span>
+                                <span class="test-option-meta">
+                                    {% if parameter.unit %}<span class="test-chip">{{ parameter.unit }}</span>{% endif %}
+                                    {% if parameter.method %}<span class="test-chip">{{ parameter.method }}</span>{% endif %}
+                                </span>
+                            </span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                </details>
+                {% endfor %}
+            </div>
+
+            <div class="test-empty-state" hidden>
+                <i class="material-icons" aria-hidden="true">filter_alt_off</i>
+                <p>No parameters match your search. Try different keywords.</p>
+            </div>
         </div>
+
         {% if form.tests_requested.errors %}
         <div class="invalid-feedback d-block small">{{ form.tests_requested.errors.0 }}</div>
         {% endif %}
@@ -109,34 +141,6 @@
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script src="https://cdn.jsdelivr.net/npm/tom-select/dist/js/tom-select.complete.min.js"></script>
 <script>
-(function() {
-    const parentBoxes = document.querySelectorAll('.parent-checkbox');
-    const childBoxes = document.querySelectorAll('.child-checkbox');
-
-    parentBoxes.forEach(parent => {
-        parent.addEventListener('change', function() {
-            const group = this.dataset.group;
-            document.querySelectorAll(`.child-checkbox[data-group="${group}"]`).forEach(child => {
-                child.checked = parent.checked;
-            });
-        });
-    });
-
-    const syncParent = (group) => {
-        const children = Array.from(document.querySelectorAll(`.child-checkbox[data-group="${group}"]`));
-        const parent = document.querySelector(`.parent-checkbox[data-group="${group}"]`);
-        if (!parent || children.length === 0) return;
-        const checkedCount = children.filter(cb => cb.checked).length;
-        parent.indeterminate = checkedCount > 0 && checkedCount < children.length;
-        parent.checked = checkedCount === children.length;
-    };
-
-    childBoxes.forEach(child => {
-        syncParent(child.dataset.group);
-        child.addEventListener('change', () => syncParent(child.dataset.group));
-    });
-})();
-
 document.addEventListener('DOMContentLoaded', function() {
     const dateInput = document.querySelector('.js-datetime-picker');
     if (dateInput && window.flatpickr) {
@@ -177,6 +181,122 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 
     document.querySelectorAll('.js-searchable-select').forEach(enhanceSelect);
+
+    const testSelector = document.querySelector('.test-selector');
+    if (!testSelector) {
+        return;
+    }
+
+    const filterInput = document.getElementById('test-parameter-search');
+    const groupNodes = Array.from(testSelector.querySelectorAll('.test-group'));
+    const checkboxNodes = Array.from(testSelector.querySelectorAll('.test-option input[type="checkbox"]'));
+    const totalLabel = testSelector.querySelector('[data-role="selected-overall"]');
+    const clearButton = testSelector.querySelector('[data-action="clear-selection"]');
+    const emptyState = testSelector.querySelector('.test-empty-state');
+
+    const updateCounts = () => {
+        let selectedTotal = 0;
+
+        groupNodes.forEach(group => {
+            const checkboxes = Array.from(group.querySelectorAll('.test-option input[type="checkbox"]'));
+            const selected = checkboxes.filter(cb => cb.checked).length;
+            selectedTotal += selected;
+
+            const countBadge = group.querySelector('[data-role="group-count"]');
+            if (countBadge) {
+                countBadge.textContent = `${selected}/${checkboxes.length}`;
+            }
+
+            const toggleButton = group.querySelector('[data-action="toggle-group"]');
+            if (toggleButton) {
+                const isAllSelected = checkboxes.length > 0 && selected === checkboxes.length;
+                toggleButton.textContent = isAllSelected ? 'Clear all' : 'Select all';
+            }
+        });
+
+        if (totalLabel) {
+            totalLabel.textContent = checkboxNodes.length ? `${selectedTotal} selected` : 'No tests available';
+        }
+
+        if (clearButton) {
+            clearButton.disabled = selectedTotal === 0;
+        }
+    };
+
+    const applyFilter = (term) => {
+        const query = term.trim().toLowerCase();
+        let visibleCount = 0;
+
+        groupNodes.forEach(group => {
+            const options = Array.from(group.querySelectorAll('.test-option'));
+            let hasVisible = false;
+
+            options.forEach(option => {
+                const checkbox = option.querySelector('input[type="checkbox"]');
+                const searchText = (option.dataset.search || '').toLowerCase();
+                const matches = !query || searchText.includes(query) || (checkbox && checkbox.checked);
+                option.hidden = !matches;
+                option.classList.toggle('is-hidden', !matches);
+                if (matches) {
+                    hasVisible = true;
+                    visibleCount += 1;
+                }
+            });
+
+            if (hasVisible) {
+                group.hidden = false;
+                if (!group.hasAttribute('open')) {
+                    group.setAttribute('open', '');
+                }
+            } else {
+                group.hidden = true;
+                group.removeAttribute('open');
+            }
+        });
+
+        if (emptyState) {
+            emptyState.hidden = visibleCount > 0;
+        }
+    };
+
+    checkboxNodes.forEach(cb => cb.addEventListener('change', updateCounts));
+
+    testSelector.querySelectorAll('[data-action="toggle-group"]').forEach(button => {
+        button.addEventListener('click', event => {
+            event.preventDefault();
+            const groupName = button.getAttribute('data-group');
+            const group = groupNodes.find(node => node.dataset.group === groupName);
+            if (!group) {
+                return;
+            }
+            const checkboxes = Array.from(group.querySelectorAll('.test-option input[type="checkbox"]'));
+            const selected = checkboxes.filter(cb => cb.checked).length;
+            const shouldSelectAll = checkboxes.length === 0 ? false : selected !== checkboxes.length;
+            checkboxes.forEach(cb => {
+                cb.checked = shouldSelectAll;
+            });
+            updateCounts();
+        });
+    });
+
+    if (clearButton) {
+        clearButton.addEventListener('click', event => {
+            event.preventDefault();
+            checkboxNodes.forEach(cb => {
+                cb.checked = false;
+            });
+            updateCounts();
+        });
+    }
+
+    if (filterInput) {
+        filterInput.addEventListener('input', event => {
+            applyFilter(event.target.value || '');
+        });
+    }
+
+    updateCounts();
+    applyFilter(filterInput ? filterInput.value || '' : '');
 });
 </script>
 {% endblock %}

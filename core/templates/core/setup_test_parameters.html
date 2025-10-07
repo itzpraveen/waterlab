@@ -22,10 +22,10 @@
 
 {% block content %}
 <div class="param-layout">
-    {% if existing_params %}
     <section class="info-card param-card">
-        <div class="section-title"><i class="material-icons">insights</i> Current test parameters <span class="badge-soft info">{{ existing_params.count }}</span></div>
-        <p class="text-muted small mb-3">The following parameters are currently available for assigning to samples.</p>
+        <div class="section-title"><i class="material-icons">insights</i> Laboratory presets</div>
+        {% if existing_params %}
+        <p class="text-muted small mb-3">{{ existing_params.count }} parameter{{ existing_params.count|pluralize }} currently available for sample registration.</p>
         <div class="chip-grid">
             {% for param in existing_params %}
             <span class="chip-pill">
@@ -34,12 +34,20 @@
             </span>
             {% endfor %}
         </div>
-    </section>
-    {% endif %}
+        {% else %}
+        <div class="alert alert-info" role="alert">
+            <div class="d-flex align-items-start gap-2">
+                <i class="material-icons" aria-hidden="true">info</i>
+                <div>
+                    <strong>No test parameters found.</strong>
+                    <div>Seed the standard set or add custom parameters to begin scheduling tests.</div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
 
-    <section class="info-card param-card">
-        <div class="section-title"><i class="material-icons">playlist_add</i>{% if existing_params %} Add standard parameters{% else %} Create standard parameters{% endif %}</div>
-        <p class="text-muted">We maintain a predefined group of water quality parameters. You can add them in one click&mdash;existing records will be skipped automatically.</p>
+        <div class="section-title mt-4"><i class="material-icons">playlist_add</i>{% if existing_params %} Add standard parameters{% else %} Create standard parameters{% endif %}</div>
+        <p class="text-muted">One click adds our recommended water-quality panel. Existing entries remain untouched.</p>
 
         <div class="param-standard-grid">
             <ul class="param-standard-list">
@@ -71,11 +79,106 @@
             <p class="text-muted small mb-0">Safe to re-run &mdash; duplicates are never created.</p>
         </div>
     </section>
+
+    <section class="info-card param-card">
+        <div class="section-title"><i class="material-icons">tune</i> Add a custom parameter</div>
+        <p class="text-muted">Capture additional analytes specific to your lab. Values sync instantly to the sample registration form.</p>
+
+        {% if form.non_field_errors %}
+        <div class="alert alert-danger" role="alert">
+            {% for error in form.non_field_errors %}
+            <div>{{ error }}</div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <form method="post" class="param-form">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="manual_create">
+            <div class="field-grid">
+                <div class="form-field">
+                    <label for="{{ form.name.id_for_label }}">Parameter name{% if form.name.field.required %}<span class="required">*</span>{% endif %}</label>
+                    {{ form.name }}
+                    {% if form.name.errors %}<div class="form-error">{{ form.name.errors.0 }}</div>{% endif %}
+                </div>
+                <div class="form-field">
+                    <label for="{{ form.unit.id_for_label }}">Unit{% if form.unit.field.required %}<span class="required">*</span>{% endif %}</label>
+                    {{ form.unit }}
+                    {% if form.unit.errors %}<div class="form-error">{{ form.unit.errors.0 }}</div>{% endif %}
+                </div>
+                <div class="form-field">
+                    <label for="{{ form.method.id_for_label }}">Method</label>
+                    {{ form.method }}
+                    {% if form.method.errors %}<div class="form-error">{{ form.method.errors.0 }}</div>{% endif %}
+                </div>
+                <div class="form-field">
+                    <label for="{{ form.display_order.id_for_label }}">Display order</label>
+                    {{ form.display_order }}
+                    <div class="help-text">Lower values appear earlier in lists and reports.</div>
+                    {% if form.display_order.errors %}<div class="form-error">{{ form.display_order.errors.0 }}</div>{% endif %}
+                </div>
+                <div class="form-field">
+                    <label for="{{ form.min_permissible_limit.id_for_label }}">Minimum limit</label>
+                    {{ form.min_permissible_limit }}
+                    {% if form.min_permissible_limit.errors %}<div class="form-error">{{ form.min_permissible_limit.errors.0 }}</div>{% endif %}
+                </div>
+                <div class="form-field">
+                    <label for="{{ form.max_permissible_limit.id_for_label }}">Maximum limit</label>
+                    {{ form.max_permissible_limit }}
+                    {% if form.max_permissible_limit.errors %}<div class="form-error">{{ form.max_permissible_limit.errors.0 }}</div>{% endif %}
+                </div>
+                <div class="form-field">
+                    <label for="{{ form.group.id_for_label }}">Group</label>
+                    {{ form.group }}
+                    {% if form.group.errors %}<div class="form-error">{{ form.group.errors.0 }}</div>{% endif %}
+                </div>
+                <div class="form-field">
+                    <label for="{{ form.discipline.id_for_label }}">Discipline</label>
+                    {{ form.discipline }}
+                    {% if form.discipline.errors %}<div class="form-error">{{ form.discipline.errors.0 }}</div>{% endif %}
+                </div>
+                <div class="form-field">
+                    <label for="{{ form.category.id_for_label }}">Category</label>
+                    {{ form.category }}
+                    {% if form.category.errors %}<div class="form-error">{{ form.category.errors.0 }}</div>{% endif %}
+                </div>
+                <div class="form-field">
+                    <label for="{{ form.fssai_limit.id_for_label }}">FSSAI limit</label>
+                    {{ form.fssai_limit }}
+                    {% if form.fssai_limit.errors %}<div class="form-error">{{ form.fssai_limit.errors.0 }}</div>{% endif %}
+                </div>
+                <div class="form-field">
+                    <label for="{{ form.parent.id_for_label }}">Parent parameter</label>
+                    {{ form.parent }}
+                    <div class="help-text">Use to nest sub-parameters beneath a broader test.</div>
+                    {% if form.parent.errors %}<div class="form-error">{{ form.parent.errors.0 }}</div>{% endif %}
+                </div>
+            </div>
+
+            <div class="param-form-actions">
+                <button type="submit" class="btn btn-primary">
+                    <i class="material-icons align-middle me-1">save</i>
+                    Save parameter
+                </button>
+                <button type="reset" class="btn btn-outline-secondary">
+                    <i class="material-icons align-middle me-1">refresh</i>
+                    Reset form
+                </button>
+            </div>
+        </form>
+    </section>
 </div>
 
 {% if existing_params %}
 <section class="info-card param-table-card">
     <div class="section-title"><i class="material-icons">dataset</i> Existing test parameters</div>
+    <div class="param-search">
+        <div class="param-search-field">
+            <i class="material-icons" aria-hidden="true">search</i>
+            <input type="search" id="parameter-table-filter" class="form-control" placeholder="Quick search by name, method or unit..." autocomplete="off">
+        </div>
+        <span class="text-muted small">{{ parameters.count }} total</span>
+    </div>
     <div class="table-responsive">
         <table class="table table-modern align-middle param-table">
             <thead>
@@ -91,12 +194,12 @@
                     <th>FSSAI limit</th>
                     <th>Category</th>
                     <th>Parent</th>
-                    <th class="text-center">Action</th>
+                    <th class="text-center">Actions</th>
                 </tr>
             </thead>
             <tbody>
                 {% for param in parameters %}
-                <tr>
+                <tr data-search="{{ param.name }} {{ param.unit|default:'' }} {{ param.method|default:'' }} {{ param.group|default:'' }} {{ param.discipline|default:'' }}">
                     <td class="fw-semibold">{{ param.name }}</td>
                     <td>{{ param.display_order }}</td>
                     <td>{{ param.unit }}</td>
@@ -109,9 +212,17 @@
                     <td>{{ param.category|default:"-" }}</td>
                     <td>{{ param.parent.name|default:"-" }}</td>
                     <td class="text-center">
-                        <a href="{% url 'core:test_parameter_edit' pk=param.pk %}" class="btn btn-sm btn-outline-primary">
-                            <i class="material-icons align-middle">edit</i>
-                        </a>
+                        <div class="param-table-actions">
+                            <a href="{% url 'core:test_parameter_edit' pk=param.pk %}" class="btn btn-sm btn-outline-primary" title="Edit {{ param.name }}">
+                                <i class="material-icons align-middle">edit</i>
+                            </a>
+                            <form method="post" action="{% url 'core:test_parameter_delete' pk=param.pk %}" onsubmit="return confirm('Delete {{ param.name }}? This cannot be undone.');">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete {{ param.name }}">
+                                    <i class="material-icons align-middle">delete</i>
+                                </button>
+                            </form>
+                        </div>
                     </td>
                 </tr>
                 {% endfor %}
@@ -123,4 +234,23 @@
 
 {% endblock %}
 
-{% block extra_js %}{% endblock extra_js %}
+{% block extra_js %}
+{{ block.super }}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const filterInput = document.getElementById('parameter-table-filter');
+    const rows = Array.from(document.querySelectorAll('.param-table tbody tr'));
+
+    if (filterInput && rows.length) {
+        filterInput.addEventListener('input', event => {
+            const query = event.target.value.trim().toLowerCase();
+            rows.forEach(row => {
+                const haystack = (row.dataset.search || '').toLowerCase();
+                const isVisible = !query || haystack.includes(query);
+                row.classList.toggle('param-row-hidden', !isVisible);
+            });
+        });
+    }
+});
+</script>
+{% endblock extra_js %}

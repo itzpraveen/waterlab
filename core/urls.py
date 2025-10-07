@@ -31,7 +31,12 @@ from .views import (
     TestResultListView,
     TestResultDetailView,
     download_sample_report_view,
-    TestParameterUpdateView # Added TestParameterUpdateView
+    TestParameterUpdateView,
+    delete_test_parameter,
+    AdminUserListView,
+    AdminUserCreateView,
+    AdminUserUpdateView,
+    toggle_user_active,
 )
 
 from .auth_views import (
@@ -92,6 +97,13 @@ urlpatterns = [
     
     # Test Parameter Management (Admin)
     path('setup-test-parameters/<uuid:pk>/edit/', TestParameterUpdateView.as_view(), name='test_parameter_edit'),
+    path('setup-test-parameters/<uuid:pk>/delete/', delete_test_parameter, name='test_parameter_delete'),
+
+    # User management (Admin)
+    path('users/', AdminUserListView.as_view(), name='user_list'),
+    path('users/add/', AdminUserCreateView.as_view(), name='user_add'),
+    path('users/<int:pk>/edit/', AdminUserUpdateView.as_view(), name='user_edit'),
+    path('users/<int:pk>/toggle/', toggle_user_active, name='user_toggle_active'),
 ]
 
 if settings.DEBUG:
