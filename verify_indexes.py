@@ -31,6 +31,9 @@ def verify_indexes():
 
     # Expected indexes by model
     expected_indexes = {
+        'core_customuser': [
+            'customuser_role_idx',
+        ],
         'core_sample': [
             'sample_status_idx',
             'sample_collected_at_idx',

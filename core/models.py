@@ -1,5 +1,7 @@
-from django.db import models
+import logging
 import uuid
+
+from django.db import models
 from django.core.validators import RegexValidator
 from django.core.exceptions import ValidationError
 # import json # Not directly used, JSONField handles serialization
@@ -23,6 +25,9 @@ def validate_kerala_pincode(value):
         raise ValidationError(
             f'{value} is not a valid PIN code format (must be 6 digits).'
         )
+
+logger = logging.getLogger(__name__)
+
 
 class CustomUser(AbstractUser):
     ROLE_CHOICES = [
@@ -51,6 +56,11 @@ class CustomUser(AbstractUser):
     
     def is_consultant(self):
         return self.role == 'consultant'
+
+    class Meta(AbstractUser.Meta):
+        indexes = [
+            models.Index(fields=['role'], name='customuser_role_idx'),
+        ]
 
 class KeralaLocation(models.Model):
     """Model to store Kerala administrative divisions"""
@@ -499,18 +509,13 @@ class ConsultantReview(models.Model):
             if self.status == 'APPROVED':
                 try:
                     self.sample.update_status('REPORT_APPROVED', self.reviewer)
-                except Exception as e:
-                    # Log the error but don't fail the save
-                    import logging
-                    logger = logging.getLogger(__name__)
-                    logger.error(f"Failed to update sample status to REPORT_APPROVED: {e}")
+                except Exception:
+                    logger.exception("Failed to update sample %s status to REPORT_APPROVED during consultant review", self.sample_id)
             elif self.status == 'REJECTED':
                 try:
                     self.sample.update_status('TESTING_IN_PROGRESS', self.reviewer)
-                except Exception as e:
-                    import logging
-                    logger = logging.getLogger(__name__)
-                    logger.error(f"Failed to update sample status to TESTING_IN_PROGRESS: {e}")
+                except Exception:
+                    logger.exception("Failed to update sample %s status to TESTING_IN_PROGRESS after rejection", self.sample_id)
 
 class AuditTrail(models.Model):
     ACTION_CHOICES = [

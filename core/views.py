@@ -1,3 +1,5 @@
+import logging
+
 from django.shortcuts import render, get_object_or_404, redirect
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, TemplateView
 from django.urls import reverse_lazy
@@ -25,6 +27,16 @@ from reportlab.lib.pagesizes import letter
 from reportlab.lib.units import inch
 from io import BytesIO
 
+
+logger = logging.getLogger(__name__)
+
+
+def _format_error_message(base_message, exc):
+    """Return debug-friendly error text without leaking details in production."""
+    if settings.DEBUG:
+        return f"{base_message} Details: {exc}"
+    return base_message
+
 def health_check(request):
     """Health check endpoint for load balancers and monitoring systems"""
     return HttpResponse("healthy", content_type="text/plain")
@@ -47,8 +59,13 @@ def debug_admin(request):
             return HttpResponse(f"Admin users found: {'; '.join(user_info)}", content_type="text/plain")
         else:
             return HttpResponse("No admin users found", content_type="text/plain")
-    except Exception as e:
-        return HttpResponse(f"Error: {str(e)}", content_type="text/plain")
+    except Exception as exc:
+        logger.exception("Failed to gather admin user debug info")
+        return HttpResponse(
+            _format_error_message("Error retrieving admin users.", exc),
+            content_type="text/plain",
+            status=500,
+        )
 
 def create_admin_web(request):
     """Web endpoint to create admin user - REMOVE IN PRODUCTION"""
@@ -71,8 +88,13 @@ def create_admin_web(request):
             is_superuser=True
         )
         return HttpResponse("Admin user created successfully! Username: admin, Password: WaterLab2024!", content_type="text/plain")
-    except Exception as e:
-        return HttpResponse(f"Error creating admin: {str(e)}", content_type="text/plain")
+    except Exception as exc:
+        logger.exception("Failed to create admin user via debug endpoint")
+        return HttpResponse(
+            _format_error_message("Error creating admin user.", exc),
+            content_type="text/plain",
+            status=500,
+        )
 
 def debug_view(request):
     """Debug endpoint to check configuration and functionality"""
@@ -100,8 +122,11 @@ def debug_view(request):
         debug_info.append(f"Samples: {Sample.objects.count()}")
         debug_info.append(f"Users: {CustomUser.objects.count()}")
         debug_info.append(f"Admin users: {CustomUser.objects.filter(role='admin').count()}")
-    except Exception as e:
-        debug_info.append(f"Database error: {e}")
+    except Exception as exc:
+        logger.exception("Database check failed in debug_view")
+        debug_info.append(
+            _format_error_message("Database error encountered while generating debug info.", exc)
+        )
     
     # Check user session
     debug_info.append("\n=== User Session ===")
@@ -183,8 +208,13 @@ def fix_admin_role_web(request):
         
         return HttpResponse(result, content_type="text/plain")
         
-    except Exception as e:
-        return HttpResponse(f"Error fixing admin role: {str(e)}", content_type="text/plain")
+    except Exception as exc:
+        logger.exception("Failed to normalize admin roles via debug endpoint")
+        return HttpResponse(
+            _format_error_message("Error normalizing admin roles.", exc),
+            content_type="text/plain",
+            status=500,
+        )
 
 def simple_home(request):
     """Simple home page to avoid redirect loops"""
@@ -336,12 +366,16 @@ class AdminDashboardView(AdminRequiredMixin, TemplateView):
                 current_status='RESULTS_ENTERED' # Samples with results entered, but not yet in 'REVIEW_PENDING'
             ).select_related('customer').order_by('-collection_datetime')[:5]
 
-        except Exception as e:
-            # Log the error (in a real application, use proper logging)
-            print(f"Error loading admin dashboard data: {e}")
+        except Exception as exc:
+            logger.exception("Failed to build admin dashboard context")
             context['data_load_error'] = True
-            # Optionally, send an alert to admin or log to a file/service
-            # messages.error(self.request, "There was an error loading some dashboard data. Please try again later.")
+            messages.error(
+                self.request,
+                _format_error_message(
+                    "There was an error loading some dashboard data. Please try again later.",
+                    exc,
+                ),
+            )
 
         return context
 
@@ -803,8 +837,9 @@ def test_result_entry(request, sample_id):
                 
                 return redirect('core:sample_detail', pk=sample.sample_id)
                 
-        except Exception as e:
-            messages.error(request, f'Error saving test results: {str(e)}')
+        except Exception as exc:
+            logger.exception("Failed to save test results for sample %s", sample.sample_id)
+            messages.error(request, _format_error_message('Error saving test results.', exc))
             return redirect('core:sample_detail', pk=sample.sample_id)
     
     # GET request - show form
@@ -860,8 +895,18 @@ def consultant_review(request, sample_id):
                 error_message = str(e.message_dict) if hasattr(e, 'message_dict') else str(e)
                 messages.error(request, f"Could not move sample to review: {error_message}")
                 return redirect('core:sample_detail', pk=sample.sample_id)
-            except Exception as e:
-                messages.error(request, f"An unexpected error occurred while updating status: {str(e)}")
+            except Exception as exc:
+                logger.exception(
+                    "Unexpected error while moving sample %s to review pending",
+                    sample.sample_id,
+                )
+                messages.error(
+                    request,
+                    _format_error_message(
+                        "An unexpected error occurred while updating status.",
+                        exc,
+                    ),
+                )
                 return redirect('core:sample_detail', pk=sample.sample_id)
         else:
             # This case should ideally not be hit if template logic is correct
@@ -925,8 +970,9 @@ def consultant_review(request, sample_id):
 
                     return redirect('core:sample_detail', pk=sample.sample_id)
                     
-            except Exception as e:
-                messages.error(request, f'Error processing review: {str(e)}')
+            except Exception as exc:
+                logger.exception("Failed to process consultant review for sample %s", sample.sample_id)
+                messages.error(request, _format_error_message('Error processing review.', exc))
                 return redirect('core:sample_detail', pk=sample.sample_id)
         else:
             messages.error(request, 'Invalid action specified.')
@@ -1199,8 +1245,18 @@ def download_sample_report_view(request, pk):
         try:
             sample.update_status('REPORT_SENT', request.user)
             messages.info(request, f"Report for sample {sample.display_id} downloaded and status updated to 'Report Sent'.")
-        except Exception as e:
-            messages.warning(request, f"Report downloaded, but failed to update sample status: {str(e)}")
+        except Exception as exc:
+            logger.exception(
+                "Failed to update sample %s status after report download",
+                sample.sample_id,
+            )
+            messages.warning(
+                request,
+                _format_error_message(
+                    "Report downloaded, but failed to update sample status.",
+                    exc,
+                ),
+            )
 
     return response
 
@@ -1235,13 +1291,13 @@ def sample_status_update(request, sample_id):
             error_message = str(e.message_dict) if hasattr(e, 'message_dict') else str(e)
             messages.error(request, f"Error updating status: {error_message}")
         
-        except Exception as e:
+        except Exception as exc:
             # Catch any other unexpected errors
-            messages.error(request, f"An unexpected error occurred: {str(e)}")
-            # Consider logging this unexpected error for developers
-            # import logging
-            # logger = logging.getLogger(__name__)
-            # logger.error(f"Unexpected error in sample_status_update for sample {sample.sample_id}: {str(e)}")
+            logger.exception("Unexpected error in sample_status_update for sample %s", sample.sample_id)
+            messages.error(
+                request,
+                _format_error_message("An unexpected error occurred while updating sample status.", exc),
+            )
 
         return redirect('core:sample_detail', pk=sample.sample_id)
 
@@ -1280,8 +1336,12 @@ def setup_test_parameters(request):
                     f"Standard parameters processed. Created {created_count} new parameter(s); {skipped} existing."
                 )
                 return redirect('core:setup_test_parameters')
-            except Exception as e:
-                messages.error(request, f"Error creating standard parameters: {str(e)}")
+            except Exception as exc:
+                logger.exception("Failed to seed standard test parameters")
+                messages.error(
+                    request,
+                    _format_error_message("Error creating standard parameters.", exc),
+                )
         else:
             # Manual single-parameter creation via form
             form = TestParameterForm(request.POST)
@@ -1292,8 +1352,12 @@ def setup_test_parameters(request):
                         AuditTrail.log_change(user=request.user, action='CREATE', instance=parameter, request=request)
                         messages.success(request, f"Test parameter '{parameter.name}' created successfully.")
                         return redirect('core:setup_test_parameters')
-                except Exception as e:
-                    messages.error(request, f"Error creating test parameter: {str(e)}")
+                except Exception as exc:
+                    logger.exception("Failed to create test parameter via setup view")
+                    messages.error(
+                        request,
+                        _format_error_message("Error creating test parameter.", exc),
+                    )
             else:
                 messages.error(request, "Error in form submission. Please check the details.")
 
@@ -1318,8 +1382,12 @@ class TestParameterUpdateView(AdminRequiredMixin, UpdateView):
                 parameter = form.save()
                 AuditTrail.log_change(user=self.request.user, action='UPDATE', instance=parameter, old_values=old_values, new_values=form.cleaned_data, request=self.request)
                 messages.success(self.request, f"Test parameter '{parameter.name}' updated successfully.")
-        except Exception as e:
-            messages.error(self.request, f"Error updating test parameter: {str(e)}")
+        except Exception as exc:
+            logger.exception("Failed to update test parameter %s", self.object.pk)
+            messages.error(
+                self.request,
+                _format_error_message("Error updating test parameter.", exc),
+            )
             return self.form_invalid(form)
         return super().form_valid(form)
 
