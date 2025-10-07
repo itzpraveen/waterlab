@@ -199,6 +199,8 @@ class Sample(models.Model):
         indexes = [
             models.Index(fields=["current_status"], name="sample_status_idx"),
             models.Index(fields=["collection_datetime"], name="sample_collected_at_idx"),
+            models.Index(fields=["date_received_at_lab"], name="sample_received_lab_idx"),
+            models.Index(fields=["current_status", "date_received_at_lab"], name="sample_status_received_idx"),
         ]
 
     def __str__(self):
@@ -366,6 +368,11 @@ class TestResult(models.Model):
 
     class Meta:
         unique_together = ('sample', 'parameter') # Ensure one result per parameter per sample
+        indexes = [
+            models.Index(fields=["test_date"], name="testresult_date_idx"),
+            models.Index(fields=["technician"], name="testresult_tech_idx"),
+            models.Index(fields=["test_date", "technician"], name="testresult_date_tech_idx"),
+        ]
 
     def __str__(self):
         return f"Result for {self.sample.display_id} - {self.parameter.name}: {self.result_value}"
@@ -445,6 +452,14 @@ class ConsultantReview(models.Model):
     recommendations = models.TextField(blank=True, null=True)
     status = models.CharField(max_length=20, choices=REVIEW_STATUS_CHOICES, default='PENDING')
     review_date = models.DateTimeField(auto_now_add=True) # Or auto_now=True if it should update on every save
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["status"], name="review_status_idx"),
+            models.Index(fields=["review_date"], name="review_date_idx"),
+            models.Index(fields=["status", "review_date"], name="review_status_date_idx"),
+            models.Index(fields=["reviewer", "review_date"], name="review_reviewer_date_idx"),
+        ]
 
     def __str__(self):
         return f"Review for {self.sample.display_id} by {self.reviewer.username if self.reviewer else 'N/A'}"
