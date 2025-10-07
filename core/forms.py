@@ -1,6 +1,6 @@
 import json # Added for loading address data
 from collections import OrderedDict
-from types import SimpleNamespace
+from dataclasses import dataclass
 
 from django import forms
 from django.contrib.auth.forms import PasswordChangeForm
@@ -136,6 +136,11 @@ class CustomerForm(forms.ModelForm):
             
         return cleaned_data
 
+@dataclass(frozen=True)
+class _ParameterGroup:
+    name: str
+
+
 class SampleForm(forms.ModelForm):
     # Accept formats configured in settings for consistency across the app
     from django.conf import settings as _settings
@@ -249,7 +254,7 @@ class SampleForm(forms.ModelForm):
                 standalone_parameters.append(parent)
 
         if standalone_parameters:
-            self.grouped_parameters[SimpleNamespace(name='Standalone parameters')] = standalone_parameters
+            self.grouped_parameters[_ParameterGroup(name='Standalone parameters')] = standalone_parameters
 
         # Set choices for the field
         self.fields['tests_requested'].queryset = TestParameter.objects.all()
