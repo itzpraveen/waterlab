@@ -157,7 +157,7 @@
             {% for num in paginator.page_range %}
                 {% if num == page_obj.number %}
                     <li class="page-item active" aria-current="page"><span class="page-link">{{ num }}</span></li>
-                {% elif num == 1 or num == paginator.num_pages or (num >= page_obj.number|add:-2 and num <= page_obj.number|add:2) %}
+                {% elif num == 1 or num == paginator.num_pages or (num >= page_obj.number|add:'-2' and num <= page_obj.number|add:'2') %}
                     <li class="page-item"><a class="page-link" href="?page={{ num }}{{ query_string }}">{{ num }}</a></li>
                 {% elif forloop.first or forloop.last %}
                     <li class="page-item disabled"><span class="page-link">…</span></li>

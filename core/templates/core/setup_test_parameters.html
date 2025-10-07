@@ -25,7 +25,7 @@
     <section class="info-card param-card">
         <div class="section-title"><i class="material-icons">insights</i> Laboratory presets</div>
         {% if existing_params %}
-        <p class="text-muted small mb-3">{{ existing_params.count }} parameter{{ existing_params.count|pluralize }} currently available for sample registration.</p>
+        <p class="text-muted small mb-3">{{ existing_params.count }} parameter{{ existing_params.count|pluralize }} ready for sample registration.</p>
         <div class="chip-grid">
             {% for param in existing_params %}
             <span class="chip-pill">
@@ -45,129 +45,128 @@
             </div>
         </div>
         {% endif %}
-
-        <div class="section-title mt-4"><i class="material-icons">playlist_add</i>{% if existing_params %} Add standard parameters{% else %} Create standard parameters{% endif %}</div>
-        <p class="text-muted">One click adds our recommended water-quality panel. Existing entries remain untouched.</p>
-
-        <div class="param-standard-grid">
-            <ul class="param-standard-list">
-                <li><i class="material-icons" aria-hidden="true">check_circle</i><div><span>pH</span><small>6.5&ndash;8.5 pH units</small></div></li>
-                <li><i class="material-icons" aria-hidden="true">check_circle</i><div><span>Total Dissolved Solids</span><small>0&ndash;500 mg/L</small></div></li>
-                <li><i class="material-icons" aria-hidden="true">check_circle</i><div><span>Turbidity</span><small>0&ndash;1 NTU</small></div></li>
-                <li><i class="material-icons" aria-hidden="true">check_circle</i><div><span>Total Hardness</span><small>0&ndash;200 mg/L as CaCO<sub>3</sub></small></div></li>
-                <li><i class="material-icons" aria-hidden="true">check_circle</i><div><span>Chlorides</span><small>0&ndash;250 mg/L</small></div></li>
-                <li><i class="material-icons" aria-hidden="true">check_circle</i><div><span>Total Alkalinity</span><small>0&ndash;200 mg/L as CaCO<sub>3</sub></small></div></li>
-            </ul>
-            <ul class="param-standard-list">
-                <li><i class="material-icons" aria-hidden="true">check_circle</i><div><span>Iron</span><small>0&ndash;0.3 mg/L</small></div></li>
-                <li><i class="material-icons" aria-hidden="true">check_circle</i><div><span>Fluoride</span><small>0&ndash;1.0 mg/L</small></div></li>
-                <li><i class="material-icons" aria-hidden="true">check_circle</i><div><span>Nitrate</span><small>0&ndash;45 mg/L</small></div></li>
-                <li><i class="material-icons" aria-hidden="true">check_circle</i><div><span>Residual Chlorine</span><small>0.2&ndash;1.0 mg/L</small></div></li>
-                <li><i class="material-icons" aria-hidden="true">check_circle</i><div><span>Total Coliform</span><small>0 CFU/100mL</small></div></li>
-                <li><i class="material-icons" aria-hidden="true">check_circle</i><div><span>E. Coli</span><small>0 CFU/100mL</small></div></li>
-            </ul>
-        </div>
-
-        <div class="param-actions">
-            <form method="post">
-                {% csrf_token %}
-                <button type="submit" name="action" value="create_standard" class="btn btn-primary btn-lg">
-                    <i class="material-icons align-middle me-1">playlist_add_check</i>
-                    {% if existing_params %}Add standard set{% else %}Create standard set{% endif %}
-                </button>
-            </form>
-            <p class="text-muted small mb-0">Safe to re-run &mdash; duplicates are never created.</p>
-        </div>
     </section>
 
-    <section class="info-card param-card">
-        <div class="section-title"><i class="material-icons">tune</i> Add a custom parameter</div>
-        <p class="text-muted">Capture additional analytes specific to your lab. Values sync instantly to the sample registration form.</p>
+    <section class="info-card param-card param-card--standard">
+        <div class="section-title"><i class="material-icons">playlist_add</i>Standard parameter set</div>
+        <p class="text-muted">Add WaterLab's recommended baseline tests in a single click. Existing entries will be skipped automatically.</p>
 
-        {% if form.non_field_errors %}
-        <div class="alert alert-danger" role="alert">
-            {% for error in form.non_field_errors %}
-            <div>{{ error }}</div>
-            {% endfor %}
-        </div>
-        {% endif %}
-
-        <form method="post" class="param-form">
+        <form method="post" class="param-standard-action">
             {% csrf_token %}
-            <input type="hidden" name="action" value="manual_create">
-            <div class="field-grid">
-                <div class="form-field">
-                    <label for="{{ form.name.id_for_label }}">Parameter name{% if form.name.field.required %}<span class="required">*</span>{% endif %}</label>
-                    {{ form.name }}
-                    {% if form.name.errors %}<div class="form-error">{{ form.name.errors.0 }}</div>{% endif %}
-                </div>
-                <div class="form-field">
-                    <label for="{{ form.unit.id_for_label }}">Unit{% if form.unit.field.required %}<span class="required">*</span>{% endif %}</label>
-                    {{ form.unit }}
-                    {% if form.unit.errors %}<div class="form-error">{{ form.unit.errors.0 }}</div>{% endif %}
-                </div>
-                <div class="form-field">
-                    <label for="{{ form.method.id_for_label }}">Method</label>
-                    {{ form.method }}
-                    {% if form.method.errors %}<div class="form-error">{{ form.method.errors.0 }}</div>{% endif %}
-                </div>
-                <div class="form-field">
-                    <label for="{{ form.display_order.id_for_label }}">Display order</label>
-                    {{ form.display_order }}
-                    <div class="help-text">Lower values appear earlier in lists and reports.</div>
-                    {% if form.display_order.errors %}<div class="form-error">{{ form.display_order.errors.0 }}</div>{% endif %}
-                </div>
-                <div class="form-field">
-                    <label for="{{ form.min_permissible_limit.id_for_label }}">Minimum limit</label>
-                    {{ form.min_permissible_limit }}
-                    {% if form.min_permissible_limit.errors %}<div class="form-error">{{ form.min_permissible_limit.errors.0 }}</div>{% endif %}
-                </div>
-                <div class="form-field">
-                    <label for="{{ form.max_permissible_limit.id_for_label }}">Maximum limit</label>
-                    {{ form.max_permissible_limit }}
-                    {% if form.max_permissible_limit.errors %}<div class="form-error">{{ form.max_permissible_limit.errors.0 }}</div>{% endif %}
-                </div>
-                <div class="form-field">
-                    <label for="{{ form.group.id_for_label }}">Group</label>
-                    {{ form.group }}
-                    {% if form.group.errors %}<div class="form-error">{{ form.group.errors.0 }}</div>{% endif %}
-                </div>
-                <div class="form-field">
-                    <label for="{{ form.discipline.id_for_label }}">Discipline</label>
-                    {{ form.discipline }}
-                    {% if form.discipline.errors %}<div class="form-error">{{ form.discipline.errors.0 }}</div>{% endif %}
-                </div>
-                <div class="form-field">
-                    <label for="{{ form.category.id_for_label }}">Category</label>
-                    {{ form.category }}
-                    {% if form.category.errors %}<div class="form-error">{{ form.category.errors.0 }}</div>{% endif %}
-                </div>
-                <div class="form-field">
-                    <label for="{{ form.fssai_limit.id_for_label }}">FSSAI limit</label>
-                    {{ form.fssai_limit }}
-                    {% if form.fssai_limit.errors %}<div class="form-error">{{ form.fssai_limit.errors.0 }}</div>{% endif %}
-                </div>
-                <div class="form-field">
-                    <label for="{{ form.parent.id_for_label }}">Parent parameter</label>
-                    {{ form.parent }}
-                    <div class="help-text">Use to nest sub-parameters beneath a broader test.</div>
-                    {% if form.parent.errors %}<div class="form-error">{{ form.parent.errors.0 }}</div>{% endif %}
-                </div>
-            </div>
-
-            <div class="param-form-actions">
-                <button type="submit" class="btn btn-primary">
-                    <i class="material-icons align-middle me-1">save</i>
-                    Save parameter
-                </button>
-                <button type="reset" class="btn btn-outline-secondary">
-                    <i class="material-icons align-middle me-1">refresh</i>
-                    Reset form
-                </button>
-            </div>
+            <button type="submit" name="action" value="create_standard" class="btn btn-primary btn-lg w-100">
+                <i class="material-icons align-middle me-1">playlist_add_check</i>
+                {% if existing_params %}Re-run standard set{% else %}Create standard set{% endif %}
+            </button>
         </form>
+        <p class="text-muted extra-small mb-0">Safe to repeat &mdash; duplicates are never created.</p>
+
+        <details class="param-standard-details">
+            <summary><i class="material-icons" aria-hidden="true">expand_more</i>See included parameters</summary>
+            <ul class="param-standard-list param-standard-list--compact">
+                <li><strong>pH</strong><span>6.5&ndash;8.5 pH units</span></li>
+                <li><strong>Total Dissolved Solids</strong><span>0&ndash;500 mg/L</span></li>
+                <li><strong>Turbidity</strong><span>0&ndash;1 NTU</span></li>
+                <li><strong>Total Hardness</strong><span>0&ndash;200 mg/L as CaCO<sub>3</sub></span></li>
+                <li><strong>Chlorides</strong><span>0&ndash;250 mg/L</span></li>
+                <li><strong>Total Alkalinity</strong><span>0&ndash;200 mg/L as CaCO<sub>3</sub></span></li>
+                <li><strong>Iron</strong><span>0&ndash;0.3 mg/L</span></li>
+                <li><strong>Fluoride</strong><span>0&ndash;1.0 mg/L</span></li>
+                <li><strong>Nitrate</strong><span>0&ndash;45 mg/L</span></li>
+                <li><strong>Residual Chlorine</strong><span>0.2&ndash;1.0 mg/L</span></li>
+                <li><strong>Total Coliform</strong><span>0 CFU/100mL</span></li>
+                <li><strong>E. Coli</strong><span>0 CFU/100mL</span></li>
+            </ul>
+        </details>
     </section>
 </div>
+
+<section class="info-card param-card param-card--full">
+    <div class="section-title"><i class="material-icons">tune</i> Add a custom parameter</div>
+    <p class="text-muted">Capture analytes unique to your lab. Newly added parameters are immediately available for sample registration.</p>
+
+    {% if form.non_field_errors %}
+    <div class="alert alert-danger" role="alert">
+        {% for error in form.non_field_errors %}
+        <div>{{ error }}</div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <form method="post" class="param-form">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="manual_create">
+        <div class="field-grid">
+            <div class="form-field">
+                <label for="{{ form.name.id_for_label }}">Parameter name{% if form.name.field.required %}<span class="required">*</span>{% endif %}</label>
+                {{ form.name }}
+                {% if form.name.errors %}<div class="form-error">{{ form.name.errors.0 }}</div>{% endif %}
+            </div>
+            <div class="form-field">
+                <label for="{{ form.unit.id_for_label }}">Unit{% if form.unit.field.required %}<span class="required">*</span>{% endif %}</label>
+                {{ form.unit }}
+                {% if form.unit.errors %}<div class="form-error">{{ form.unit.errors.0 }}</div>{% endif %}
+            </div>
+            <div class="form-field">
+                <label for="{{ form.method.id_for_label }}">Method</label>
+                {{ form.method }}
+                {% if form.method.errors %}<div class="form-error">{{ form.method.errors.0 }}</div>{% endif %}
+            </div>
+            <div class="form-field">
+                <label for="{{ form.display_order.id_for_label }}">Display order</label>
+                {{ form.display_order }}
+                <div class="help-text">Lower values appear earlier in lists and reports.</div>
+                {% if form.display_order.errors %}<div class="form-error">{{ form.display_order.errors.0 }}</div>{% endif %}
+            </div>
+            <div class="form-field">
+                <label for="{{ form.min_permissible_limit.id_for_label }}">Minimum limit</label>
+                {{ form.min_permissible_limit }}
+                {% if form.min_permissible_limit.errors %}<div class="form-error">{{ form.min_permissible_limit.errors.0 }}</div>{% endif %}
+            </div>
+            <div class="form-field">
+                <label for="{{ form.max_permissible_limit.id_for_label }}">Maximum limit</label>
+                {{ form.max_permissible_limit }}
+                {% if form.max_permissible_limit.errors %}<div class="form-error">{{ form.max_permissible_limit.errors.0 }}</div>{% endif %}
+            </div>
+            <div class="form-field">
+                <label for="{{ form.group.id_for_label }}">Group</label>
+                {{ form.group }}
+                {% if form.group.errors %}<div class="form-error">{{ form.group.errors.0 }}</div>{% endif %}
+            </div>
+            <div class="form-field">
+                <label for="{{ form.discipline.id_for_label }}">Discipline</label>
+                {{ form.discipline }}
+                {% if form.discipline.errors %}<div class="form-error">{{ form.discipline.errors.0 }}</div>{% endif %}
+            </div>
+            <div class="form-field">
+                <label for="{{ form.category.id_for_label }}">Category</label>
+                {{ form.category }}
+                {% if form.category.errors %}<div class="form-error">{{ form.category.errors.0 }}</div>{% endif %}
+            </div>
+            <div class="form-field">
+                <label for="{{ form.fssai_limit.id_for_label }}">FSSAI limit</label>
+                {{ form.fssai_limit }}
+                {% if form.fssai_limit.errors %}<div class="form-error">{{ form.fssai_limit.errors.0 }}</div>{% endif %}
+            </div>
+            <div class="form-field">
+                <label for="{{ form.parent.id_for_label }}">Parent parameter</label>
+                {{ form.parent }}
+                <div class="help-text">Use to nest sub-parameters beneath a broader test.</div>
+                {% if form.parent.errors %}<div class="form-error">{{ form.parent.errors.0 }}</div>{% endif %}
+            </div>
+        </div>
+
+        <div class="param-form-actions">
+            <button type="submit" class="btn btn-primary">
+                <i class="material-icons align-middle me-1">save</i>
+                Save parameter
+            </button>
+            <button type="reset" class="btn btn-outline-secondary">
+                <i class="material-icons align-middle me-1">refresh</i>
+                Reset form
+            </button>
+        </div>
+    </form>
+</section>
 
 {% if existing_params %}
 <section class="info-card param-table-card">

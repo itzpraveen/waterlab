@@ -1052,6 +1052,10 @@ main {
   gap: 1.25rem;
 }
 
+.param-card--full {
+  margin-top: 1.75rem;
+}
+
 .chip-grid {
   display: flex;
   flex-wrap: wrap;
@@ -1076,57 +1080,76 @@ main {
   color: rgba(15, 23, 42, 0.6);
 }
 
-.param-standard-grid {
+.param-card--standard {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 1.25rem;
+  gap: 1rem;
+}
+
+.param-standard-action {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.param-standard-details {
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  border-radius: 1rem;
+  background: rgba(248, 250, 252, 0.7);
+  padding: 0.85rem 1rem;
+}
+
+.param-standard-details summary {
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  font-weight: 600;
+  color: rgba(15, 23, 42, 0.85);
+}
+
+.param-standard-details summary::-webkit-details-marker {
+  display: none;
+}
+
+.param-standard-details summary .material-icons {
+  transition: transform 0.25s ease;
+}
+
+.param-standard-details[open] summary .material-icons {
+  transform: rotate(180deg);
 }
 
 .param-standard-list {
   list-style: none;
   padding: 0;
-  margin: 0;
+  margin: 0.85rem 0 0 0;
   display: grid;
-  gap: 0.85rem;
+  gap: 0.5rem;
 }
 
-.param-standard-list li {
+.param-standard-list--compact li {
   display: flex;
-  gap: 0.75rem;
-  align-items: flex-start;
-  background: rgba(255, 255, 255, 0.8);
-  border: 1px solid rgba(148, 163, 184, 0.25);
-  padding: 0.85rem 1rem;
-  border-radius: 1rem;
-  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.05);
-}
-
-.param-standard-list i {
-  font-size: 1.2rem;
-  color: var(--wl-success);
-  margin-top: 0.1rem;
-}
-
-.param-standard-list span {
-  font-weight: 600;
-  color: #0f172a;
-}
-
-.param-standard-list small {
-  display: block;
-  font-size: 0.8rem;
-  color: rgba(15, 23, 42, 0.6);
-}
-
-.param-standard-list small sub {
-  font-size: 0.6rem;
-}
-
-.param-actions {
-  display: flex;
-  align-items: center;
+  justify-content: space-between;
   gap: 1rem;
-  flex-wrap: wrap;
+  font-size: 0.9rem;
+  background: #fff;
+  border-radius: 0.75rem;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  padding: 0.55rem 0.85rem;
+}
+
+.param-standard-list--compact li span {
+  color: rgba(15, 23, 42, 0.6);
+  font-size: 0.8rem;
+}
+
+.param-standard-list--compact li strong {
+  font-weight: 600;
+  color: rgba(15, 23, 42, 0.85);
+}
+
+.extra-small {
+  font-size: 0.75rem;
 }
 
 .param-table-card {
@@ -1139,17 +1162,6 @@ main {
 
 .param-table td {
   white-space: nowrap;
-}
-
-@media (max-width: 576px) {
-  .param-actions {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .param-actions .btn {
-    width: 100%;
-  }
 }
 
 .quick-link-bar {
