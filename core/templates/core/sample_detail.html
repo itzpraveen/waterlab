@@ -131,6 +131,7 @@
                         <tr>
                             <th class="text-center">Sl No</th>
                             <th>Test</th>
+                            <th>Method</th>
                             <th>Unit</th>
                             <th>Permissible range</th>
                         </tr>
@@ -138,12 +139,13 @@
                     <tbody>
                         {% for category_name, tests in tests_by_category.items %}
                         <tr>
-                            <th colspan="4">{{ category_name|default:"Uncategorized" }}</th>
+                            <th colspan="5">{{ category_name|default:"Uncategorized" }}</th>
                         </tr>
                             {% for entry in tests %}
                             <tr>
                                 <td class="text-center">{{ entry.index }}</td>
                                 <td>{{ entry.item.name }}</td>
+                                <td>{{ entry.item.method|default:"--" }}</td>
                                 <td>{{ entry.item.unit }}</td>
                                 <td>
                                     {% if entry.item.min_permissible_limit and entry.item.max_permissible_limit %}
@@ -176,24 +178,37 @@
                         <tr>
                             <th class="text-center">Sl No</th>
                             <th>Parameter</th>
+                            <th>Method</th>
                             <th class="text-center">Result</th>
                             <th>Unit</th>
+                            <th>Limits</th>
                             <th class="text-center">Status</th>
-                            <th>Test date</th>
-                            <th>Technician</th>
+                            <th>Observation</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for category_name, category_results in results_by_category.items %}
                         <tr>
-                            <th colspan="7">{{ category_name|default:"Uncategorized" }}</th>
+                            <th colspan="8">{{ category_name|default:"Uncategorized" }}</th>
                         </tr>
                             {% for entry in category_results %}
                             <tr>
                                 <td class="text-center">{{ entry.index }}</td>
                                 <td>{{ entry.item.parameter.name }}</td>
+                                <td>{{ entry.item.parameter.method|default:"--" }}</td>
                                 <td class="text-center fw-semibold">{{ entry.item.result_value }}</td>
                                 <td>{{ entry.item.parameter.unit }}</td>
+                                <td>
+                                    {% if entry.item.parameter.min_permissible_limit and entry.item.parameter.max_permissible_limit %}
+                                        {{ entry.item.parameter.min_permissible_limit }} – {{ entry.item.parameter.max_permissible_limit }}
+                                    {% elif entry.item.parameter.max_permissible_limit %}
+                                        ≤ {{ entry.item.parameter.max_permissible_limit }}
+                                    {% elif entry.item.parameter.min_permissible_limit %}
+                                        ≥ {{ entry.item.parameter.min_permissible_limit }}
+                                    {% else %}
+                                        <span class="text-muted">Not specified</span>
+                                    {% endif %}
+                                </td>
                                 <td class="text-center">
                                     {% if entry.item.parameter.min_permissible_limit is not None and entry.item.parameter.max_permissible_limit is not None %}
                                         {% with status=entry.item.get_limit_status %}
@@ -209,14 +224,7 @@
                                         <span class="badge-soft">No limits set</span>
                                     {% endif %}
                                 </td>
-                                <td>{{ entry.item.test_date|date:"M d, Y H:i" }}</td>
-                                <td>
-                                    {% if entry.item.technician %}
-                                        {{ entry.item.technician.first_name|default:entry.item.technician.username }}
-                                    {% else %}
-                                        N/A
-                                    {% endif %}
-                                </td>
+                                <td>{{ entry.item.observation|default:entry.item.remarks|default:"—" }}</td>
                             </tr>
                             {% endfor %}
                         {% endfor %}

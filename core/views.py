@@ -1367,23 +1367,23 @@ def download_sample_report_view(request, pk):
 
     available_width = doc.width
     column_widths = [
-        available_width * 0.06,
-        available_width * 0.24,
-        available_width * 0.09,
-        available_width * 0.08,
-        available_width * 0.15,
-        available_width * 0.16,
-        available_width * 0.10,
-        available_width * 0.12,
+        available_width * 0.06,  # Sl. No
+        available_width * 0.24,  # Parameter
+        available_width * 0.14,  # Method
+        available_width * 0.09,  # Result
+        available_width * 0.08,  # Unit
+        available_width * 0.17,  # Limits
+        available_width * 0.10,  # Status
+        available_width * 0.12,  # Observation
     ]
 
     def _build_results_table(category_results, start_index):
         header = [
             Paragraph('Sl. No', styles['TableHead']),
             Paragraph('Parameter', styles['TableHead']),
+            Paragraph('Method', styles['TableHead']),
             Paragraph('Result', styles['TableHead']),
             Paragraph('Unit', styles['TableHead']),
-            Paragraph('Method', styles['TableHead']),
             Paragraph('Limits', styles['TableHead']),
             Paragraph('Status', styles['TableHead']),
             Paragraph('Observation', styles['TableHead'])
@@ -1418,9 +1418,9 @@ def download_sample_report_view(request, pk):
             table_data.append([
                 Paragraph(str(running_index), styles['TableCell']),
                 Paragraph(param.name or '—', styles['TableCell']),
+                Paragraph(param.method or '—', styles['TableCell']),
                 Paragraph(result.result_value or '—', styles['TableCell']),
                 Paragraph(param.unit or '—', styles['TableCell']),
-                Paragraph(param.method or '—', styles['TableCell']),
                 Paragraph(limits_text, styles['TableCell']),
                 Paragraph(status_label, styles['TableCell']),
                 Paragraph(result.observation or result.remarks or '—', styles['TableCell'])
