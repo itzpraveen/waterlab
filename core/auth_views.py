@@ -1,6 +1,6 @@
 from django.contrib.auth import login
 from django.contrib.auth.views import LoginView, LogoutView
-from django.shortcuts import redirect
+from django.shortcuts import redirect, resolve_url
 from django.contrib import messages
 from django.urls import reverse_lazy
 from django.views.generic import TemplateView
@@ -84,8 +84,8 @@ class DashboardView(LoginRequiredMixin, TemplateView):
 
     def dispatch(self, request, *args, **kwargs):
         if not request.user.is_authenticated:
-            # This should ideally be handled by LoginRequiredMixin redirecting to LOGIN_URL
-            return redirect(reverse_lazy(settings.LOGIN_URL))
+            # LoginRequiredMixin should redirect, but guard against misconfiguration
+            return redirect(resolve_url(settings.LOGIN_URL))
 
         user = request.user
         if user.is_admin():
