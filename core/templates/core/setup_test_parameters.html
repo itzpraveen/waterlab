@@ -140,6 +140,13 @@
             <div class="form-field">
                 <label for="{{ form.category.id_for_label }}">Category</label>
                 {{ form.category }}
+                {% if form.category_suggestions %}
+                <datalist id="test-parameter-category-options">
+                    {% for option in form.category_suggestions %}
+                    <option value="{{ option }}">
+                    {% endfor %}
+                </datalist>
+                {% endif %}
                 {% if form.category.errors %}<div class="form-error">{{ form.category.errors.0 }}</div>{% endif %}
             </div>
             <div class="form-field">

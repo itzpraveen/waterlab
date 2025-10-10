@@ -6,7 +6,6 @@ from django import forms
 from django.contrib.auth.forms import PasswordChangeForm
 from django.core.exceptions import ValidationError
 from django.utils import timezone
-from django.db.models import Prefetch
 from .models import Customer, Sample, TestParameter, CustomUser # Added TestParameter, CustomUser
 
 class CustomerForm(forms.ModelForm):
@@ -235,29 +234,46 @@ class SampleForm(forms.ModelForm):
         self.fields['sample_source'].choices = [('', 'Select a sample source')] + list(Sample.SAMPLE_SOURCE_CHOICES)
         self.fields['collected_by'].choices = [('', 'Select who collected the sample')] + list(Sample.COLLECTED_BY_CHOICES)
         
-        # Group parameters by category
-        self.grouped_parameters = OrderedDict()
-        child_queryset = TestParameter.objects.all()
-        parent_parameters = (
+        # Group parameters by their category to mirror reporting layout
+        def _category_priority(name: str) -> tuple[int, str]:
+            lowered = name.casefold()
+            if any(token in lowered for token in ('physical', 'chemical')):
+                return (0, name)
+            if any(token in lowered for token in ('micro', 'bacter')):
+                return (1, name)
+            if 'solution' in lowered:
+                return (2, name)
+            return (3, name)
+
+        parameters = (
             TestParameter.objects
-            .filter(parent__isnull=True)
-            .prefetch_related(Prefetch('children', queryset=child_queryset))
+            .all()
+            .order_by('category', 'display_order', 'name')
         )
 
-        standalone_parameters = []
+        category_groups: dict[str, dict[str, object]] = OrderedDict()
+        for parameter in parameters:
+            raw_category = (parameter.category or '').strip()
+            display_name = raw_category or 'Uncategorized parameters'
+            key = display_name.casefold()
+            if key not in category_groups:
+                category_groups[key] = {
+                    'group': _ParameterGroup(name=display_name),
+                    'parameters': []
+                }
+            category_groups[key]['parameters'].append(parameter)
 
-        for parent in parent_parameters:
-            children = parent.children.all()
-            if children.exists():
-                self.grouped_parameters[parent] = children
-            else:
-                standalone_parameters.append(parent)
+        sorted_groups = sorted(
+            category_groups.values(),
+            key=lambda entry: _category_priority(entry['group'].name)
+        )
 
-        if standalone_parameters:
-            self.grouped_parameters[_ParameterGroup(name='Standalone parameters')] = standalone_parameters
+        self.grouped_parameters = OrderedDict(
+            (entry['group'], entry['parameters']) for entry in sorted_groups
+        )
 
         # Set choices for the field
-        self.fields['tests_requested'].queryset = TestParameter.objects.all()
+        self.fields['tests_requested'].queryset = parameters
         self.fields['tests_requested'].widget = forms.CheckboxSelectMultiple(attrs={
             'class': 'form-check-input'
         })
@@ -290,6 +306,12 @@ class TestResultEntryForm(forms.Form):
             })
 
 class TestParameterForm(forms.ModelForm):
+    CATEGORY_SUGGESTIONS = [
+        'Physical & Chemical',
+        'Microbiological',
+        'Solution',
+    ]
+
     class Meta:
         model = TestParameter
         fields = [
@@ -305,7 +327,11 @@ class TestParameterForm(forms.ModelForm):
             'group': forms.TextInput(attrs={'class': 'form-control'}),
             'discipline': forms.TextInput(attrs={'class': 'form-control'}),
             'fssai_limit': forms.TextInput(attrs={'class': 'form-control'}),
-            'category': forms.TextInput(attrs={'class': 'form-control'}),
+            'category': forms.TextInput(attrs={
+                'class': 'form-control',
+                'list': 'test-parameter-category-options',
+                'placeholder': 'Select or type a category'
+            }),
             'display_order': forms.NumberInput(attrs={'class': 'form-control', 'min': '0'}),
             'parent': forms.Select(attrs={'class': 'form-control'}),
         }
@@ -317,6 +343,10 @@ class TestParameterForm(forms.ModelForm):
             'min_permissible_limit': 'Leave blank if no minimum limit.',
             'max_permissible_limit': 'Leave blank if no maximum limit.',
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.category_suggestions = self.CATEGORY_SUGGESTIONS
 
     def save(self, commit=True):
         instance = super().save(commit=False)

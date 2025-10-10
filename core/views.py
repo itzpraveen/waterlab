@@ -1,4 +1,6 @@
 import logging
+from collections import OrderedDict
+from html import escape
 
 from django.shortcuts import render, get_object_or_404, redirect, resolve_url
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, TemplateView
@@ -841,8 +843,37 @@ class SampleDetailView(DetailView): # New DetailView for Sample
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         sample = context['sample']
-        context['ordered_tests'] = sample.tests_requested.all().order_by('display_order', 'name')
-        context['ordered_results'] = sample.results.select_related('parameter').order_by('parameter__display_order', 'parameter__name')
+        tests_qs = sample.tests_requested.all().order_by('display_order', 'name')
+        results_qs = sample.results.select_related('parameter').order_by('parameter__display_order', 'parameter__name')
+
+        def _category_key(label: str) -> tuple[int, str]:
+            lowered = label.casefold()
+            if any(token in lowered for token in ('physical', 'chemical')):
+                return (0, label)
+            if any(token in lowered for token in ('micro', 'bacter')):
+                return (1, label)
+            if 'solution' in lowered:
+                return (2, label)
+            return (3, label)
+
+        def _group_by_category(items, get_category):
+            buckets = {}
+            counter = 1
+            for item in items:
+                raw_category = (get_category(item) or '').strip()
+                label = raw_category or 'Uncategorized'
+                buckets.setdefault(label, []).append({
+                    'index': counter,
+                    'item': item,
+                })
+                counter += 1
+            ordered_labels = sorted(buckets.keys(), key=_category_key)
+            return OrderedDict((label, buckets[label]) for label in ordered_labels)
+
+        context['ordered_tests'] = tests_qs
+        context['tests_by_category'] = _group_by_category(tests_qs, lambda param: param.category)
+        context['ordered_results'] = results_qs
+        context['results_by_category'] = _group_by_category(results_qs, lambda result: result.parameter.category)
         return context
 
 class SampleCreateView(AuditMixin, FrontDeskRequiredMixin, CreateView):
@@ -1165,7 +1196,7 @@ def download_sample_report_view(request, pk):
     from reportlab.lib import colors
     from reportlab.lib.pagesizes import A4
     from reportlab.lib.units import mm
-    from reportlab.platypus import BaseDocTemplate, Frame, PageTemplate, Table, TableStyle, Paragraph, Spacer, Image
+    from reportlab.platypus import BaseDocTemplate, Frame, PageTemplate, Table, TableStyle, Paragraph, Spacer, Image, PageBreak
     from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
     from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
     from reportlab.lib.utils import ImageReader
@@ -1247,6 +1278,16 @@ def download_sample_report_view(request, pk):
     primary = colors.HexColor('#0F766E')
     text_color = colors.HexColor('#0F172A')
 
+    styles.add(ParagraphStyle(
+        name='CategoryHeading',
+        parent=styles['Normal'],
+        fontName='Helvetica-Bold',
+        fontSize=11,
+        textColor=text_color,
+        spaceBefore=10,
+        spaceAfter=6,
+    ))
+
     styles['ReportTitle'].textColor = primary
     styles['SectionTitle'].textColor = primary
     styles['Normal'].textColor = text_color
@@ -1296,12 +1337,49 @@ def download_sample_report_view(request, pk):
     elements.append(Spacer(1, 20))
 
     elements.append(Paragraph("TEST OBSERVATIONS", styles['SectionTitle']))
+    elements.append(Spacer(1, 6))
 
-    results = sample.results.select_related('parameter').order_by('parameter__display_order', 'parameter__name')
-    if not results:
-        elements.append(Paragraph("No test results recorded for this sample.", styles['Normal']))
-    else:
+    results_queryset = sample.results.select_related('parameter').order_by('parameter__display_order', 'parameter__name')
+    results = list(results_queryset)
+
+    section_templates = OrderedDict([
+        ('physical_chemical', {'title': 'Physical & Chemical Parameters', 'categories': OrderedDict()}),
+        ('microbiological', {'title': 'Microbiological Parameters', 'categories': OrderedDict()}),
+        ('solution', {'title': 'Solution Parameters', 'categories': OrderedDict()}),
+    ])
+
+    def _section_for_category(label: str) -> str:
+        lowered = label.casefold()
+        if any(token in lowered for token in ('micro', 'bacter', 'pathogen')):
+            return 'microbiological'
+        if any(token in lowered for token in ('solution', 'remedy', 'treatment')):
+            return 'solution'
+        return 'physical_chemical'
+
+    for result in results:
+        raw_category = (result.parameter.category or '').strip()
+        display_label = raw_category or 'Uncategorized'
+        section_key = _section_for_category(display_label)
+        categories = section_templates[section_key]['categories']
+        if display_label not in categories:
+            categories[display_label] = []
+        categories[display_label].append(result)
+
+    available_width = doc.width
+    column_widths = [
+        available_width * 0.06,
+        available_width * 0.24,
+        available_width * 0.09,
+        available_width * 0.08,
+        available_width * 0.15,
+        available_width * 0.16,
+        available_width * 0.10,
+        available_width * 0.12,
+    ]
+
+    def _build_results_table(category_results, start_index):
         header = [
+            Paragraph('Sl. No', styles['TableHead']),
             Paragraph('Parameter', styles['TableHead']),
             Paragraph('Result', styles['TableHead']),
             Paragraph('Unit', styles['TableHead']),
@@ -1321,7 +1399,8 @@ def download_sample_report_view(request, pk):
                 return f"≥ {param.min_permissible_limit} {param.unit or ''}".strip()
             return f"{param.min_permissible_limit} – {param.max_permissible_limit} {param.unit or ''}".strip()
 
-        for result in results:
+        running_index = start_index
+        for result in category_results:
             param = result.parameter
             limits_text = format_limits(param)
             status = getattr(result, 'get_limit_status', lambda: None)()
@@ -1337,6 +1416,7 @@ def download_sample_report_view(request, pk):
                 status_label = '—'
 
             table_data.append([
+                Paragraph(str(running_index), styles['TableCell']),
                 Paragraph(param.name or '—', styles['TableCell']),
                 Paragraph(result.result_value or '—', styles['TableCell']),
                 Paragraph(param.unit or '—', styles['TableCell']),
@@ -1345,19 +1425,10 @@ def download_sample_report_view(request, pk):
                 Paragraph(status_label, styles['TableCell']),
                 Paragraph(result.observation or result.remarks or '—', styles['TableCell'])
             ])
+            running_index += 1
 
-        available_width = doc.width
-        column_widths = [
-            available_width * 0.22,
-            available_width * 0.12,
-            available_width * 0.08,
-            available_width * 0.18,
-            available_width * 0.18,
-            available_width * 0.08,
-            available_width * 0.14,
-        ]
-        results_table = Table(table_data, colWidths=column_widths, repeatRows=1)
-        results_table.setStyle(TableStyle([
+        table = Table(table_data, colWidths=column_widths, repeatRows=1)
+        table.setStyle(TableStyle([
             ('BACKGROUND', (0,0), (-1,0), primary),
             ('TEXTCOLOR', (0,0), (-1,0), colors.white),
             ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
@@ -1370,8 +1441,42 @@ def download_sample_report_view(request, pk):
             ('TOPPADDING', (0,0), (-1,-1), 6),
             ('BOTTOMPADDING', (0,0), (-1,-1), 6),
         ]))
-        elements.append(results_table)
-        elements.append(Spacer(1, 18))
+        return table, running_index
+
+    def _render_section(section_key: str, heading: str):
+        section = section_templates[section_key]
+        elements.append(Paragraph(heading, styles['SectionTitle']))
+        elements.append(Spacer(1, 6))
+        if section['categories']:
+            serial_counter = 1
+            for category_label, category_results in section['categories'].items():
+                elements.append(Paragraph(category_label, styles['CategoryHeading']))
+                table, serial_counter = _build_results_table(category_results, serial_counter)
+                elements.append(table)
+                elements.append(Spacer(1, 12))
+        else:
+            elements.append(Paragraph("No parameters recorded for this category.", styles['Normal']))
+            elements.append(Spacer(1, 12))
+
+    _render_section('physical_chemical', 'Physical & Chemical Parameters')
+    elements.append(PageBreak())
+    _render_section('microbiological', 'Microbiological Parameters')
+    elements.append(PageBreak())
+    _render_section('solution', 'Solution & Recommendations')
+
+    review = getattr(sample, 'review', None)
+    if review:
+        recommendations_text = (review.recommendations or '').strip()
+    else:
+        recommendations_text = ''
+
+    elements.append(Paragraph("Consultant Recommendations", styles['SectionTitle']))
+    if recommendations_text:
+        safe_text = escape(recommendations_text).replace('\n', '<br/>')
+        elements.append(Paragraph(safe_text, styles['Normal']))
+    else:
+        elements.append(Paragraph("No consultant recommendations recorded for this sample.", styles['Normal']))
+    elements.append(Spacer(1, 18))
 
     elements.append(Paragraph("REMARKS", styles['SectionTitle']))
     elements.append(Paragraph(

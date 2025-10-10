@@ -124,29 +124,40 @@
 
         <div class="info-card mb-4">
             <div class="section-title"><i class="material-icons">checklist</i>Tests requested</div>
-            {% if sample.tests_requested.count %}
+            {% if tests_by_category %}
             <div class="table-responsive">
                 <table class="table table-modern align-middle mb-0">
                     <thead>
                         <tr>
+                            <th class="text-center">Sl No</th>
                             <th>Test</th>
                             <th>Unit</th>
                             <th>Permissible range</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {% for test in ordered_tests %}
+                        {% for category_name, tests in tests_by_category.items %}
                         <tr>
-                            <td>{{ test.name }}</td>
-                            <td>{{ test.unit }}</td>
-                            <td>
-                                {% if test.min_permissible_limit and test.max_permissible_limit %}
-                                    {{ test.min_permissible_limit }} – {{ test.max_permissible_limit }}
-                                {% else %}
-                                    <span class="text-muted">Not specified</span>
-                                {% endif %}
-                            </td>
+                            <th colspan="4">{{ category_name|default:"Uncategorized" }}</th>
                         </tr>
+                            {% for entry in tests %}
+                            <tr>
+                                <td class="text-center">{{ entry.index }}</td>
+                                <td>{{ entry.item.name }}</td>
+                                <td>{{ entry.item.unit }}</td>
+                                <td>
+                                    {% if entry.item.min_permissible_limit and entry.item.max_permissible_limit %}
+                                        {{ entry.item.min_permissible_limit }} – {{ entry.item.max_permissible_limit }}
+                                    {% elif entry.item.max_permissible_limit %}
+                                        ≤ {{ entry.item.max_permissible_limit }}
+                                    {% elif entry.item.min_permissible_limit %}
+                                        ≥ {{ entry.item.min_permissible_limit }}
+                                    {% else %}
+                                        <span class="text-muted">Not specified</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
                         {% endfor %}
                     </tbody>
                 </table>
@@ -156,13 +167,14 @@
             {% endif %}
         </div>
 
-        {% if sample.results.count %}
+        {% if results_by_category %}
         <div class="info-card">
             <div class="section-title"><i class="material-icons">assessment</i>Test results</div>
             <div class="table-responsive">
                 <table class="table table-modern align-middle mb-0">
                     <thead>
                         <tr>
+                            <th class="text-center">Sl No</th>
                             <th>Parameter</th>
                             <th class="text-center">Result</th>
                             <th>Unit</th>
@@ -172,35 +184,41 @@
                         </tr>
                     </thead>
                     <tbody>
-                        {% for result in ordered_results %}
+                        {% for category_name, category_results in results_by_category.items %}
                         <tr>
-                            <td>{{ result.parameter.name }}</td>
-                            <td class="text-center fw-semibold">{{ result.result_value }}</td>
-                            <td>{{ result.parameter.unit }}</td>
-                            <td class="text-center">
-                                {% if result.parameter.min_permissible_limit is not None and result.parameter.max_permissible_limit is not None %}
-                                    {% with status=result.get_limit_status %}
-                                        {% if status == 'WITHIN_LIMITS' %}
-                                            <span class="badge-soft success">Within limits</span>
-                                        {% elif status == 'NON_NUMERIC' %}
-                                            <span class="badge-soft warning">Result not numeric</span>
-                                        {% else %}
-                                            <span class="badge-soft danger">Out of range</span>
-                                        {% endif %}
-                                    {% endwith %}
-                                {% else %}
-                                    <span class="badge-soft">No limits set</span>
-                                {% endif %}
-                            </td>
-                            <td>{{ result.test_date|date:"M d, Y H:i" }}</td>
-                            <td>
-                                {% if result.technician %}
-                                    {{ result.technician.first_name|default:result.technician.username }}
-                                {% else %}
-                                    N/A
-                                {% endif %}
-                            </td>
+                            <th colspan="7">{{ category_name|default:"Uncategorized" }}</th>
                         </tr>
+                            {% for entry in category_results %}
+                            <tr>
+                                <td class="text-center">{{ entry.index }}</td>
+                                <td>{{ entry.item.parameter.name }}</td>
+                                <td class="text-center fw-semibold">{{ entry.item.result_value }}</td>
+                                <td>{{ entry.item.parameter.unit }}</td>
+                                <td class="text-center">
+                                    {% if entry.item.parameter.min_permissible_limit is not None and entry.item.parameter.max_permissible_limit is not None %}
+                                        {% with status=entry.item.get_limit_status %}
+                                            {% if status == 'WITHIN_LIMITS' %}
+                                                <span class="badge-soft success">Within limits</span>
+                                            {% elif status == 'NON_NUMERIC' %}
+                                                <span class="badge-soft warning">Result not numeric</span>
+                                            {% else %}
+                                                <span class="badge-soft danger">Out of range</span>
+                                            {% endif %}
+                                        {% endwith %}
+                                    {% else %}
+                                        <span class="badge-soft">No limits set</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ entry.item.test_date|date:"M d, Y H:i" }}</td>
+                                <td>
+                                    {% if entry.item.technician %}
+                                        {{ entry.item.technician.first_name|default:entry.item.technician.username }}
+                                    {% else %}
+                                        N/A
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
                         {% endfor %}
                     </tbody>
                 </table>
