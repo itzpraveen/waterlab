@@ -266,84 +266,31 @@
 </section>
 {% endif %}
 
-{% block extra_js %}
-<script>
-(function() {
-  const table = document.getElementById('param-table');
-  if (!table) return;
-
-  const tbody = table.querySelector('tbody');
-  const rows = () => Array.from(tbody.querySelectorAll('tr.draggable-row'));
-
-  let draggingEl = null;
-
-  function handleDragStart(e) {
-    draggingEl = e.currentTarget;
-    e.dataTransfer.effectAllowed = 'move';
-    e.currentTarget.classList.add('dragging');
-  }
-  function handleDragEnd(e) {
-    e.currentTarget.classList.remove('dragging');
-    draggingEl = null;
-    persistOrder();
-  }
-  function handleDragOver(e) {
-    e.preventDefault();
-    const target = e.target.closest('tr.draggable-row');
-    if (!target || target === draggingEl) return;
-    const rect = target.getBoundingClientRect();
-    const next = (e.clientY - rect.top) / (rect.bottom - rect.top) > 0.5;
-    tbody.insertBefore(draggingEl, next ? target.nextSibling : target);
-  }
-
-  rows().forEach(r => {
-    r.addEventListener('dragstart', handleDragStart);
-    r.addEventListener('dragend', handleDragEnd);
-    r.addEventListener('dragover', handleDragOver);
-  });
-
-  function getCsrfToken() {
-    const el = document.querySelector('input[name="csrfmiddlewaretoken"]');
-    return el ? el.value : '';
-  }
-
-  async function persistOrder() {
-    const order = rows().map(r => r.getAttribute('data-id'));
-    const body = { order: order };
-    const catSel = document.querySelector('#filter_category');
-    if (catSel && catSel.value) { body.category = catSel.value; }
-    try {
-      const res = await fetch('{% url "core:test_parameter_reorder" %}', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRFToken': getCsrfToken(),
-        },
-        body: JSON.stringify(body),
-      });
-      if (!res.ok) throw new Error('Failed to save order');
-      // Update the order column numbers (10,20,...)
-      let n = 10;
-      rows().forEach(r => {
-        const cell = r.children[2]; // order column
-        if (cell) cell.textContent = n;
-        n += 10;
-      });
-    } catch (err) {
-      console.error(err);
-      // Soft reload as fallback
-      location.reload();
-    }
-  }
-})();
-</script>
-{% endblock %}
-
 {% endblock %}
 
 {% block extra_js %}
 {{ block.super }}
 <script>
+// Drag & drop reorder
+(function() {
+  const table = document.getElementById('param-table');
+  if (!table) return;
+  const tbody = table.querySelector('tbody');
+  const rows = () => Array.from(tbody.querySelectorAll('tr.draggable-row'));
+  let draggingEl = null;
+  function handleDragStart(e){ draggingEl = e.currentTarget; e.dataTransfer.effectAllowed='move'; e.currentTarget.classList.add('dragging'); }
+  function handleDragEnd(e){ e.currentTarget.classList.remove('dragging'); draggingEl=null; persistOrder(); }
+  function handleDragOver(e){ e.preventDefault(); const t=e.target.closest('tr.draggable-row'); if(!t||t===draggingEl) return; const r=t.getBoundingClientRect(); const next=(e.clientY-r.top)/(r.bottom-r.top)>0.5; tbody.insertBefore(draggingEl,next?t.nextSibling:t); }
+  rows().forEach(r=>{ r.addEventListener('dragstart',handleDragStart); r.addEventListener('dragend',handleDragEnd); r.addEventListener('dragover',handleDragOver); });
+  function getCsrfToken(){ const el=document.querySelector('input[name="csrfmiddlewaretoken"]'); return el?el.value:''; }
+  async function persistOrder(){
+    const order = rows().map(r=>r.getAttribute('data-id'));
+    const body = {order}; const sel=document.querySelector('#filter_category'); if(sel&&sel.value){ body.category = sel.value; }
+    try{ const res=await fetch('{% url "core:test_parameter_reorder" %}',{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':getCsrfToken()},body:JSON.stringify(body)}); if(!res.ok) throw new Error('save failed'); let n=10; rows().forEach(r=>{ const c=r.children[2]; if(c) c.textContent=n; n+=10; }); }catch(err){ console.error(err); location.reload(); }
+  }
+})();
+
+// Quick filter
 document.addEventListener('DOMContentLoaded', function() {
     const filterInput = document.getElementById('parameter-table-filter');
     const rows = Array.from(document.querySelectorAll('.param-table tbody tr'));
