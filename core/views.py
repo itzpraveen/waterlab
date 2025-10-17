@@ -1650,7 +1650,16 @@ class TestParameterUpdateView(AdminRequiredMixin, UpdateView):
             with transaction.atomic():
                 old_values = TestParameter.objects.filter(pk=self.object.pk).values().first()
                 parameter = form.save()
-                AuditTrail.log_change(user=self.request.user, action='UPDATE', instance=parameter, old_values=old_values, new_values=form.cleaned_data, request=self.request)
+                # Fetch DB-serializable field values for audit logging to avoid JSON serialization errors
+                new_values = TestParameter.objects.filter(pk=parameter.pk).values().first()
+                AuditTrail.log_change(
+                    user=self.request.user,
+                    action='UPDATE',
+                    instance=parameter,
+                    old_values=old_values,
+                    new_values=new_values,
+                    request=self.request,
+                )
                 messages.success(self.request, f"Test parameter '{parameter.name}' updated successfully.")
         except Exception as exc:
             logger.exception("Failed to update test parameter %s", self.object.pk)
