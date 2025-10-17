@@ -15,7 +15,12 @@
     // Load dataset
     let data = {};
     try {
-      const res = await fetch('/static/js/kerala_address_data.json', {cache: 'no-store'});
+      // Prefer DB-backed endpoint so admins can update locations
+      let res = await fetch('/address/kerala.json', {cache: 'no-store'});
+      if (!res.ok) {
+        // Fallback to bundled static data
+        res = await fetch('/static/js/kerala_address_data.json', {cache: 'no-store'});
+      }
       data = await res.json();
     } catch (e) {
       console.warn('Failed to load kerala_address_data.json', e);
@@ -47,7 +52,10 @@
         create: false,
         allowEmptyOption: true,
         maxItems: 1,
-        placeholder: placeholder || 'Select...'
+        placeholder: placeholder || 'Select...',
+        closeAfterSelect: true,
+        selectOnTab: true,
+        onItemAdd: function(){ this.close(); this.blur(); }
       });
     }
 
@@ -98,4 +106,3 @@
     }
   });
 })();
-

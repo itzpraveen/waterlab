@@ -41,6 +41,7 @@ from .views import (
     AdminUserCreateView,
     AdminUserUpdateView,
     toggle_user_active,
+    kerala_locations_json,
 )
 
 from .auth_views import (
@@ -90,6 +91,7 @@ urlpatterns = [
     
     # Test Parameters Setup
     path('setup-test-parameters/', setup_test_parameters, name='setup_test_parameters'),
+    path('address/kerala.json', kerala_locations_json, name='kerala_locations_json'),
     path('setup-test-parameters/reorder/', reorder_test_parameters, name='test_parameter_reorder'),
     path('setup-test-categories/', setup_test_categories, name='setup_test_categories'),
     

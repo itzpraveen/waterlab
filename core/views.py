@@ -34,7 +34,7 @@ from .decorators import admin_required, lab_required, frontdesk_required, consul
 from .mixins import AdminRequiredMixin, LabRequiredMixin, FrontDeskRequiredMixin, ConsultantRequiredMixin, RoleRequiredMixin, AuditMixin
 
 # Health check endpoint for deployment monitoring
-from django.http import HttpResponse, FileResponse, HttpResponseNotFound
+from django.http import HttpResponse, FileResponse, HttpResponseNotFound, JsonResponse
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.units import inch
@@ -1845,6 +1845,39 @@ def delete_test_category(request, pk):
         logger.exception("Failed to delete category %s", pk)
         messages.error(request, _format_error_message("Error deleting category.", exc))
     return redirect('core:setup_test_categories')
+
+
+@login_required
+def kerala_locations_json(request):
+    """Return district -> taluk -> local body names from the DB.
+
+    If no KeralaLocation rows exist, respond with 204 so the client falls
+    back to the bundled static JSON.
+    """
+    from .models import KeralaLocation
+    if not KeralaLocation.objects.exists():
+        return JsonResponse({}, status=204)
+
+    data = {}
+    districts = KeralaLocation.objects.filter(location_type='district').order_by('name')
+    taluks = KeralaLocation.objects.filter(location_type='taluk').select_related('parent')
+    local_bodies = KeralaLocation.objects.exclude(location_type__in=['district','taluk']).select_related('parent')
+
+    taluks_by_district = {}
+    for t in taluks:
+        taluks_by_district.setdefault(t.parent_id, []).append(t)
+
+    locals_by_taluk = {}
+    for lb in local_bodies:
+        locals_by_taluk.setdefault(lb.parent_id, []).append(lb)
+
+    for d in districts:
+        data[d.name] = {}
+        for t in sorted(taluks_by_district.get(d.id, []), key=lambda x: x.name):
+            names = [x.name for x in sorted(locals_by_taluk.get(t.id, []), key=lambda x: x.name)]
+            data[d.name][t.name] = names
+
+    return JsonResponse(data)
 
 
 @login_required

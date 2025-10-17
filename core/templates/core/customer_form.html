@@ -49,6 +49,11 @@
 
     <div class="info-card">
         <div class="form-section-title"><i class="material-icons">location_on</i>Address details</div>
+        {% if request.user.is_staff %}
+        <div class="mb-2 small text-muted">
+            Admin shortcut: <a href="/admin/core/keralalocation/" target="_blank">Manage address data (districts / taluks / panchayats)</a>
+        </div>
+        {% endif %}
         <div class="row g-3">
             <div class="col-md-6">
                 <label for="{{ form.house_name_door_no.id_for_label }}" class="form-label">House name / door number</label>
