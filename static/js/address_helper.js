@@ -28,21 +28,28 @@
 
     // Helper to (re)fill select options
     function setOptions(select, items) {
-      const isTom = !!select.tomselect;
-      if (isTom) select.tomselect.clearOptions();
+      const opts = items || [];
+      if (select.tomselect) {
+        const ts = select.tomselect;
+        ts.clear(true);
+        ts.clearOptions();
+        ts.addOptions(opts.map(v => ({ value: v, text: v })));
+        ts.enable();
+        select.removeAttribute('disabled');
+        ts.refreshOptions(false);
+        return;
+      }
+      // Non-TomSelect fallback
       select.innerHTML = '';
       const blank = document.createElement('option');
       blank.value = ''; blank.textContent = '---------';
       select.appendChild(blank);
-      (items||[]).forEach(v => {
+      opts.forEach(v => {
         const opt = document.createElement('option');
         opt.value = v; opt.textContent = v;
         select.appendChild(opt);
       });
-      if (isTom) {
-        (items||[]).forEach(v => select.tomselect.addOption({value:v, text:v}));
-        select.tomselect.refreshOptions(false);
-      }
+      select.removeAttribute('disabled');
     }
 
     // Enhance selects with TomSelect
