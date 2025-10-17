@@ -1336,29 +1336,33 @@ def download_sample_report_view(request, pk):
     elements.append(address_table)
     elements.append(Spacer(1, 20))
 
-    elements.append(Paragraph("TEST OBSERVATIONS", styles['SectionTitle']))
+    elements.append(Paragraph("TEST OUTCOMES", styles['SectionTitle']))
     elements.append(Spacer(1, 6))
 
-    results_queryset = sample.results.select_related('parameter').order_by('parameter__display_order', 'parameter__name')
+    # Respect configured display order within categories
+    results_queryset = sample.results.select_related('parameter').order_by('parameter__category_obj__display_order', 'parameter__display_order', 'parameter__name')
     results = list(results_queryset)
 
     section_templates = OrderedDict([
-        ('physical_chemical', {'title': 'Physical & Chemical Parameters', 'categories': OrderedDict()}),
+        ('physical', {'title': 'Physical Parameters', 'categories': OrderedDict()}),
+        ('chemical', {'title': 'Chemical Parameters', 'categories': OrderedDict()}),
         ('microbiological', {'title': 'Microbiological Parameters', 'categories': OrderedDict()}),
-        ('solution', {'title': 'Solution Parameters', 'categories': OrderedDict()}),
+        ('other', {'title': 'Other Parameters', 'categories': OrderedDict()}),
     ])
 
     def _section_for_category(label: str) -> str:
         lowered = label.casefold()
+        if 'physical' in lowered:
+            return 'physical'
+        if 'chemical' in lowered:
+            return 'chemical'
         if any(token in lowered for token in ('micro', 'bacter', 'pathogen')):
             return 'microbiological'
-        if any(token in lowered for token in ('solution', 'remedy', 'treatment')):
-            return 'solution'
-        return 'physical_chemical'
+        return 'other'
 
     for result in results:
-        raw_category = (result.parameter.category or '').strip()
-        display_label = raw_category or 'Uncategorized'
+        # Prefer structured category; fallback to legacy text
+        display_label = (getattr(result.parameter, 'category_label', '') or '').strip() or 'Uncategorized'
         section_key = _section_for_category(display_label)
         categories = section_templates[section_key]['categories']
         if display_label not in categories:
@@ -1386,7 +1390,7 @@ def download_sample_report_view(request, pk):
             Paragraph('Unit', styles['TableHead']),
             Paragraph('Limits', styles['TableHead']),
             Paragraph('Status', styles['TableHead']),
-            Paragraph('Observation', styles['TableHead'])
+            Paragraph('Test outcomes', styles['TableHead'])
         ]
         table_data = [header]
 
@@ -1458,11 +1462,11 @@ def download_sample_report_view(request, pk):
             elements.append(Paragraph("No parameters recorded for this category.", styles['Normal']))
             elements.append(Spacer(1, 12))
 
-    _render_section('physical_chemical', 'Physical & Chemical Parameters')
+    _render_section('physical', 'Physical Parameters')
+    elements.append(PageBreak())
+    _render_section('chemical', 'Chemical Parameters')
     elements.append(PageBreak())
     _render_section('microbiological', 'Microbiological Parameters')
-    elements.append(PageBreak())
-    _render_section('solution', 'Solution & Recommendations')
 
     review = getattr(sample, 'review', None)
     if review:
@@ -1480,7 +1484,7 @@ def download_sample_report_view(request, pk):
 
     elements.append(Paragraph("REMARKS", styles['SectionTitle']))
     elements.append(Paragraph(
-        "The sample has been analysed in accordance with IS 10500:2012 guidelines. Observations above include automated compliance status for each parameter.",
+        "The sample has been analysed in accordance with IS 10500:2012 guidelines. Outcomes above include automated compliance status for each parameter.",
         styles['Normal']
     ))
     elements.append(Spacer(1, 18))
