@@ -291,7 +291,30 @@
       const res=await fetch('{% url "core:test_parameter_reorder" %}',{
         method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':getCsrfToken()},body:JSON.stringify(body)});
       if(!res.ok) throw new Error('save failed');
+      try { const data = await res.json(); if (data && data.ok) showToast('Order saved'); } catch(_) { showToast('Order saved'); }
     }catch(err){ console.error(err); /* non-fatal */ }
+  }
+
+  // Lightweight toast utility
+  function ensureToastStyles(){
+    if (document.getElementById('wl-toast-style')) return;
+    const s = document.createElement('style');
+    s.id = 'wl-toast-style';
+    s.textContent = `
+    .wl-toast{position:fixed; right:16px; bottom:16px; background:#0F766E; color:#fff; padding:10px 14px; border-radius:6px; opacity:0; transform:translateY(8px); transition:all .25s ease; z-index:9999; box-shadow:0 8px 20px rgba(0,0,0,.15); font-size:14px}
+    .wl-toast.show{opacity:1; transform:none}
+    `;
+    document.head.appendChild(s);
+  }
+  function showToast(message){
+    ensureToastStyles();
+    const t = document.createElement('div');
+    t.className = 'wl-toast';
+    t.textContent = message || 'Saved';
+    document.body.appendChild(t);
+    // force reflow then show
+    void t.offsetHeight; t.classList.add('show');
+    setTimeout(()=>{ t.classList.remove('show'); setTimeout(()=>t.remove(), 300); }, 1600);
   }
 })();
 
