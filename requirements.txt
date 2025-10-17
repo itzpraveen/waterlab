@@ -26,3 +26,4 @@ openpyxl==3.1.2
 
 # Environment configuration
 python-dotenv>=0.21.0 # For loading .env files
+pdfminer.six==20250506
