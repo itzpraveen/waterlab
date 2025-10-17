@@ -17,13 +17,20 @@
     try {
       // Prefer DB-backed endpoint so admins can update locations
       let res = await fetch('/address/kerala.json', {cache: 'no-store'});
-      if (!res.ok) {
-        // Fallback to bundled static data
-        res = await fetch('/static/js/kerala_address_data.json', {cache: 'no-store'});
+      let loaded = false;
+      if (res.ok) {
+        try {
+          const txt = await res.text();
+          if (txt && txt.trim().length) { data = JSON.parse(txt); loaded = true; }
+        } catch (_) { /* fall back below */ }
       }
-      data = await res.json();
+      if (!loaded) {
+        const res2 = await fetch('/static/js/kerala_address_data.json', {cache: 'no-store'});
+        data = await res2.json();
+      }
     } catch (e) {
-      console.warn('Failed to load kerala_address_data.json', e);
+      console.warn('Failed to load kerala address data; fields may be empty', e);
+      data = {};
     }
 
     // Helper to (re)fill select options
