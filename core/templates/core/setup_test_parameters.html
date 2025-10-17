@@ -23,6 +23,61 @@
 {% block content %}
 <div class="param-layout">
     <section class="info-card param-card">
+        <div class="section-title"><i class="material-icons">checklist</i> Guided setup</div>
+        <div class="row g-3 align-items-center">
+            <div class="col-md-4">
+                <div class="small text-muted">Step 1</div>
+                <div class="fw-semibold">Create categories</div>
+                <div class="text-muted small">Add or rename test groupings.</div>
+            </div>
+            <div class="col-md-3">
+                <a href="{% url 'core:setup_test_categories' %}" class="btn btn-outline-secondary w-100">
+                    <i class="material-icons align-middle me-1">category</i>Manage
+                </a>
+            </div>
+            <div class="col-md-5 text-muted small">{{ categories|length }} categor{{ categories|length|pluralize:"y,ies" }} available</div>
+        </div>
+        <hr>
+        <div class="row g-3 align-items-center">
+            <div class="col-md-4">
+                <div class="small text-muted">Step 2</div>
+                <div class="fw-semibold">Add parameters</div>
+                <div class="text-muted small">Use the form below or add our recommended set.</div>
+            </div>
+            <div class="col-md-3">
+                <form method="post" class="m-0">
+                    {% csrf_token %}
+                    <button type="submit" name="action" value="create_standard" class="btn btn-outline-primary w-100">
+                        <i class="material-icons align-middle me-1">playlist_add_check</i>
+                        Add recommended
+                    </button>
+                </form>
+            </div>
+            <div class="col-md-5 text-muted small">Safe to repeat—won't change your order</div>
+        </div>
+        <hr>
+        <div class="row g-3 align-items-center">
+            <div class="col-md-4">
+                <div class="small text-muted">Step 3</div>
+                <div class="fw-semibold">Arrange order</div>
+                <div class="text-muted small">Lower numbers appear earlier.</div>
+            </div>
+            <div class="col-md-3">
+                <form method="post" class="m-0">
+                    {% csrf_token %}
+                    {% if selected_category %}
+                    <input type="hidden" name="category" value="{{ selected_category.pk }}">
+                    {% endif %}
+                    <button type="submit" name="action" value="normalize_order" class="btn btn-outline-secondary w-100">
+                        <i class="material-icons align-middle me-1">sort</i>
+                        Normalise order
+                    </button>
+                </form>
+            </div>
+            <div class="col-md-5 text-muted small">Applies to {{ selected_category.name|default:"all categories" }}</div>
+        </div>
+    </section>
+    <section class="info-card param-card">
         <div class="section-title"><i class="material-icons">insights</i> Laboratory presets</div>
         {% if existing_params %}
         <p class="text-muted small mb-3">{{ existing_params.count }} parameter{{ existing_params.count|pluralize }} ready for sample registration.</p>
@@ -48,40 +103,25 @@
     </section>
 
     <section class="info-card param-card param-card--standard">
-        <div class="section-title"><i class="material-icons">playlist_add</i>Standard parameter set</div>
-        <p class="text-muted">Add WaterLab's recommended baseline tests in a single click. Existing entries will be skipped automatically.</p>
-
-        <form method="post" class="param-standard-action">
-            {% csrf_token %}
-            <button type="submit" name="action" value="create_standard" class="btn btn-primary btn-lg w-100">
-                <i class="material-icons align-middle me-1">playlist_add_check</i>
-                {% if existing_params %}Re-run standard set{% else %}Create standard set{% endif %}
-            </button>
-        </form>
-        <p class="text-muted extra-small mb-0">Safe to repeat &mdash; duplicates are never created.</p>
-
-        <details class="param-standard-details">
-            <summary><i class="material-icons" aria-hidden="true">expand_more</i>See included parameters</summary>
-            <ul class="param-standard-list param-standard-list--compact">
-                <li><strong>pH</strong><span>6.5&ndash;8.5 pH units</span></li>
-                <li><strong>Total Dissolved Solids</strong><span>0&ndash;500 mg/L</span></li>
-                <li><strong>Turbidity</strong><span>0&ndash;1 NTU</span></li>
-                <li><strong>Total Hardness</strong><span>0&ndash;200 mg/L as CaCO<sub>3</sub></span></li>
-                <li><strong>Chlorides</strong><span>0&ndash;250 mg/L</span></li>
-                <li><strong>Total Alkalinity</strong><span>0&ndash;200 mg/L as CaCO<sub>3</sub></span></li>
-                <li><strong>Iron</strong><span>0&ndash;0.3 mg/L</span></li>
-                <li><strong>Fluoride</strong><span>0&ndash;1.0 mg/L</span></li>
-                <li><strong>Nitrate</strong><span>0&ndash;45 mg/L</span></li>
-                <li><strong>Residual Chlorine</strong><span>0.2&ndash;1.0 mg/L</span></li>
-                <li><strong>Total Coliform</strong><span>0 CFU/100mL</span></li>
-                <li><strong>E. Coli</strong><span>0 CFU/100mL</span></li>
-            </ul>
-        </details>
-    </section>
+        <div class="section-title"><i class="material-icons">tune</i> Add a custom parameter</div>
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label for="filter_category" class="form-label">Filter by category</label>
+                <form method="get">
+                    <select id="filter_category" name="category" class="form-select" onchange="this.form.submit()">
+                        <option value="">All categories</option>
+                        {% for c in categories %}
+                        <option value="{{ c.pk }}" {% if selected_category and selected_category.pk == c.pk %}selected{% endif %}>{{ c.name }}</option>
+                        {% endfor %}
+                    </select>
+                </form>
+            </div>
+            <div class="col-md-8 small text-muted d-flex align-items-end">Recommended next order: <span class="ms-1 fw-semibold">{{ next_order }}</span>{% if selected_category %} in {{ selected_category.name }}{% endif %}</div>
+        </div>
 </div>
 
-<section class="info-card param-card param-card--full">
-    <div class="section-title"><i class="material-icons">tune</i> Add a custom parameter</div>
+    <section class="info-card param-card param-card--full">
+    <div class="section-title"><i class="material-icons">add_circle</i> Add a custom parameter</div>
     <p class="text-muted">Capture analytes unique to your lab. Newly added parameters are immediately available for sample registration.</p>
 
     {% if form.non_field_errors %}
@@ -182,7 +222,7 @@
             <i class="material-icons" aria-hidden="true">search</i>
             <input type="search" id="parameter-table-filter" class="form-control" placeholder="Quick search by name, method or unit..." autocomplete="off">
         </div>
-        <span class="text-muted small">{{ parameters.count }} total</span>
+        <span class="text-muted small">{{ parameters.count }} shown{% if selected_category %} ({{ selected_category.name }}){% endif %}</span>
     </div>
     <div class="table-responsive">
         <table class="table table-modern align-middle param-table">

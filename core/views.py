@@ -1588,9 +1588,36 @@ def setup_test_parameters(request):
     (skipping any that already exist by name).
     """
 
+    # Helpers
+    def _next_order_for(category: TestCategory | None) -> int:
+        qs = TestParameter.objects.all()
+        if category:
+            qs = qs.filter(category_obj=category)
+        last = qs.order_by('-display_order').first()
+        base = (last.display_order if last and last.display_order else 0)
+        # Step by 10 to leave room for inserts
+        return (base // 10 + 1) * 10 if base else 10
+
+    # Filters and data
+    categories = TestCategory.objects.all().order_by('display_order', 'name')
+    selected_category_id = request.GET.get('category') or request.POST.get('category')
+    selected_category = None
+    if selected_category_id:
+        try:
+            selected_category = categories.get(pk=selected_category_id)
+        except Exception:
+            selected_category = None
+
     # List existing parameters and show a form for manual add/edit
-    parameters = TestParameter.objects.all().order_by('category_obj__display_order', 'category_obj__name', 'display_order', 'name')
+    parameters_qs = TestParameter.objects.all()
+    if selected_category:
+        parameters_qs = parameters_qs.filter(category_obj=selected_category)
+    parameters = parameters_qs.order_by('category_obj__display_order', 'category_obj__name', 'display_order', 'name')
     form = TestParameterForm()
+    # Pre-fill recommended order if a category is chosen
+    if selected_category:
+        form.fields['category_obj'].initial = selected_category.pk
+        form.fields['display_order'].initial = _next_order_for(selected_category)
 
     if request.method == 'POST':
         # If the POST is from the "Create Standard Parameters" button, it won't
@@ -1612,15 +1639,48 @@ def setup_test_parameters(request):
                     request,
                     _format_error_message("Error creating standard parameters.", exc),
                 )
+        elif action == 'normalize_order':
+            # Normalize display_order within a category (or across all if none selected)
+            try:
+                with transaction.atomic():
+                    target_categories = [selected_category] if selected_category else list(categories)
+                    if not target_categories:
+                        target_categories = [None]
+                    for cat in target_categories:
+                        qs = TestParameter.objects.all()
+                        if cat:
+                            qs = qs.filter(category_obj=cat)
+                        running = 10
+                        for p in qs.order_by('name'):
+                            if p.display_order != running:
+                                p.display_order = running
+                                p.save(update_fields=['display_order'])
+                            running += 10
+                if selected_category:
+                    messages.success(request, f"Normalised order within '{selected_category.name}'.")
+                else:
+                    messages.success(request, "Normalised order across all categories.")
+                # Preserve filter in redirect
+                if selected_category:
+                    return redirect(f"{reverse_lazy('core:setup_test_parameters')}?category={selected_category.pk}")
+                return redirect('core:setup_test_parameters')
+            except Exception as exc:
+                logger.exception("Failed to normalize parameter order")
+                messages.error(request, _format_error_message("Error normalising order.", exc))
         else:
             # Manual single-parameter creation via form
             form = TestParameterForm(request.POST)
             if form.is_valid():
                 try:
                     with transaction.atomic():
+                        # If no order provided, place at the end of the selected (or global) list
+                        if not form.cleaned_data.get('display_order'):
+                            form.instance.display_order = _next_order_for(form.cleaned_data.get('category_obj'))
                         parameter = form.save()
                         AuditTrail.log_change(user=request.user, action='CREATE', instance=parameter, request=request)
                         messages.success(request, f"Test parameter '{parameter.name}' created successfully.")
+                        if selected_category:
+                            return redirect(f"{reverse_lazy('core:setup_test_parameters')}?category={selected_category.pk}")
                         return redirect('core:setup_test_parameters')
                 except Exception as exc:
                     logger.exception("Failed to create test parameter via setup view")
@@ -1634,6 +1694,9 @@ def setup_test_parameters(request):
     context = {
         'existing_params': parameters,
         'parameters': parameters,
+        'categories': categories,
+        'selected_category': selected_category,
+        'next_order': _next_order_for(selected_category) if selected_category or parameters.exists() else 10,
         'form': form,
         'page_title': 'Setup Test Parameters',
     }
