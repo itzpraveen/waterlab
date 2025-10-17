@@ -280,7 +280,12 @@
   function getCsrfToken(){ const el=document.querySelector('input[name="csrfmiddlewaretoken"]'); return el?el.value:''; }
   async function persistOrder(){
     const order = rows().map(r=>r.getAttribute('data-id'));
-    const body = {order}; const sel=document.querySelector('#filter_category'); if(sel&&sel.value){ body.category = sel.value; }
+    const sel=document.querySelector('#filter_category');
+    if(!sel || !sel.value){
+      alert('Select a category first, then drag to reorder within it.');
+      return;
+    }
+    const body = {order, category: sel.value};
     try{
       const res=await fetch('{% url "core:test_parameter_reorder" %}',{
         method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':getCsrfToken()},body:JSON.stringify(body)});

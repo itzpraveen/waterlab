@@ -1704,13 +1704,16 @@ def reorder_test_parameters(request):
     if not isinstance(ids, list) or not ids:
         return JsonResponse({"ok": False, "error": "No order provided."}, status=400)
 
+    # Require category selection to avoid cross-category global ordering
+    if not category_id:
+        return JsonResponse({"ok": False, "error": "category_required"}, status=400)
+
     qs = TestParameter.objects.filter(parameter_id__in=ids)
-    if category_id:
-        try:
-            cat = TestCategory.objects.get(pk=category_id)
-        except TestCategory.DoesNotExist:
-            return JsonResponse({"ok": False, "error": "Invalid category."}, status=400)
-        qs = qs.filter(category_obj=cat)
+    try:
+        cat = TestCategory.objects.get(pk=category_id)
+    except TestCategory.DoesNotExist:
+        return JsonResponse({"ok": False, "error": "Invalid category."}, status=400)
+    qs = qs.filter(category_obj=cat)
 
     found_ids = set(str(x) for x in qs.values_list('parameter_id', flat=True))
     missing = [i for i in ids if str(i) not in found_ids]
