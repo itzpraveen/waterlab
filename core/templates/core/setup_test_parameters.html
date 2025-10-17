@@ -60,21 +60,8 @@
             <div class="col-md-4">
                 <div class="small text-muted">Step 3</div>
                 <div class="fw-semibold">Arrange order</div>
-                <div class="text-muted small">Lower numbers appear earlier.</div>
+                <div class="text-muted small">Drag rows in the table to set order.</div>
             </div>
-            <div class="col-md-3">
-                <form method="post" class="m-0">
-                    {% csrf_token %}
-                    {% if selected_category %}
-                    <input type="hidden" name="category" value="{{ selected_category.pk }}">
-                    {% endif %}
-                    <button type="submit" name="action" value="normalize_order" class="btn btn-outline-secondary w-100">
-                        <i class="material-icons align-middle me-1">sort</i>
-                        Normalise order
-                    </button>
-                </form>
-            </div>
-            <div class="col-md-5 text-muted small">Applies to {{ selected_category.name|default:"all categories" }}</div>
         </div>
     </section>
     <section class="info-card param-card">
@@ -225,9 +212,10 @@
         <span class="text-muted small">{{ parameters.count }} shown{% if selected_category %} ({{ selected_category.name }}){% endif %}</span>
     </div>
     <div class="table-responsive">
-        <table class="table table-modern align-middle param-table">
+        <table class="table table-modern align-middle param-table" id="param-table">
             <thead>
                 <tr>
+                    <th style="width:44px;" title="Drag to reorder">⇅</th>
                     <th>Parameter</th>
                     <th>Order</th>
                     <th>Unit</th>
@@ -244,7 +232,8 @@
             </thead>
             <tbody>
                 {% for param in parameters %}
-                <tr data-search="{{ param.name }} {{ param.unit|default:'' }} {{ param.method|default:'' }} {{ param.group|default:'' }} {{ param.discipline|default:'' }}">
+                <tr data-id="{{ param.parameter_id }}" draggable="true" class="draggable-row" data-search="{{ param.name }} {{ param.unit|default:'' }} {{ param.method|default:'' }} {{ param.group|default:'' }} {{ param.discipline|default:'' }}">
+                    <td class="text-muted" style="cursor:grab">&#x2630;</td>
                     <td class="fw-semibold">{{ param.name }}</td>
                     <td>{{ param.display_order }}</td>
                     <td>{{ param.unit }}</td>
@@ -276,6 +265,79 @@
     </div>
 </section>
 {% endif %}
+
+{% block extra_js %}
+<script>
+(function() {
+  const table = document.getElementById('param-table');
+  if (!table) return;
+
+  const tbody = table.querySelector('tbody');
+  const rows = () => Array.from(tbody.querySelectorAll('tr.draggable-row'));
+
+  let draggingEl = null;
+
+  function handleDragStart(e) {
+    draggingEl = e.currentTarget;
+    e.dataTransfer.effectAllowed = 'move';
+    e.currentTarget.classList.add('dragging');
+  }
+  function handleDragEnd(e) {
+    e.currentTarget.classList.remove('dragging');
+    draggingEl = null;
+    persistOrder();
+  }
+  function handleDragOver(e) {
+    e.preventDefault();
+    const target = e.target.closest('tr.draggable-row');
+    if (!target || target === draggingEl) return;
+    const rect = target.getBoundingClientRect();
+    const next = (e.clientY - rect.top) / (rect.bottom - rect.top) > 0.5;
+    tbody.insertBefore(draggingEl, next ? target.nextSibling : target);
+  }
+
+  rows().forEach(r => {
+    r.addEventListener('dragstart', handleDragStart);
+    r.addEventListener('dragend', handleDragEnd);
+    r.addEventListener('dragover', handleDragOver);
+  });
+
+  function getCsrfToken() {
+    const el = document.querySelector('input[name="csrfmiddlewaretoken"]');
+    return el ? el.value : '';
+  }
+
+  async function persistOrder() {
+    const order = rows().map(r => r.getAttribute('data-id'));
+    const body = { order: order };
+    const catSel = document.querySelector('#filter_category');
+    if (catSel && catSel.value) { body.category = catSel.value; }
+    try {
+      const res = await fetch('{% url "core:test_parameter_reorder" %}', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': getCsrfToken(),
+        },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) throw new Error('Failed to save order');
+      // Update the order column numbers (10,20,...)
+      let n = 10;
+      rows().forEach(r => {
+        const cell = r.children[2]; // order column
+        if (cell) cell.textContent = n;
+        n += 10;
+      });
+    } catch (err) {
+      console.error(err);
+      // Soft reload as fallback
+      location.reload();
+    }
+  }
+})();
+</script>
+{% endblock %}
 
 {% endblock %}
 

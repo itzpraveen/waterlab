@@ -28,6 +28,7 @@ from .views import (
     fix_admin_role_web,
     sample_status_update,
     setup_test_parameters,
+    reorder_test_parameters,
     setup_test_categories,
     TestResultListView,
     TestResultDetailView,
@@ -89,6 +90,7 @@ urlpatterns = [
     
     # Test Parameters Setup
     path('setup-test-parameters/', setup_test_parameters, name='setup_test_parameters'),
+    path('setup-test-parameters/reorder/', reorder_test_parameters, name='test_parameter_reorder'),
     path('setup-test-categories/', setup_test_categories, name='setup_test_categories'),
     
     # Audit Trail

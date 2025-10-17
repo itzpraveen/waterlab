@@ -1639,34 +1639,6 @@ def setup_test_parameters(request):
                     request,
                     _format_error_message("Error creating standard parameters.", exc),
                 )
-        elif action == 'normalize_order':
-            # Normalize display_order within a category (or across all if none selected)
-            try:
-                with transaction.atomic():
-                    target_categories = [selected_category] if selected_category else list(categories)
-                    if not target_categories:
-                        target_categories = [None]
-                    for cat in target_categories:
-                        qs = TestParameter.objects.all()
-                        if cat:
-                            qs = qs.filter(category_obj=cat)
-                        running = 10
-                        for p in qs.order_by('name'):
-                            if p.display_order != running:
-                                p.display_order = running
-                                p.save(update_fields=['display_order'])
-                            running += 10
-                if selected_category:
-                    messages.success(request, f"Normalised order within '{selected_category.name}'.")
-                else:
-                    messages.success(request, "Normalised order across all categories.")
-                # Preserve filter in redirect
-                if selected_category:
-                    return redirect(f"{reverse_lazy('core:setup_test_parameters')}?category={selected_category.pk}")
-                return redirect('core:setup_test_parameters')
-            except Exception as exc:
-                logger.exception("Failed to normalize parameter order")
-                messages.error(request, _format_error_message("Error normalising order.", exc))
         else:
             # Manual single-parameter creation via form
             form = TestParameterForm(request.POST)
@@ -1701,6 +1673,73 @@ def setup_test_parameters(request):
         'page_title': 'Setup Test Parameters',
     }
     return render(request, 'core/setup_test_parameters.html', context)
+
+
+@login_required
+@admin_required
+@require_POST
+def reorder_test_parameters(request):
+    """Reorder parameters via drag-and-drop.
+
+    Body: JSON { "order": [parameter_id, ...], "category": <optional category pk> }
+    Only reorders the provided list, assigning display_order = 10,20,... in
+    the sequence received. If a category is provided, we validate that every
+    ID belongs to that category.
+    """
+    import json
+    from django.http import JsonResponse
+
+    try:
+        payload = json.loads(request.body.decode('utf-8')) if request.body else {}
+    except json.JSONDecodeError:
+        payload = request.POST
+
+    ids = payload.get('order') or []
+    category_id = payload.get('category')
+
+    if not isinstance(ids, list) or not ids:
+        return JsonResponse({"ok": False, "error": "No order provided."}, status=400)
+
+    qs = TestParameter.objects.filter(parameter_id__in=ids)
+    if category_id:
+        try:
+            cat = TestCategory.objects.get(pk=category_id)
+        except TestCategory.DoesNotExist:
+            return JsonResponse({"ok": False, "error": "Invalid category."}, status=400)
+        qs = qs.filter(category_obj=cat)
+
+    found_ids = set(str(x) for x in qs.values_list('parameter_id', flat=True))
+    missing = [i for i in ids if str(i) not in found_ids]
+    if missing:
+        return JsonResponse({"ok": False, "error": f"Unknown parameter ids: {', '.join(missing)}"}, status=400)
+
+    # Map id -> object for quick access
+    obj_by_id = {str(obj.parameter_id): obj for obj in qs}
+    running = 10
+    changed = []
+    for pid in ids:
+        obj = obj_by_id[str(pid)]
+        if obj.display_order != running:
+            obj.display_order = running
+            changed.append(obj)
+        running += 10
+
+    if changed:
+        TestParameter.objects.bulk_update(changed, ['display_order'])
+        # Log as a single audit record
+        try:
+            AuditTrail.log_change(
+                user=request.user,
+                action='UPDATE',
+                instance=changed[0],  # representative
+                old_values={},
+                new_values={"reordered_count": len(changed)},
+                request=request,
+            )
+        except Exception:
+            logger.exception("Failed to log audit for parameter reorder")
+
+    return JsonResponse({"ok": True, "updated": len(changed)})
 
 class TestParameterUpdateView(AdminRequiredMixin, UpdateView):
     model = TestParameter
