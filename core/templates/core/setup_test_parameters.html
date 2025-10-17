@@ -103,7 +103,7 @@
                     </select>
                 </form>
             </div>
-            <div class="col-md-8 small text-muted d-flex align-items-end">Recommended next order: <span class="ms-1 fw-semibold">{{ next_order }}</span>{% if selected_category %} in {{ selected_category.name }}{% endif %}</div>
+            <div class="col-md-8 small text-muted d-flex align-items-end">Drag rows below to reorder within {% if selected_category %}{{ selected_category.name }}{% else %}each category{% endif %}.</div>
         </div>
 </div>
 
@@ -138,12 +138,7 @@
                 {{ form.method }}
                 {% if form.method.errors %}<div class="form-error">{{ form.method.errors.0 }}</div>{% endif %}
             </div>
-            <div class="form-field">
-                <label for="{{ form.display_order.id_for_label }}">Display order</label>
-                {{ form.display_order }}
-                <div class="help-text">Lower values appear earlier in lists and reports.</div>
-                {% if form.display_order.errors %}<div class="form-error">{{ form.display_order.errors.0 }}</div>{% endif %}
-            </div>
+            {# Order is controlled via drag-and-drop; hide manual field to reduce confusion #}
             <div class="form-field">
                 <label for="{{ form.min_permissible_limit.id_for_label }}">Minimum limit</label>
                 {{ form.min_permissible_limit }}
@@ -217,7 +212,7 @@
                 <tr>
                     <th style="width:44px;" title="Drag to reorder">⇅</th>
                     <th>Parameter</th>
-                    <th>Order</th>
+                    {# Order column removed; list order matches final PDF order #}
                     <th>Unit</th>
                     <th>Min limit</th>
                     <th>Max limit</th>
@@ -235,7 +230,7 @@
                 <tr data-id="{{ param.parameter_id }}" draggable="true" class="draggable-row" data-search="{{ param.name }} {{ param.unit|default:'' }} {{ param.method|default:'' }} {{ param.group|default:'' }} {{ param.discipline|default:'' }}">
                     <td class="text-muted" style="cursor:grab">&#x2630;</td>
                     <td class="fw-semibold">{{ param.name }}</td>
-                    <td>{{ param.display_order }}</td>
+                    {# Removed explicit order; visual order + drag handle indicates position #}
                     <td>{{ param.unit }}</td>
                     <td>{{ param.min_permissible_limit|default:"-" }}</td>
                     <td>{{ param.max_permissible_limit|default:"-" }}</td>
@@ -286,7 +281,11 @@
   async function persistOrder(){
     const order = rows().map(r=>r.getAttribute('data-id'));
     const body = {order}; const sel=document.querySelector('#filter_category'); if(sel&&sel.value){ body.category = sel.value; }
-    try{ const res=await fetch('{% url "core:test_parameter_reorder" %}',{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':getCsrfToken()},body:JSON.stringify(body)}); if(!res.ok) throw new Error('save failed'); let n=10; rows().forEach(r=>{ const c=r.children[2]; if(c) c.textContent=n; n+=10; }); }catch(err){ console.error(err); location.reload(); }
+    try{
+      const res=await fetch('{% url "core:test_parameter_reorder" %}',{
+        method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':getCsrfToken()},body:JSON.stringify(body)});
+      if(!res.ok) throw new Error('save failed');
+    }catch(err){ console.error(err); /* non-fatal */ }
   }
 })();
 
