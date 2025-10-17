@@ -579,14 +579,49 @@ class AuditTrail(models.Model):
         """
         Helper method to log changes
         """
+        from decimal import Decimal
+        from uuid import UUID
+        from datetime import date, datetime, time
+        from django.db.models import Model, QuerySet
+
+        def _to_json_safe(value):
+            if value is None or isinstance(value, (str, int, float, bool)):
+                return value
+            if isinstance(value, Decimal):
+                try:
+                    return float(value)
+                except Exception:
+                    return str(value)
+            if isinstance(value, (datetime, date, time)):
+                return value.isoformat()
+            if isinstance(value, UUID):
+                return str(value)
+            if isinstance(value, dict):
+                return {str(k): _to_json_safe(v) for k, v in value.items()}
+            if isinstance(value, (list, tuple, set)):
+                return [_to_json_safe(v) for v in value]
+            if isinstance(value, QuerySet):
+                return [_to_json_safe(v) for v in list(value)]
+            if isinstance(value, Model):
+                # Prefer primary key string if available
+                try:
+                    return str(value.pk) if getattr(value, 'pk', None) is not None else str(value)
+                except Exception:
+                    return str(value)
+            # Fallback: best-effort string conversion
+            try:
+                return str(value)
+            except Exception:
+                return None
+
         changes = {}
         if old_values and new_values:
             for field, new_value in new_values.items():
                 old_value = old_values.get(field)
                 if old_value != new_value:
                     changes[field] = {
-                        'old': old_value,
-                        'new': new_value
+                        'old': _to_json_safe(old_value),
+                        'new': _to_json_safe(new_value)
                     }
         
         audit_log = cls.objects.create(
@@ -596,8 +631,8 @@ class AuditTrail(models.Model):
             object_id=str(instance.pk),
             object_repr=str(instance),
             changes=changes,
-            old_values=old_values or {},
-            new_values=new_values or {},
+            old_values=_to_json_safe(old_values or {}),
+            new_values=_to_json_safe(new_values or {}),
             ip_address=cls._get_client_ip(request) if request else None,
             user_agent=request.META.get('HTTP_USER_AGENT', '') if request else ''
         )
