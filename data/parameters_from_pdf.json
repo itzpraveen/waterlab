@@ -1,5 +1,5 @@
 {
-  "Physical & Chemical": [
+  "Physical": [
     "Odour",
     "Color",
     "Temperature",
@@ -8,7 +8,9 @@
     "Total Dissolved Solids",
     "Electrical Conductivity",
     "ORP",
-    "Total Suspended Solids",
+    "Total Suspended Solids"
+  ],
+  "Chemical": [
     "Total hardness",
     "Chloride",
     "Calcium",

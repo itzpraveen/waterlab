@@ -45,7 +45,10 @@ def parse_pdf(path: str) -> dict[str, list[str]]:
     text = extract_text(path)
     lines = [l.strip() for l in (text or "").splitlines()]
 
-    categories = {"physical": "Physical & Chemical", "microbiology": "Microbiological"}
+    # Recognise three headings when present; if PDF only shows "Physical"
+    # but contains chemical items in the same block, we'll split heuristically
+    # after extraction (see below).
+    categories = {"physical": "Physical", "chemical": "Chemical", "microbiology": "Microbiological"}
     params_by_cat: dict[str, list[str]] = {}
     cur: str | None = None
 
@@ -88,6 +91,27 @@ def parse_pdf(path: str) -> dict[str, list[str]]:
             if key in seen: continue
             seen.add(key); uniq.append(n)
         params_by_cat[cat] = uniq
+
+    # If Chemical header was not explicitly found, split Physical items into
+    # Physical vs Chemical using a conservative whitelist of physical-only
+    # parameters observed in the document and standard practice.
+    if ("Physical" in params_by_cat) and ("Chemical" not in params_by_cat):
+        physical_only = {
+            "Odour", "Color", "Colour", "Temperature", "pH",
+            "Turbidity", "Total Dissolved Solids", "Electrical Conductivity",
+            "ORP", "Total Suspended Solids"
+        }
+        phys_src = params_by_cat["Physical"]
+        new_phys = []
+        new_chem = []
+        for name in phys_src:
+            if name in physical_only:
+                new_phys.append(name)
+            else:
+                new_chem.append(name)
+        if new_chem:
+            params_by_cat["Physical"] = new_phys
+            params_by_cat["Chemical"] = new_chem
 
     return params_by_cat
 
