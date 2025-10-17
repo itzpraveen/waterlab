@@ -328,6 +328,17 @@ class Sample(models.Model):
         """Check if sample processing is completed"""
         return self.current_status in ['REPORT_APPROVED', 'REPORT_SENT']
 
+class TestCategory(models.Model):
+    """Dedicated category model so admins can manage categories centrally."""
+    name = models.CharField(max_length=100, unique=True)
+    display_order = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ['display_order', 'name']
+
+    def __str__(self):
+        return self.name
+
 class TestParameter(models.Model):
     parameter_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=100, unique=True)
@@ -335,7 +346,13 @@ class TestParameter(models.Model):
     method = models.CharField(max_length=255, blank=True, null=True)
     min_permissible_limit = models.DecimalField(max_digits=10, decimal_places=3, null=True, blank=True)
     max_permissible_limit = models.DecimalField(max_digits=10, decimal_places=3, null=True, blank=True)
+    # Legacy free-text category retained for backward compatibility
     category = models.CharField(max_length=100, blank=True, null=True)
+    # Preferred: structured category
+    category_obj = models.ForeignKey(
+        'TestCategory', null=True, blank=True, on_delete=models.SET_NULL,
+        related_name='parameters', verbose_name='Category'
+    )
     parent = models.ForeignKey('self', null=True, blank=True, on_delete=models.CASCADE, related_name='children')
     display_order = models.PositiveIntegerField(default=0, help_text="Lower numbers appear earlier in lists and reports")
     
@@ -363,6 +380,11 @@ class TestParameter(models.Model):
             qs = qs.exclude(pk=self.pk)
         if qs.exists():
             raise ValidationError({"name": "A parameter with this name already exists (case-insensitive)."})
+
+    @property
+    def category_label(self) -> str:
+        """Display-friendly category name (structured first, else legacy text)."""
+        return (self.category_obj.name if getattr(self, 'category_obj', None) else (self.category or ''))
 
 class TestResult(models.Model):
     result_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

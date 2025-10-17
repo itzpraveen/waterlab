@@ -28,11 +28,14 @@ from .views import (
     fix_admin_role_web,
     sample_status_update,
     setup_test_parameters,
+    setup_test_categories,
     TestResultListView,
     TestResultDetailView,
     download_sample_report_view,
     TestParameterUpdateView,
     delete_test_parameter,
+    TestCategoryUpdateView,
+    delete_test_category,
     AdminUserListView,
     AdminUserCreateView,
     AdminUserUpdateView,
@@ -86,6 +89,7 @@ urlpatterns = [
     
     # Test Parameters Setup
     path('setup-test-parameters/', setup_test_parameters, name='setup_test_parameters'),
+    path('setup-test-categories/', setup_test_categories, name='setup_test_categories'),
     
     # Audit Trail
     path('audit/', AuditTrailView.as_view(), name='audit_trail'),
@@ -98,6 +102,9 @@ urlpatterns = [
     # Test Parameter Management (Admin)
     path('setup-test-parameters/<uuid:pk>/edit/', TestParameterUpdateView.as_view(), name='test_parameter_edit'),
     path('setup-test-parameters/<uuid:pk>/delete/', delete_test_parameter, name='test_parameter_delete'),
+    # Category Management (Admin)
+    path('setup-test-categories/<int:pk>/edit/', TestCategoryUpdateView.as_view(), name='test_category_edit'),
+    path('setup-test-categories/<int:pk>/delete/', delete_test_category, name='test_category_delete'),
 
     # User management (Admin)
     path('users/', AdminUserListView.as_view(), name='user_list'),

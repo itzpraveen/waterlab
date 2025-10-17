@@ -1,0 +1,50 @@
+{% extends 'core/base.html' %}
+
+{% block title %}{{ page_title|default:"Edit Category" }} - WaterLab LIMS{% endblock %}
+
+{% block page_header %}
+<div class="page-header">
+    <div class="page-heading">
+        <span class="page-eyebrow">Test library</span>
+        <h1 class="page-title">{{ page_title|default:"Edit Category" }}</h1>
+        <p class="page-subtitle">Update the name or display order for this category.</p>
+    </div>
+    <div class="page-actions">
+        <a href="{% url 'core:setup_test_categories' %}" class="btn btn-outline-secondary">
+            <i class="material-icons align-middle me-1">arrow_back</i>
+            Back to categories
+        </a>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="parameter-form-shell">
+    <section class="info-card">
+        <div class="section-title"><i class="material-icons">category</i>{{ page_title|default:"Edit Category" }}</div>
+        <form method="post" class="parameter-form">
+            {% csrf_token %}
+            <div class="grid-two">
+                <div class="form-field">
+                    <label for="id_name">Name</label>
+                    {{ form.name }}
+                    {% if form.name.errors %}<p class="form-error">{{ form.name.errors.0 }}</p>{% endif %}
+                </div>
+                <div class="form-field">
+                    <label for="id_display_order">Display order</label>
+                    {{ form.display_order }}
+                    {% if form.display_order.errors %}<p class="form-error">{{ form.display_order.errors.0 }}</p>{% endif %}
+                </div>
+            </div>
+            <div class="form-actions">
+                <a href="{% url 'core:setup_test_categories' %}" class="btn btn-light">Cancel</a>
+                <button type="submit" class="btn btn-primary">
+                    <i class="material-icons align-middle me-1">save</i>
+                    Save changes
+                </button>
+            </div>
+        </form>
+    </section>
+</div>
+{% endblock %}
+

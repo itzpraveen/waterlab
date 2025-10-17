@@ -6,7 +6,7 @@ from django import forms
 from django.contrib.auth.forms import PasswordChangeForm
 from django.core.exceptions import ValidationError
 from django.utils import timezone
-from .models import Customer, Sample, TestParameter, CustomUser # Added TestParameter, CustomUser
+from .models import Customer, Sample, TestParameter, CustomUser, TestCategory # Added TestParameter, CustomUser, TestCategory
 
 class CustomerForm(forms.ModelForm):
     class Meta:
@@ -248,12 +248,12 @@ class SampleForm(forms.ModelForm):
         parameters = (
             TestParameter.objects
             .all()
-            .order_by('category', 'display_order', 'name')
+            .order_by('category_obj__display_order', 'category_obj__name', 'category', 'display_order', 'name')
         )
 
         category_groups: dict[str, dict[str, object]] = OrderedDict()
         for parameter in parameters:
-            raw_category = (parameter.category or '').strip()
+            raw_category = (parameter.category_label or '').strip()
             display_name = raw_category or 'Uncategorized parameters'
             key = display_name.casefold()
             if key not in category_groups:
@@ -316,7 +316,7 @@ class TestParameterForm(forms.ModelForm):
         model = TestParameter
         fields = [
             'name', 'unit', 'method', 'min_permissible_limit', 'max_permissible_limit',
-            'group', 'discipline', 'fssai_limit', 'category', 'display_order', 'parent'
+            'group', 'discipline', 'fssai_limit', 'category_obj', 'display_order', 'parent'
         ]
         widgets = {
             'name': forms.TextInput(attrs={'class': 'form-control'}),
@@ -327,11 +327,7 @@ class TestParameterForm(forms.ModelForm):
             'group': forms.TextInput(attrs={'class': 'form-control'}),
             'discipline': forms.TextInput(attrs={'class': 'form-control'}),
             'fssai_limit': forms.TextInput(attrs={'class': 'form-control'}),
-            'category': forms.TextInput(attrs={
-                'class': 'form-control',
-                'list': 'test-parameter-category-options',
-                'placeholder': 'Select or type a category'
-            }),
+            'category_obj': forms.Select(attrs={'class': 'form-control'}),
             'display_order': forms.NumberInput(attrs={'class': 'form-control', 'min': '0'}),
             'parent': forms.Select(attrs={'class': 'form-control'}),
         }
@@ -347,6 +343,8 @@ class TestParameterForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.category_suggestions = self.CATEGORY_SUGGESTIONS
+        # Provide category choices
+        self.fields['category_obj'].queryset = TestCategory.objects.all().order_by('display_order', 'name')
 
     def save(self, commit=True):
         instance = super().save(commit=False)

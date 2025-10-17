@@ -138,16 +138,15 @@
                 {% if form.discipline.errors %}<div class="form-error">{{ form.discipline.errors.0 }}</div>{% endif %}
             </div>
             <div class="form-field">
-                <label for="{{ form.category.id_for_label }}">Category</label>
-                {{ form.category }}
-                {% if form.category_suggestions %}
-                <datalist id="test-parameter-category-options">
-                    {% for option in form.category_suggestions %}
-                    <option value="{{ option }}">
-                    {% endfor %}
-                </datalist>
-                {% endif %}
-                {% if form.category.errors %}<div class="form-error">{{ form.category.errors.0 }}</div>{% endif %}
+                <label for="{{ form.category_obj.id_for_label }}">Category</label>
+                <div class="d-flex gap-2">
+                    <div class="flex-grow-1">{{ form.category_obj }}</div>
+                    <a class="btn btn-outline-secondary" href="{% url 'core:setup_test_categories' %}">
+                        <i class="material-icons align-middle">category</i>
+                        Manage
+                    </a>
+                </div>
+                {% if form.category_obj.errors %}<div class="form-error">{{ form.category_obj.errors.0 }}</div>{% endif %}
             </div>
             <div class="form-field">
                 <label for="{{ form.fssai_limit.id_for_label }}">FSSAI limit</label>
@@ -215,7 +214,7 @@
                     <td>{{ param.group|default:"-" }}</td>
                     <td>{{ param.discipline|default:"-" }}</td>
                     <td>{{ param.fssai_limit|default:"-" }}</td>
-                    <td>{{ param.category|default:"-" }}</td>
+                    <td>{{ param.category_obj.name|default:param.category|default:"-" }}</td>
                     <td>{{ param.parent.name|default:"-" }}</td>
                     <td class="text-center">
                         <div class="param-table-actions">

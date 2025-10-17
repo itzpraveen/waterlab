@@ -8,16 +8,21 @@ def _auto_seed_parameters():
     """
     from django.conf import settings
     from django.db.utils import OperationalError, ProgrammingError
-    from .models import TestParameter
+    from .models import TestParameter, TestCategory
     from .services.parameters import seed_standard_parameters
+    from .services.categories import seed_standard_categories
 
     try:
         auto_seed = getattr(settings, 'AUTO_SEED_PARAMETERS', True)
-        if not auto_seed:
+        # Skip during test runs to avoid interfering with isolated DBs
+        import sys as _sys
+        if (not auto_seed) or ('test' in _sys.argv):
             return
-        if TestParameter.objects.exists():
-            return
-        seed_standard_parameters()
+        # Ensure categories exist first, then parameters
+        if not TestCategory.objects.exists():
+            seed_standard_categories()
+        if not TestParameter.objects.exists():
+            seed_standard_parameters()
     except (OperationalError, ProgrammingError):
         # Database might not be ready during certain operations.
         pass

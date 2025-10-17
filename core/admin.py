@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from .models import Customer, Sample, TestParameter, TestResult, ConsultantReview, KeralaLocation, CustomUser, AuditTrail
+from .models import Customer, Sample, TestParameter, TestResult, ConsultantReview, KeralaLocation, CustomUser, AuditTrail, TestCategory
 
 @admin.register(Customer)
 class CustomerAdmin(admin.ModelAdmin):
@@ -64,3 +64,4 @@ admin.site.register(Sample)
 admin.site.register(TestParameter)
 admin.site.register(TestResult)
 admin.site.register(ConsultantReview)
+admin.site.register(TestCategory)

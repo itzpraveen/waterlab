@@ -20,7 +20,7 @@ from django.forms.models import model_to_dict
 
 from django.conf import settings
 
-from .models import Customer, Sample, TestParameter, TestResult, ConsultantReview, CustomUser, AuditTrail
+from .models import Customer, Sample, TestParameter, TestResult, ConsultantReview, CustomUser, AuditTrail, TestCategory
 from .forms import (
     CustomerForm,
     SampleForm,
@@ -843,8 +843,8 @@ class SampleDetailView(DetailView): # New DetailView for Sample
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         sample = context['sample']
-        tests_qs = sample.tests_requested.all().order_by('display_order', 'name')
-        results_qs = sample.results.select_related('parameter').order_by('parameter__display_order', 'parameter__name')
+        tests_qs = sample.tests_requested.all().order_by('category_obj__display_order', 'category_obj__name', 'category', 'display_order', 'name')
+        results_qs = sample.results.select_related('parameter').order_by('parameter__category_obj__display_order', 'parameter__category_obj__name', 'parameter__category', 'parameter__display_order', 'parameter__name')
 
         def _category_key(label: str) -> tuple[int, str]:
             lowered = label.casefold()
@@ -871,9 +871,9 @@ class SampleDetailView(DetailView): # New DetailView for Sample
             return OrderedDict((label, buckets[label]) for label in ordered_labels)
 
         context['ordered_tests'] = tests_qs
-        context['tests_by_category'] = _group_by_category(tests_qs, lambda param: param.category)
+        context['tests_by_category'] = _group_by_category(tests_qs, lambda param: param.category_label)
         context['ordered_results'] = results_qs
-        context['results_by_category'] = _group_by_category(results_qs, lambda result: result.parameter.category)
+        context['results_by_category'] = _group_by_category(results_qs, lambda result: result.parameter.category_label)
         return context
 
 class SampleCreateView(AuditMixin, FrontDeskRequiredMixin, CreateView):
@@ -1589,7 +1589,7 @@ def setup_test_parameters(request):
     """
 
     # List existing parameters and show a form for manual add/edit
-    parameters = TestParameter.objects.all().order_by('display_order', 'name')
+    parameters = TestParameter.objects.all().order_by('category_obj__display_order', 'category_obj__name', 'display_order', 'name')
     form = TestParameterForm()
 
     if request.method == 'POST':
@@ -1666,6 +1666,70 @@ class TestParameterUpdateView(AdminRequiredMixin, UpdateView):
         context['page_title'] = f'Edit Test Parameter: {self.object.name}'
         context['is_edit'] = True # For template to adapt if needed
         return context
+
+
+@login_required
+@admin_required
+def setup_test_categories(request):
+    categories = TestCategory.objects.all().order_by('display_order', 'name')
+    from django import forms
+
+    class TestCategoryForm(forms.ModelForm):
+        class Meta:
+            model = TestCategory
+            fields = ['name', 'display_order']
+            widgets = {
+                'name': forms.TextInput(attrs={'class': 'form-control'}),
+                'display_order': forms.NumberInput(attrs={'class': 'form-control', 'min': '0'}),
+            }
+
+    form = TestCategoryForm()
+    if request.method == 'POST':
+        form = TestCategoryForm(request.POST)
+        if form.is_valid():
+            obj = form.save()
+            AuditTrail.log_change(user=request.user, action='CREATE', instance=obj, request=request)
+            messages.success(request, f"Category '{obj.name}' created.")
+            return redirect('core:setup_test_categories')
+        else:
+            messages.error(request, "Error in form submission.")
+
+    return render(request, 'core/setup_test_categories.html', {
+        'form': form,
+        'categories': categories,
+        'page_title': 'Setup Categories',
+    })
+
+
+class TestCategoryUpdateView(AdminRequiredMixin, UpdateView):
+    model = TestCategory
+    fields = ['name', 'display_order']
+    template_name = 'core/test_category_form.html'
+    success_url = reverse_lazy('core:setup_test_categories')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['page_title'] = f'Edit Category: {self.object.name}'
+        context['is_edit'] = True
+        return context
+
+
+@login_required
+@admin_required
+@require_POST
+def delete_test_category(request, pk):
+    category = get_object_or_404(TestCategory, pk=pk)
+    name = category.name
+    try:
+        with transaction.atomic():
+            old_values = {'name': name, 'display_order': category.display_order}
+            AuditTrail.log_change(user=request.user, action='DELETE', instance=category, old_values=old_values, new_values={}, request=request)
+            category.delete()
+            messages.success(request, f"Category '{name}' deleted.")
+    except Exception as exc:
+        logger.exception("Failed to delete category %s", pk)
+        messages.error(request, _format_error_message("Error deleting category.", exc))
+    return redirect('core:setup_test_categories')
 
 
 @login_required

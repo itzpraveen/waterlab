@@ -81,16 +81,16 @@
 
             <div class="grid-two">
                 <div class="form-field">
-                    <label for="{{ form.category.id_for_label }}">Category</label>
-                    {{ form.category }}
-                    {% if form.category_suggestions %}
-                    <datalist id="test-parameter-category-options">
-                        {% for option in form.category_suggestions %}
-                        <option value="{{ option }}">
-                        {% endfor %}
-                    </datalist>
-                    {% endif %}
-                    {% if form.category.errors %}<p class="form-error">{{ form.category.errors.0 }}</p>{% endif %}
+                    <label for="{{ form.category_obj.id_for_label }}">Category</label>
+                    <div class="grid-two align-items-end">
+                        <div>{{ form.category_obj }}</div>
+                        <div class="text-end">
+                            <a href="{% url 'core:setup_test_categories' %}" class="btn btn-outline-secondary btn-sm">
+                                <i class="material-icons align-middle me-1">category</i>Manage categories
+                            </a>
+                        </div>
+                    </div>
+                    {% if form.category_obj.errors %}<p class="form-error">{{ form.category_obj.errors.0 }}</p>{% endif %}
                 </div>
                 <div class="form-field">
                     <label for="{{ form.display_order.id_for_label }}">Display order</label>
