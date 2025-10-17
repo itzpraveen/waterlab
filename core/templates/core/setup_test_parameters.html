@@ -227,7 +227,7 @@
             </thead>
             <tbody>
                 {% for param in parameters %}
-                <tr data-id="{{ param.parameter_id }}" draggable="true" class="draggable-row" data-search="{{ param.name }} {{ param.unit|default:'' }} {{ param.method|default:'' }} {{ param.group|default:'' }} {{ param.discipline|default:'' }}">
+                <tr data-id="{{ param.parameter_id }}" data-cat="{{ param.category_obj_id|default:'' }}" draggable="true" class="draggable-row" data-search="{{ param.name }} {{ param.unit|default:'' }} {{ param.method|default:'' }} {{ param.group|default:'' }} {{ param.discipline|default:'' }}">
                     <td class="text-muted" style="cursor:grab">&#x2630;</td>
                     <td class="fw-semibold">{{ param.name }}</td>
                     {# Removed explicit order; visual order + drag handle indicates position #}
@@ -279,13 +279,14 @@
   rows().forEach(r=>{ r.addEventListener('dragstart',handleDragStart); r.addEventListener('dragend',handleDragEnd); r.addEventListener('dragover',handleDragOver); });
   function getCsrfToken(){ const el=document.querySelector('input[name="csrfmiddlewaretoken"]'); return el?el.value:''; }
   async function persistOrder(){
-    const order = rows().map(r=>r.getAttribute('data-id'));
-    const sel=document.querySelector('#filter_category');
-    if(!sel || !sel.value){
-      alert('Select a category first, then drag to reorder within it.');
-      return;
-    }
-    const body = {order, category: sel.value};
+    // Group rows by category id so saving works even when "All categories" is shown
+    const groupsMap = {};
+    rows().forEach(r => {
+      const cat = r.getAttribute('data-cat') || 'null';
+      (groupsMap[cat] ||= []).push(r.getAttribute('data-id'));
+    });
+    const groups = Object.entries(groupsMap).map(([cat, order]) => ({category: cat==='null'? null : cat, order}));
+    const body = {groups};
     try{
       const res=await fetch('{% url "core:test_parameter_reorder" %}',{
         method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':getCsrfToken()},body:JSON.stringify(body)});

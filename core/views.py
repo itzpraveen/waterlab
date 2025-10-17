@@ -1698,55 +1698,63 @@ def reorder_test_parameters(request):
     except json.JSONDecodeError:
         payload = request.POST
 
-    ids = payload.get('order') or []
-    category_id = payload.get('category')
+    groups = payload.get('groups')
+    if groups:
+        updated_total = 0
+        with transaction.atomic():
+            for group in groups:
+                ids = group.get('order') or []
+                category_id = group.get('category')
+                # Accept null category (uncategorised)
+                qs = TestParameter.objects.filter(parameter_id__in=ids)
+                if category_id:
+                    try:
+                        cat = TestCategory.objects.get(pk=category_id)
+                    except TestCategory.DoesNotExist:
+                        return JsonResponse({"ok": False, "error": f"Invalid category {category_id}"}, status=400)
+                    qs = qs.filter(category_obj=cat)
+                else:
+                    qs = qs.filter(category_obj__isnull=True)
 
-    if not isinstance(ids, list) or not ids:
-        return JsonResponse({"ok": False, "error": "No order provided."}, status=400)
+                found_ids = set(str(x) for x in qs.values_list('parameter_id', flat=True))
+                missing = [i for i in ids if str(i) not in found_ids]
+                if missing:
+                    return JsonResponse({"ok": False, "error": f"Unknown parameter ids: {', '.join(missing)}"}, status=400)
 
-    # Require category selection to avoid cross-category global ordering
-    if not category_id:
-        return JsonResponse({"ok": False, "error": "category_required"}, status=400)
-
-    qs = TestParameter.objects.filter(parameter_id__in=ids)
-    try:
-        cat = TestCategory.objects.get(pk=category_id)
-    except TestCategory.DoesNotExist:
-        return JsonResponse({"ok": False, "error": "Invalid category."}, status=400)
-    qs = qs.filter(category_obj=cat)
-
-    found_ids = set(str(x) for x in qs.values_list('parameter_id', flat=True))
-    missing = [i for i in ids if str(i) not in found_ids]
-    if missing:
-        return JsonResponse({"ok": False, "error": f"Unknown parameter ids: {', '.join(missing)}"}, status=400)
-
-    # Map id -> object for quick access
-    obj_by_id = {str(obj.parameter_id): obj for obj in qs}
-    running = 10
-    changed = []
-    for pid in ids:
-        obj = obj_by_id[str(pid)]
-        if obj.display_order != running:
-            obj.display_order = running
-            changed.append(obj)
-        running += 10
-
-    if changed:
-        TestParameter.objects.bulk_update(changed, ['display_order'])
-        # Log as a single audit record
-        try:
-            AuditTrail.log_change(
-                user=request.user,
-                action='UPDATE',
-                instance=changed[0],  # representative
-                old_values={},
-                new_values={"reordered_count": len(changed)},
-                request=request,
-            )
-        except Exception:
-            logger.exception("Failed to log audit for parameter reorder")
-
-    return JsonResponse({"ok": True, "updated": len(changed)})
+                obj_by_id = {str(obj.parameter_id): obj for obj in qs}
+                running = 10
+                changed = []
+                for pid in ids:
+                    obj = obj_by_id[str(pid)]
+                    if obj.display_order != running:
+                        obj.display_order = running
+                        changed.append(obj)
+                    running += 10
+                if changed:
+                    TestParameter.objects.bulk_update(changed, ['display_order'])
+                    updated_total += len(changed)
+        return JsonResponse({"ok": True, "updated": updated_total})
+    else:
+        # Legacy single-category payload
+        ids = payload.get('order') or []
+        category_id = payload.get('category')
+        if not isinstance(ids, list) or not ids:
+            return JsonResponse({"ok": False, "error": "No order provided."}, status=400)
+        if not category_id:
+            return JsonResponse({"ok": False, "error": "category_required"}, status=400)
+        qs = TestParameter.objects.filter(parameter_id__in=ids, category_obj_id=category_id)
+        obj_by_id = {str(obj.parameter_id): obj for obj in qs}
+        running = 10
+        changed = []
+        for pid in ids:
+            obj = obj_by_id[str(pid)]
+            if obj.display_order != running:
+                obj.display_order = running
+                changed.append(obj)
+            running += 10
+        if changed:
+            TestParameter.objects.bulk_update(changed, ['display_order'])
+        return JsonResponse({"ok": True, "updated": len(changed)})
 
 class TestParameterUpdateView(AdminRequiredMixin, UpdateView):
     model = TestParameter
