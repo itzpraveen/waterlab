@@ -14,6 +14,7 @@
 {% endblock %}
 
 {% block content %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tom-select/dist/css/tom-select.bootstrap5.min.css">
 <form method="post" novalidate class="form-shell">
     {% csrf_token %}
 
@@ -104,6 +105,8 @@
 
 {% block extra_js %}
 {{ block.super }}
+<script src="https://cdn.jsdelivr.net/npm/tom-select/dist/js/tom-select.complete.min.js"></script>
+<script src="{% static 'js/address_helper.js' %}"></script>
 <script>
 (function() {
     const phoneInput = document.getElementById('{{ form.phone.id_for_label }}');

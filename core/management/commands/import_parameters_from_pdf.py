@@ -8,7 +8,10 @@ from core.models import TestParameter, TestCategory, AuditTrail
 
 
 HEADERS = {"parameters", "test method", "limit"}
-UNIT_PATTERN = re.compile(r"(mg/L|ppm|NTU|µs/cm|Colonies|Absent/ml|<|OC)")
+UNIT_PATTERN = re.compile(r"(mg/L|ppm|NTU|µs/cm|Colonies|Absent/ml|°C|OC)")
+RANGE_RE = re.compile(r"(?P<min>\d+(?:\.\d+)?)\s*[-–]\s*(?P<max>\d+(?:\.\d+)?)")
+LTE_RE = re.compile(r"(?:≤|<)\s*(?P<max>\d+(?:\.\d+)?)")
+GTE_RE = re.compile(r"(?:≥|>)\s*(?P<min>\d+(?:\.\d+)?)")
 
 
 NAME_ALIASES = {
@@ -41,7 +44,22 @@ def _normalize_name(name: str) -> str:
     return cleaned
 
 
-def parse_pdf(path: str) -> dict[str, list[str]]:
+def _parse_limits(text: str):
+    if not text:
+        return None, None
+    m = RANGE_RE.search(text)
+    if m:
+        return m.group('min'), m.group('max')
+    m = LTE_RE.search(text)
+    if m:
+        return None, m.group('max')
+    m = GTE_RE.search(text)
+    if m:
+        return m.group('min'), None
+    return None, None
+
+
+def parse_pdf(path: str) -> dict[str, list[dict]]:
     text = extract_text(path)
     lines = [l.strip() for l in (text or "").splitlines()]
 
@@ -49,7 +67,7 @@ def parse_pdf(path: str) -> dict[str, list[str]]:
     # but contains chemical items in the same block, we'll split heuristically
     # after extraction (see below).
     categories = {"physical": "Physical", "chemical": "Chemical", "microbiology": "Microbiological"}
-    params_by_cat: dict[str, list[str]] = {}
+    params_by_cat: dict[str, list[dict]] = {}
     cur: str | None = None
 
     i = 0
@@ -79,17 +97,56 @@ def parse_pdf(path: str) -> dict[str, list[str]]:
             else:
                 break
         name = _normalize_name(" ".join(parts))
+
+        # Look ahead for method and limit hints within the next few lines
+        method = None
+        unit = None
+        limit_text = None
+        look = j
+        steps = 0
+        while look < len(lines) and steps < 6:
+            token = lines[look].strip()
+            if not token:
+                look += 1; steps += 1; continue
+            if _is_method_token(token) or token.startswith('IS'):
+                method = token
+            if UNIT_PATTERN.search(token) or any(ch.isdigit() for ch in token):
+                # probable limit/units line
+                limit_text = token
+                # try to extract a unit keyword if present
+                m = re.search(r"(mg/L|ppm|NTU|µs/cm|°C|OC)", token)
+                if m:
+                    unit = 'µS/cm' if m.group(0) in {'µs/cm','OC'} else m.group(0)
+            # stop if we reached next obvious parameter start (capitalised word without numbers and not a method/limit)
+            if (token and not any(ch.isdigit() for ch in token) and not token.startswith('IS') and not _is_method_token(token) and len(token.split())<=3 and token[0].isalpha()):
+                # heuristic: might be a next parameter heading but we don't consume it here
+                pass
+            look += 1; steps += 1
+
+        min_v = max_v = None
+        if limit_text:
+            min_s, max_s = _parse_limits(limit_text)
+            min_v = float(min_s) if min_s else None
+            max_v = float(max_s) if max_s else None
+
         if name and not any(ch.isdigit() for ch in name):
-            params_by_cat.setdefault(cur, []).append(name)
+            params_by_cat.setdefault(cur, []).append({
+                'name': name,
+                'method': method,
+                'unit': unit,
+                'min': min_v,
+                'max': max_v,
+            })
         i = j
 
     # De-duplicate while preserving order
     for cat, items in list(params_by_cat.items()):
         seen = set(); uniq = []
-        for n in items:
+        for item in items:
+            n = item['name']
             key = n.casefold()
             if key in seen: continue
-            seen.add(key); uniq.append(n)
+            seen.add(key); uniq.append(item)
         params_by_cat[cat] = uniq
 
     # If Chemical header was not explicitly found, split Physical items into
@@ -104,11 +161,11 @@ def parse_pdf(path: str) -> dict[str, list[str]]:
         phys_src = params_by_cat["Physical"]
         new_phys = []
         new_chem = []
-        for name in phys_src:
-            if name in physical_only:
-                new_phys.append(name)
+        for item in phys_src:
+            if item['name'] in physical_only:
+                new_phys.append(item)
             else:
-                new_chem.append(name)
+                new_chem.append(item)
         if new_chem:
             params_by_cat["Physical"] = new_phys
             params_by_cat["Chemical"] = new_chem
@@ -146,8 +203,8 @@ class Command(BaseCommand):
         if dry:
             for cat, items in parsed.items():
                 self.stdout.write(self.style.HTTP_INFO(f"[{cat}] {len(items)} parameters"))
-                for i, n in enumerate(items, start=1):
-                    self.stdout.write(f"  {i*10:>3}: {n}")
+                for i, item in enumerate(items, start=1):
+                    self.stdout.write(f"  {i*10:>3}: {item['name']} | {item.get('method') or '-'} | {item.get('min') or ''}-{item.get('max') or ''} {item.get('unit') or ''}")
             return
 
         with transaction.atomic():
@@ -162,7 +219,8 @@ class Command(BaseCommand):
 
                 # Apply display order within each category and assign category_obj
                 order = 10
-                for pname in items:
+                for item in items:
+                    pname = item['name']
                     obj = TestParameter.objects.filter(name__iexact=pname).first()
                     if obj:
                         changed = False
@@ -170,11 +228,28 @@ class Command(BaseCommand):
                             obj.category_obj = cat; changed = True
                         if obj.display_order != order:
                             obj.display_order = order; changed = True
+                        # Update method/limits/units when available
+                        if item.get('method') and obj.method != item['method']:
+                            obj.method = item['method']; changed = True
+                        if item.get('unit') and obj.unit != item['unit']:
+                            obj.unit = item['unit']; changed = True
+                        if (item.get('min') is not None) and (obj.min_permissible_limit != item['min']):
+                            obj.min_permissible_limit = item['min']; changed = True
+                        if (item.get('max') is not None) and (obj.max_permissible_limit != item['max']):
+                            obj.max_permissible_limit = item['max']; changed = True
                         if changed:
-                            obj.save(update_fields=['category_obj','display_order'])
+                            obj.save()
                             updated_params += 1
                     else:
-                        TestParameter.objects.create(name=pname, unit='', category_obj=cat, display_order=order)
+                        TestParameter.objects.create(
+                            name=pname,
+                            unit=item.get('unit') or '',
+                            method=item.get('method'),
+                            min_permissible_limit=item.get('min'),
+                            max_permissible_limit=item.get('max'),
+                            category_obj=cat,
+                            display_order=order,
+                        )
                         created_params += 1
                     order += 10
 
