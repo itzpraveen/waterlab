@@ -199,6 +199,12 @@
 {% if existing_params %}
 <section class="info-card param-table-card">
     <div class="section-title"><i class="material-icons">dataset</i> Existing test parameters</div>
+    <div id="order-saved-banner" class="alert alert-success" role="alert" style="display:none; align-items:center; justify-content:space-between">
+        <div>
+            <strong>Order saved.</strong> Your display order has been updated and will be used in forms and PDFs.
+        </div>
+        <button type="button" class="btn btn-sm btn-outline-light" id="dismiss-order-saved">Dismiss</button>
+    </div>
     <div class="param-search">
         <div class="param-search-field">
             <i class="material-icons" aria-hidden="true">search</i>
@@ -291,7 +297,18 @@
       const res=await fetch('{% url "core:test_parameter_reorder" %}',{
         method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':getCsrfToken()},body:JSON.stringify(body)});
       if(!res.ok) throw new Error('save failed');
-      try { const data = await res.json(); if (data && data.ok) showToast('Order saved'); } catch(_) { showToast('Order saved'); }
+      try {
+        const data = await res.json();
+        if (data && data.ok) {
+          showToast('Order saved');
+          localStorage.setItem('wl.paramOrderSavedAt', new Date().toISOString());
+          showPersistentBanner();
+        }
+      } catch(_) {
+        showToast('Order saved');
+        localStorage.setItem('wl.paramOrderSavedAt', new Date().toISOString());
+        showPersistentBanner();
+      }
     }catch(err){ console.error(err); /* non-fatal */ }
   }
 
@@ -316,6 +333,36 @@
     void t.offsetHeight; t.classList.add('show');
     setTimeout(()=>{ t.classList.remove('show'); setTimeout(()=>t.remove(), 300); }, 1600);
   }
+
+  // Persistent banner (survives reload briefly)
+  function showPersistentBanner(){
+    const el = document.getElementById('order-saved-banner');
+    if (!el) return;
+    el.style.display = 'flex';
+    const dismiss = document.getElementById('dismiss-order-saved');
+    if (dismiss) {
+      dismiss.addEventListener('click', () => {
+        el.style.display = 'none';
+        localStorage.removeItem('wl.paramOrderSavedAt');
+      });
+    }
+  }
+
+  // On page load, show banner if recently saved (within 10 minutes)
+  (function() {
+    const ts = localStorage.getItem('wl.paramOrderSavedAt');
+    if (!ts) return;
+    try {
+      const saved = new Date(ts).getTime();
+      if (Date.now() - saved < 10*60*1000) {
+        showPersistentBanner();
+      } else {
+        localStorage.removeItem('wl.paramOrderSavedAt');
+      }
+    } catch (_) {
+      localStorage.removeItem('wl.paramOrderSavedAt');
+    }
+  })();
 })();
 
 // Quick filter
