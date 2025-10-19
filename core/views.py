@@ -1458,8 +1458,11 @@ def download_sample_report_view(request, pk):
         elements.append(Paragraph(heading, styles['SectionTitle']))
         elements.append(Spacer(1, 6))
         if section['categories']:
+            heading_key = heading.casefold().strip()
             for category_label, category_results in section['categories'].items():
-                elements.append(Paragraph(category_label, styles['CategoryHeading']))
+                label_text = (category_label or '').strip()
+                if label_text and label_text.casefold() != heading_key:
+                    elements.append(Paragraph(label_text, styles['CategoryHeading']))
                 table, serial_counter = _build_results_table(category_results, serial_counter)
                 elements.append(table)
                 elements.append(Spacer(1, 12))
