@@ -1593,11 +1593,8 @@ def setup_test_parameters(request):
     """
 
     # Helpers
-    def _next_order_for(category: TestCategory | None) -> int:
-        qs = TestParameter.objects.all()
-        if category:
-            qs = qs.filter(category_obj=category)
-        last = qs.order_by('-display_order').first()
+    def _next_order_for(_: TestCategory | None) -> int:
+        last = TestParameter.objects.order_by('-display_order').first()
         base = (last.display_order if last and last.display_order else 0)
         # Step by 10 to leave room for inserts
         return (base // 10 + 1) * 10 if base else 10
@@ -1616,7 +1613,7 @@ def setup_test_parameters(request):
     parameters_qs = TestParameter.objects.all()
     if selected_category:
         parameters_qs = parameters_qs.filter(category_obj=selected_category)
-    parameters = parameters_qs.order_by('category_obj__display_order', 'category_obj__name', 'display_order', 'name')
+    parameters = parameters_qs.order_by('display_order', 'name')
     form = TestParameterForm()
     # Pre-fill recommended order if a category is chosen
     if selected_category:
@@ -1735,26 +1732,86 @@ def reorder_test_parameters(request):
                     updated_total += len(changed)
         return JsonResponse({"ok": True, "updated": updated_total})
     else:
-        # Legacy single-category payload
-        ids = payload.get('order') or []
-        category_id = payload.get('category')
-        if not isinstance(ids, list) or not ids:
+        order_payload = payload.get('order')
+        if not isinstance(order_payload, list) or not order_payload:
             return JsonResponse({"ok": False, "error": "No order provided."}, status=400)
-        if not category_id:
-            return JsonResponse({"ok": False, "error": "category_required"}, status=400)
-        qs = TestParameter.objects.filter(parameter_id__in=ids, category_obj_id=category_id)
-        obj_by_id = {str(obj.parameter_id): obj for obj in qs}
-        running = 10
-        changed = []
-        for pid in ids:
-            obj = obj_by_id[str(pid)]
-            if obj.display_order != running:
-                obj.display_order = running
-                changed.append(obj)
-            running += 10
-        if changed:
-            TestParameter.objects.bulk_update(changed, ['display_order'])
-        return JsonResponse({"ok": True, "updated": len(changed)})
+
+        def _normalise(item):
+            if isinstance(item, dict):
+                value = item.get('id')
+            else:
+                value = item
+            return str(value) if value else None
+
+        ids = [pid for pid in (_normalise(item) for item in order_payload) if pid]
+        if not ids:
+            return JsonResponse({"ok": False, "error": "Invalid IDs."}, status=400)
+
+        raw_category = payload.get('category')
+        if raw_category not in (None, '', 'null', 'None'):
+            mode = 'category'
+            try:
+                category_obj = TestCategory.objects.get(pk=raw_category)
+            except TestCategory.DoesNotExist:
+                return JsonResponse({"ok": False, "error": f"Invalid category {raw_category}"}, status=400)
+        elif raw_category in ('null', 'None'):
+            mode = 'uncategorized'
+            category_obj = None
+        else:
+            mode = 'global'
+            category_obj = None
+
+        def apply_global_sequence(sequence):
+            objs = list(TestParameter.objects.filter(parameter_id__in=sequence))
+            if len(objs) != len(sequence):
+                found = {str(obj.parameter_id) for obj in objs}
+                missing = [pid for pid in sequence if pid not in found]
+                return None, JsonResponse({"ok": False, "error": f"Unknown parameter ids: {', '.join(missing)}"}, status=400)
+            obj_by_id = {str(obj.parameter_id): obj for obj in objs}
+            running = 10
+            changed = []
+            for pid in sequence:
+                obj = obj_by_id[str(pid)]
+                if obj.display_order != running:
+                    obj.display_order = running
+                    changed.append(obj)
+                running += 10
+            if changed:
+                TestParameter.objects.bulk_update(changed, ['display_order'])
+            return len(changed), None
+
+        if mode == 'global':
+            total = TestParameter.objects.count()
+            if len(ids) != total:
+                return JsonResponse({"ok": False, "error": "Full order required for global reorder."}, status=400)
+            updated, error_response = apply_global_sequence(ids)
+            if error_response:
+                return error_response
+            return JsonResponse({"ok": True, "updated": updated})
+
+        # Category-specific reorder, rebuild the full sequence preserving other categories.
+        def matches(cat_id):
+            if mode == 'category':
+                return cat_id == category_obj.pk
+            return cat_id is None  # uncategorized
+
+        all_rows = list(TestParameter.objects.order_by('display_order', 'name').values_list('parameter_id', 'category_obj_id'))
+        current_subset = [str(pid) for pid, cat_id in all_rows if matches(cat_id)]
+        if len(current_subset) != len(ids) or set(current_subset) != set(ids):
+            return JsonResponse({"ok": False, "error": "Provided IDs do not match the selected category contents."}, status=400)
+
+        ids_iter = iter(ids)
+        rebuilt_sequence = []
+        for pid, cat_id in all_rows:
+            if matches(cat_id):
+                rebuilt_sequence.append(next(ids_iter))
+            else:
+                rebuilt_sequence.append(str(pid))
+
+        updated, error_response = apply_global_sequence(rebuilt_sequence)
+        if error_response:
+            return error_response
+        return JsonResponse({"ok": True, "updated": updated})
 
 class TestParameterUpdateView(AdminRequiredMixin, UpdateView):
     model = TestParameter

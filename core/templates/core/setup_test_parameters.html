@@ -213,7 +213,7 @@
         <span class="text-muted small">{{ parameters.count }} shown{% if selected_category %} ({{ selected_category.name }}){% endif %}</span>
     </div>
     <div class="table-responsive">
-        <table class="table table-modern align-middle param-table" id="param-table">
+        <table class="table table-modern align-middle param-table" id="param-table" data-all-categories="{% if selected_category %}0{% else %}1{% endif %}" data-selected-category="{% if selected_category %}{{ selected_category.pk }}{% endif %}">
             <thead>
                 <tr>
                     <th style="width:44px;" title="Drag to reorder">⇅</th>
@@ -278,6 +278,8 @@
   if (!table) return;
   const tbody = table.querySelector('tbody');
   const rows = () => Array.from(tbody.querySelectorAll('tr.draggable-row'));
+  const isAllCategories = table.dataset.allCategories === '1';
+  const selectedCategory = table.dataset.selectedCategory || null;
   let draggingEl = null;
   function handleDragStart(e){ draggingEl = e.currentTarget; e.dataTransfer.effectAllowed='move'; e.currentTarget.classList.add('dragging'); }
   function handleDragEnd(e){ e.currentTarget.classList.remove('dragging'); draggingEl=null; persistOrder(); }
@@ -285,14 +287,11 @@
   rows().forEach(r=>{ r.addEventListener('dragstart',handleDragStart); r.addEventListener('dragend',handleDragEnd); r.addEventListener('dragover',handleDragOver); });
   function getCsrfToken(){ const el=document.querySelector('input[name="csrfmiddlewaretoken"]'); return el?el.value:''; }
   async function persistOrder(){
-    // Group rows by category id so saving works even when "All categories" is shown
-    const groupsMap = {};
-    rows().forEach(r => {
-      const cat = r.getAttribute('data-cat') || 'null';
-      (groupsMap[cat] ||= []).push(r.getAttribute('data-id'));
-    });
-    const groups = Object.entries(groupsMap).map(([cat, order]) => ({category: cat==='null'? null : cat, order}));
-    const body = {groups};
+    const orderedIds = rows().map(r => r.getAttribute('data-id')).filter(Boolean);
+    if (!orderedIds.length) return;
+    const body = (!isAllCategories && selectedCategory)
+      ? { order: orderedIds, category: selectedCategory }
+      : { order: orderedIds };
     try{
       const res=await fetch('{% url "core:test_parameter_reorder" %}',{
         method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':getCsrfToken()},body:JSON.stringify(body)});
