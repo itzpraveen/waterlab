@@ -122,6 +122,10 @@
         }
       });
 
+      if (ts.wrapper) {
+        ts.wrapper.classList.add('tom-select-field');
+      }
+
       ts.on('initialize', () => {
         const dropdownInput = ts.dropdown && ts.dropdown.querySelector('.dropdown-input input');
         const searchPlaceholder = basePlaceholder;
