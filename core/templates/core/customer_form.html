@@ -70,20 +70,28 @@
                 {{ form.village_town_city }}
                 {% if form.village_town_city.errors %}<div class="invalid-feedback d-block small">{{ form.village_town_city.errors.0 }}</div>{% endif %}
             </div>
-            <div class="col-md-6">
-                <label for="{{ form.panchayat_municipality.id_for_label }}" class="form-label">Panchayat / municipality *</label>
-                {{ form.panchayat_municipality }}
-                {% if form.panchayat_municipality.errors %}<div class="invalid-feedback d-block small">{{ form.panchayat_municipality.errors.0 }}</div>{% endif %}
-            </div>
-            <div class="col-md-6">
-                <label for="{{ form.taluk.id_for_label }}" class="form-label">Taluk *</label>
-                {{ form.taluk }}
-                {% if form.taluk.errors %}<div class="invalid-feedback d-block small">{{ form.taluk.errors.0 }}</div>{% endif %}
-            </div>
-            <div class="col-md-6">
-                <label for="{{ form.district.id_for_label }}" class="form-label">District *</label>
-                {{ form.district }}
-                {% if form.district.errors %}<div class="invalid-feedback d-block small">{{ form.district.errors.0 }}</div>{% endif %}
+            <div class="col-12">
+                <div class="address-hierarchy">
+                    <div class="address-hierarchy__title">Administrative area</div>
+                    <p class="address-hierarchy__hint small mb-3">Start with the district to unlock matching taluks and panchayats.</p>
+                    <div class="row g-3">
+                        <div class="col-lg-4 col-md-6">
+                            <label for="{{ form.district.id_for_label }}" class="form-label">District *</label>
+                            {{ form.district }}
+                            {% if form.district.errors %}<div class="invalid-feedback d-block small">{{ form.district.errors.0 }}</div>{% endif %}
+                        </div>
+                        <div class="col-lg-4 col-md-6">
+                            <label for="{{ form.taluk.id_for_label }}" class="form-label">Taluk *</label>
+                            {{ form.taluk }}
+                            {% if form.taluk.errors %}<div class="invalid-feedback d-block small">{{ form.taluk.errors.0 }}</div>{% endif %}
+                        </div>
+                        <div class="col-lg-4 col-md-6">
+                            <label for="{{ form.panchayat_municipality.id_for_label }}" class="form-label">Panchayat / municipality *</label>
+                            {{ form.panchayat_municipality }}
+                            {% if form.panchayat_municipality.errors %}<div class="invalid-feedback d-block small">{{ form.panchayat_municipality.errors.0 }}</div>{% endif %}
+                        </div>
+                    </div>
+                </div>
             </div>
             <div class="col-md-6">
                 <label for="{{ form.pincode.id_for_label }}" class="form-label">PIN code *</label>

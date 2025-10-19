@@ -34,42 +34,101 @@
     }
 
     // Helper to (re)fill select options
-    function setOptions(select, items) {
-      const opts = items || [];
+    function setOptions(select, items, config = {}) {
+      const opts = Array.isArray(items) ? items : [];
+      const selectPlaceholder = select.dataset.tsPlaceholder || select.dataset.placeholder || 'Select...';
+      const emptyLabel = config.emptyLabel || select.dataset.tsEmptyLabel || 'No options available';
+      const previousValue = select.value;
+      const shouldDisable = opts.length === 0;
+
       if (select.tomselect) {
         const ts = select.tomselect;
-        ts.clear(true);
         ts.clearOptions();
         ts.addOptions(opts.map(v => ({ value: v, text: v })));
-        ts.enable();
-        select.removeAttribute('disabled');
+        const nextPlaceholder = shouldDisable ? emptyLabel : selectPlaceholder;
+        ts.settings.placeholder = nextPlaceholder;
+        if (ts.control_input) {
+          ts.control_input.placeholder = nextPlaceholder;
+        }
+        if (shouldDisable) {
+          ts.clear(true);
+          ts.disable();
+          select.setAttribute('disabled', 'disabled');
+        } else {
+          ts.enable();
+          select.removeAttribute('disabled');
+          if (previousValue && opts.includes(previousValue)) {
+            ts.setValue(previousValue, true);
+          } else {
+            ts.clear(true);
+          }
+        }
+        if (typeof ts.inputState === 'function') {
+          ts.inputState();
+        }
         ts.refreshOptions(false);
         return;
       }
       // Non-TomSelect fallback
       select.innerHTML = '';
       const blank = document.createElement('option');
-      blank.value = ''; blank.textContent = '---------';
+      blank.value = '';
+      blank.textContent = shouldDisable ? emptyLabel : '---------';
       select.appendChild(blank);
       opts.forEach(v => {
         const opt = document.createElement('option');
         opt.value = v; opt.textContent = v;
         select.appendChild(opt);
       });
-      select.removeAttribute('disabled');
+      if (shouldDisable) {
+        select.value = '';
+        select.setAttribute('disabled', 'disabled');
+      } else {
+        select.removeAttribute('disabled');
+        if (previousValue && opts.includes(previousValue)) {
+          select.value = previousValue;
+        }
+      }
     }
 
     // Enhance selects with TomSelect
     function enhance(select, placeholder) {
       if (!window.TomSelect || select.tomselect) return;
-      new TomSelect(select, {
+      const basePlaceholder = placeholder || 'Select...';
+      select.dataset.tsPlaceholder = basePlaceholder;
+      const ts = new TomSelect(select, {
         create: false,
         allowEmptyOption: true,
         maxItems: 1,
-        placeholder: placeholder || 'Select...',
+        sortField: {
+          field: 'text',
+          direction: 'asc'
+        },
+        searchField: ['text'],
+        placeholder: basePlaceholder,
         closeAfterSelect: true,
         selectOnTab: true,
-        onItemAdd: function(){ this.close(); this.blur(); }
+        openOnFocus: true,
+        plugins: ['dropdown_input'],
+        render: {
+          no_results: (data, escape) => '<div class="no-results">No matches found for "' + escape(data.input) + '"</div>'
+        },
+        onItemAdd: function(){
+          this.close();
+          this.blur();
+        },
+        onFocus: function() {
+          this.open();
+        }
+      });
+
+      ts.on('initialize', () => {
+        const dropdownInput = ts.dropdown && ts.dropdown.querySelector('.dropdown-input input');
+        const searchPlaceholder = basePlaceholder;
+        if (dropdownInput) {
+          dropdownInput.placeholder = searchPlaceholder;
+          dropdownInput.setAttribute('aria-label', searchPlaceholder);
+        }
       });
     }
 
@@ -80,10 +139,8 @@
     function onDistrictChanged() {
       const d = districtEl.value || districtEl.options[districtEl.selectedIndex]?.value;
       const taluks = d && data[d] ? Object.keys(data[d]) : [];
-      setOptions(talukEl, taluks);
-      setOptions(panchayatEl, []);
-      if (talukEl.tomselect) talukEl.tomselect.clear(true);
-      if (panchayatEl.tomselect) panchayatEl.tomselect.clear(true);
+      setOptions(talukEl, taluks, { emptyLabel: 'Select a district first' });
+      setOptions(panchayatEl, [], { emptyLabel: 'Select a taluk first' });
       // update composed address
       const changeEvent = new Event('change');
       talukEl.dispatchEvent(changeEvent);
@@ -93,8 +150,7 @@
       const d = districtEl.value || districtEl.options[districtEl.selectedIndex]?.value;
       const t = talukEl.value || talukEl.options[talukEl.selectedIndex]?.value;
       const bodies = (d && t && data[d] && data[d][t]) ? data[d][t] : [];
-      setOptions(panchayatEl, bodies);
-      if (panchayatEl.tomselect) panchayatEl.tomselect.clear(true);
+      setOptions(panchayatEl, bodies, { emptyLabel: 'Select a taluk first' });
       // update composed address
       const changeEvent = new Event('change');
       panchayatEl.dispatchEvent(changeEvent);

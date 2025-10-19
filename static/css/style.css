@@ -62,6 +62,84 @@ body.app-body {
   box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.18);
 }
 
+.ts-wrapper.form-control {
+  padding: 0;
+  border: none;
+  background: transparent;
+}
+
+.ts-wrapper.form-control .ts-control {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  width: 100%;
+  min-height: calc(1.5em + 1.3rem);
+  border: 1px solid var(--wl-border);
+  border-radius: 0.85rem;
+  padding: 0.65rem 0.9rem;
+  background-color: #fff;
+  box-shadow: none;
+}
+
+.ts-wrapper.form-control.focus .ts-control,
+.ts-wrapper.form-control.dropdown-active .ts-control {
+  border-color: rgba(15, 118, 110, 0.65);
+  box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.18);
+}
+
+.ts-wrapper.form-control .ts-control > .item,
+.ts-wrapper.form-control .ts-control > .placeholder {
+  margin: 0;
+  padding: 0;
+  line-height: 1.4;
+}
+
+.ts-wrapper.form-control .ts-control > input {
+  min-width: 0 !important;
+  flex: 1 1 auto !important;
+  padding: 0 !important;
+}
+
+.ts-wrapper.form-control.disabled .ts-control {
+  background-color: #f1f5f9;
+  color: #94a3b8;
+}
+
+.plugin-dropdown_input .dropdown-input {
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid rgba(15, 118, 110, 0.12);
+}
+
+.plugin-dropdown_input .dropdown-input input {
+  border: 1px solid rgba(15, 118, 110, 0.25);
+  border-radius: 0.65rem;
+  padding: 0.45rem 0.75rem;
+  font-size: 0.9rem;
+}
+
+.ts-dropdown .no-results {
+  font-size: 0.85rem;
+  color: #64748b;
+  padding: 0.4rem 0.75rem;
+}
+
+.address-hierarchy {
+  background: #f8fafc;
+  border: 1px solid rgba(15, 118, 110, 0.12);
+  border-radius: 1rem;
+  padding: 1.25rem 1.35rem;
+}
+
+.address-hierarchy__title {
+  font-weight: 600;
+  color: #0f172a;
+  margin-bottom: 0.25rem;
+}
+
+.address-hierarchy__hint {
+  color: #64748b;
+}
+
 textarea.form-control {
   min-height: 120px;
   resize: vertical;
