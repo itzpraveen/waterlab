@@ -843,8 +843,8 @@ class SampleDetailView(DetailView): # New DetailView for Sample
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         sample = context['sample']
-        tests_qs = sample.tests_requested.all().order_by('category_obj__display_order', 'category_obj__name', 'category', 'display_order', 'name')
-        results_qs = sample.results.select_related('parameter').order_by('parameter__category_obj__display_order', 'parameter__category_obj__name', 'parameter__category', 'parameter__display_order', 'parameter__name')
+        tests_qs = sample.tests_requested.all().order_by('display_order', 'name')
+        results_qs = sample.results.select_related('parameter').order_by('parameter__display_order', 'parameter__name')
 
         def _category_key(label: str) -> tuple[int, str]:
             lowered = label.casefold()
@@ -1340,15 +1340,18 @@ def download_sample_report_view(request, pk):
     elements.append(Spacer(1, 6))
 
     # Respect configured display order within categories
-    results_queryset = sample.results.select_related('parameter').order_by('parameter__category_obj__display_order', 'parameter__display_order', 'parameter__name')
+    results_queryset = sample.results.select_related('parameter').order_by('parameter__display_order', 'parameter__name')
     results = list(results_queryset)
 
-    section_templates = OrderedDict([
-        ('physical', {'title': 'Physical Parameters', 'categories': OrderedDict()}),
-        ('chemical', {'title': 'Chemical Parameters', 'categories': OrderedDict()}),
-        ('microbiological', {'title': 'Microbiological Parameters', 'categories': OrderedDict()}),
-        ('other', {'title': 'Other Parameters', 'categories': OrderedDict()}),
-    ])
+    section_headings = {
+        'physical': 'Physical Parameters',
+        'chemical': 'Chemical Parameters',
+        'microbiological': 'Microbiological Parameters',
+        'other': 'Other Parameters',
+    }
+
+    section_templates: dict[str, dict] = {}
+    section_order: list[str] = []
 
     def _section_for_category(label: str) -> str:
         lowered = label.casefold()
@@ -1364,7 +1367,10 @@ def download_sample_report_view(request, pk):
         # Prefer structured category; fallback to legacy text
         display_label = (getattr(result.parameter, 'category_label', '') or '').strip() or 'Uncategorized'
         section_key = _section_for_category(display_label)
-        categories = section_templates[section_key]['categories']
+        section_bucket = section_templates.setdefault(section_key, {'categories': OrderedDict()})
+        categories = section_bucket['categories']
+        if section_key not in section_order:
+            section_order.append(section_key)
         if display_label not in categories:
             categories[display_label] = []
         categories[display_label].append(result)
@@ -1447,12 +1453,11 @@ def download_sample_report_view(request, pk):
         ]))
         return table, running_index
 
-    def _render_section(section_key: str, heading: str):
-        section = section_templates[section_key]
+    def _render_section(section_key: str, heading: str, serial_counter: int):
+        section = section_templates.get(section_key, {'categories': OrderedDict()})
         elements.append(Paragraph(heading, styles['SectionTitle']))
         elements.append(Spacer(1, 6))
         if section['categories']:
-            serial_counter = 1
             for category_label, category_results in section['categories'].items():
                 elements.append(Paragraph(category_label, styles['CategoryHeading']))
                 table, serial_counter = _build_results_table(category_results, serial_counter)
@@ -1461,12 +1466,14 @@ def download_sample_report_view(request, pk):
         else:
             elements.append(Paragraph("No parameters recorded for this category.", styles['Normal']))
             elements.append(Spacer(1, 12))
+        return serial_counter
 
-    _render_section('physical', 'Physical Parameters')
-    elements.append(PageBreak())
-    _render_section('chemical', 'Chemical Parameters')
-    elements.append(PageBreak())
-    _render_section('microbiological', 'Microbiological Parameters')
+    serial_counter = 1
+    for index, section_key in enumerate(section_order):
+        if index > 0:
+            elements.append(PageBreak())
+        heading = section_headings.get(section_key, section_headings['other'])
+        serial_counter = _render_section(section_key, heading, serial_counter)
 
     review = getattr(sample, 'review', None)
     if review:
