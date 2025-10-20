@@ -1,0 +1,90 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Laboratory Profile - WaterLab LIMS{% endblock %}
+
+{% block page_header %}
+<div class="page-header">
+    <div class="page-heading">
+        <h1 class="page-title">Laboratory profile</h1>
+        <p class="page-subtitle">Update the name, address, and contact details shown on reports and dashboards.</p>
+    </div>
+    <a href="{% url 'core:dashboard' %}" class="btn btn-outline-secondary">
+        <i class="material-icons me-1 align-middle">arrow_back</i>
+        Back to dashboard
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<form method="post" novalidate class="form-shell">
+    {% csrf_token %}
+
+    {% if form.non_field_errors %}
+    <div class="alert alert-danger" role="alert">
+        {% for error in form.non_field_errors %}
+            <div>{{ error }}</div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="info-card">
+        <div class="form-section-title"><i class="material-icons">business</i>Laboratory identity</div>
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label for="{{ form.name.id_for_label }}" class="form-label">Lab name *</label>
+                {{ form.name }}
+                {% if form.name.errors %}<div class="invalid-feedback d-block small">{{ form.name.errors.0 }}</div>{% endif %}
+            </div>
+            <div class="col-md-6">
+                <label for="{{ form.phone.id_for_label }}" class="form-label">Contact phone</label>
+                {{ form.phone }}
+                {% if form.phone.errors %}<div class="invalid-feedback d-block small">{{ form.phone.errors.0 }}</div>{% endif %}
+            </div>
+            <div class="col-md-6">
+                <label for="{{ form.email.id_for_label }}" class="form-label">Contact email</label>
+                {{ form.email }}
+                {% if form.email.errors %}<div class="invalid-feedback d-block small">{{ form.email.errors.0 }}</div>{% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="info-card">
+        <div class="form-section-title"><i class="material-icons">place</i>Address</div>
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label for="{{ form.address_line1.id_for_label }}" class="form-label">Address line 1</label>
+                {{ form.address_line1 }}
+                {% if form.address_line1.errors %}<div class="invalid-feedback d-block small">{{ form.address_line1.errors.0 }}</div>{% endif %}
+            </div>
+            <div class="col-md-6">
+                <label for="{{ form.address_line2.id_for_label }}" class="form-label">Address line 2</label>
+                {{ form.address_line2 }}
+                {% if form.address_line2.errors %}<div class="invalid-feedback d-block small">{{ form.address_line2.errors.0 }}</div>{% endif %}
+            </div>
+            <div class="col-md-4">
+                <label for="{{ form.city.id_for_label }}" class="form-label">City</label>
+                {{ form.city }}
+                {% if form.city.errors %}<div class="invalid-feedback d-block small">{{ form.city.errors.0 }}</div>{% endif %}
+            </div>
+            <div class="col-md-4">
+                <label for="{{ form.state.id_for_label }}" class="form-label">State / Region</label>
+                {{ form.state }}
+                {% if form.state.errors %}<div class="invalid-feedback d-block small">{{ form.state.errors.0 }}</div>{% endif %}
+            </div>
+            <div class="col-md-4">
+                <label for="{{ form.postal_code.id_for_label }}" class="form-label">Postal code</label>
+                {{ form.postal_code }}
+                {% if form.postal_code.errors %}<div class="invalid-feedback d-block small">{{ form.postal_code.errors.0 }}</div>{% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="form-actions">
+        <a href="{% url 'core:dashboard' %}" class="btn btn-outline-secondary">Cancel</a>
+        <button type="submit" class="btn btn-primary">
+            <i class="material-icons me-1 align-middle">save</i>
+            Save profile
+        </button>
+    </div>
+</form>
+{% endblock %}

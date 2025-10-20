@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from .models import Customer, Sample, TestParameter, TestResult, ConsultantReview, KeralaLocation, CustomUser, AuditTrail, TestCategory
+from .models import Customer, Sample, TestParameter, TestResult, ConsultantReview, KeralaLocation, CustomUser, AuditTrail, TestCategory, LabProfile
 
 @admin.register(Customer)
 class CustomerAdmin(admin.ModelAdmin):
@@ -59,6 +59,33 @@ class AuditTrailAdmin(admin.ModelAdmin):
     
     def has_delete_permission(self, request, obj=None):
         return request.user.is_superuser
+
+@admin.register(LabProfile)
+class LabProfileAdmin(admin.ModelAdmin):
+    fieldsets = (
+        (None, {
+            'fields': (
+                'name',
+                'address_line1',
+                'address_line2',
+                ('city', 'state', 'postal_code'),
+                'phone',
+                'email',
+            )
+        }),
+        ('Metadata', {
+            'fields': ('updated_at',),
+        })
+    )
+    readonly_fields = ['updated_at']
+
+    def has_add_permission(self, request):
+        if LabProfile.objects.exists():
+            return False
+        return super().has_add_permission(request)
+
+    def has_delete_permission(self, request, obj=None):
+        return False
 
 admin.site.register(Sample)
 admin.site.register(TestParameter)

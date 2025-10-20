@@ -153,6 +153,61 @@ class Customer(models.Model):
     def __str__(self):
         return self.name
 
+
+class LabProfile(models.Model):
+    """Stores lab contact details displayed across reports and dashboards."""
+    name = models.CharField(max_length=150, default='Biofix Laboratory')
+    address_line1 = models.CharField(max_length=255, blank=True, default='')
+    address_line2 = models.CharField(max_length=255, blank=True, default='')
+    city = models.CharField(max_length=100, blank=True, default='')
+    state = models.CharField(max_length=100, blank=True, default='')
+    postal_code = models.CharField(max_length=20, blank=True, default='')
+    phone = models.CharField(max_length=50, blank=True, default='')
+    email = models.EmailField(blank=True, default='')
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Lab profile"
+        verbose_name_plural = "Lab profile"
+
+    def __str__(self):
+        return self.name or "Lab profile"
+
+    @classmethod
+    def get_active(cls):
+        """Return the active profile, falling back to configured defaults."""
+        profile = cls.objects.order_by('pk').first()
+        if profile:
+            return profile
+
+        defaults = getattr(settings, 'WATERLAB_SETTINGS', {})
+        return cls(
+            name=defaults.get('LAB_NAME', 'Biofix Laboratory'),
+            address_line1=defaults.get('LAB_ADDRESS', ''),
+            phone=defaults.get('LAB_PHONE', ''),
+            email=defaults.get('LAB_EMAIL', ''),
+        )
+
+    @property
+    def formatted_address(self):
+        parts = [
+            self.address_line1,
+            self.address_line2,
+            ", ".join([segment for segment in [self.city, self.state] if segment]),
+            self.postal_code,
+        ]
+        return ", ".join(part for part in parts if part).strip()
+
+    @property
+    def contact_line(self):
+        segments = []
+        if self.phone:
+            segments.append(f"Phone: {self.phone}")
+        if self.email:
+            segments.append(f"Email: {self.email}")
+        return "  |  ".join(segments)
+
+
 class Sample(models.Model):
     SAMPLE_SOURCE_CHOICES = [
         ('WELL', 'Well'),

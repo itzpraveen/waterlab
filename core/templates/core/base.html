@@ -31,7 +31,7 @@
     <nav class="navbar navbar-expand-lg navbar-light" aria-label="Primary navigation">
         <div class="container-fluid px-4 page-shell app-header__inner">
             <a class="navbar-brand app-brand" href="{% if user.is_authenticated %}{% url 'core:dashboard' %}{% else %}{% url 'core:home' %}{% endif %}">
-                <img src="{% static 'images/biofix_logo.png' %}" alt="Biofix Research Institute · WaterLab LIMS" class="app-brand__logo" height="40">
+                <img src="{% static 'images/biofix_logo.png' %}" alt="{{ lab_profile.name|default:'Laboratory' }} · WaterLab LIMS" class="app-brand__logo" height="40">
             </a>
             {% if user.is_authenticated %}
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav" aria-controls="mainNav" aria-expanded="false" aria-label="Toggle navigation">
@@ -81,6 +81,12 @@
                         <a class="nav-link {% if 'setup_test_parameters' == request.resolver_match.url_name %}active{% endif %}" href="{% url 'core:setup_test_parameters' %}">
                             <i class="material-icons align-middle me-1">tune</i>
                             Test Setup
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if 'lab_profile' == request.resolver_match.url_name %}active{% endif %}" href="{% url 'core:lab_profile' %}">
+                            <i class="material-icons align-middle me-1">business</i>
+                            Lab Profile
                         </a>
                     </li>
                     <li class="nav-item">
@@ -152,10 +158,10 @@
         <div class="row gy-3 align-items-center">
             <div class="col-lg-6">
                 <div class="d-flex align-items-center gap-3">
-                    <img src="{% static 'images/biofix_logo.png' %}" alt="Biofix" height="36" class="rounded">
+                    <img src="{% static 'images/biofix_logo.png' %}" alt="{{ lab_profile.name|default:'Laboratory' }}" height="36" class="rounded">
                     <div>
-                        <p class="mb-0 fw-semibold">WaterLab LIMS by Biofix Research Institute</p>
-                        <p class="mb-0 text-muted small">Streamlining water quality testing for modern laboratories.</p>
+                        <p class="mb-0 fw-semibold">WaterLab LIMS<span class="text-muted"> · {{ lab_profile.name }}</span></p>
+                        {% if lab_profile_contact_line %}<p class="mb-0 text-muted small">{{ lab_profile_contact_line }}</p>{% endif %}
                     </div>
                 </div>
             </div>
@@ -164,11 +170,17 @@
                 <ul class="list-unstyled small mb-0">
                     <li><a class="text-decoration-none" href="{% url 'core:dashboard' %}">Dashboard</a></li>
                     <li><a class="text-decoration-none" href="{% url 'core:sample_list' %}">Samples</a></li>
-                    <li><a class="text-decoration-none" href="mailto:support@biofix.in">Support</a></li>
+                    <li>
+                        {% if lab_profile.email %}
+                        <a class="text-decoration-none" href="mailto:{{ lab_profile.email }}">Support</a>
+                        {% else %}
+                        <a class="text-decoration-none" href="mailto:support@biofix.in">Support</a>
+                        {% endif %}
+                    </li>
                 </ul>
             </div>
             <div class="col-lg-3 text-lg-end">
-                <p class="text-muted small mb-0">&copy; {% now "Y" %} WaterLab LIMS · Kerala, India</p>
+                <p class="text-muted small mb-0">&copy; {% now "Y" %} WaterLab LIMS{% if lab_profile_address %} · {{ lab_profile_address }}{% endif %}</p>
             </div>
         </div>
     </div>

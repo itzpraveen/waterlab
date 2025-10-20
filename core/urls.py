@@ -42,6 +42,7 @@ from .views import (
     AdminUserUpdateView,
     toggle_user_active,
     kerala_locations_json,
+    LabProfileUpdateView,
 )
 
 from .auth_views import (
@@ -109,6 +110,7 @@ urlpatterns = [
     # Category Management (Admin)
     path('setup-test-categories/<int:pk>/edit/', TestCategoryUpdateView.as_view(), name='test_category_edit'),
     path('setup-test-categories/<int:pk>/delete/', delete_test_category, name='test_category_delete'),
+    path('lab-profile/', LabProfileUpdateView.as_view(), name='lab_profile'),
 
     # User management (Admin)
     path('users/', AdminUserListView.as_view(), name='user_list'),

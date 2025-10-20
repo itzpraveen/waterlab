@@ -6,7 +6,7 @@ from django import forms
 from django.contrib.auth.forms import PasswordChangeForm
 from django.core.exceptions import ValidationError
 from django.utils import timezone
-from .models import Customer, Sample, TestParameter, CustomUser, TestCategory # Added TestParameter, CustomUser, TestCategory
+from .models import Customer, Sample, TestParameter, CustomUser, TestCategory, LabProfile # Added TestParameter, CustomUser, TestCategory, LabProfile
 
 class CustomerForm(forms.ModelForm):
     class Meta:
@@ -455,6 +455,37 @@ class AdminUserUpdateForm(_BaseAdminUserForm):
             user.save()
             self.save_m2m()
         return user
+
+
+class LabProfileForm(forms.ModelForm):
+    class Meta:
+        model = LabProfile
+        fields = [
+            'name',
+            'address_line1',
+            'address_line2',
+            'city',
+            'state',
+            'postal_code',
+            'phone',
+            'email',
+        ]
+        widgets = {
+            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Laboratory name'}),
+            'address_line1': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Address line 1'}),
+            'address_line2': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Address line 2'}),
+            'city': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'City'}),
+            'state': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'State / Region'}),
+            'postal_code': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Postal code'}),
+            'phone': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Contact phone'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'Contact email'}),
+        }
+
+    def clean(self):
+        cleaned = super().clean()
+        if not cleaned.get('name'):
+            self.add_error('name', ValidationError('Laboratory name is required.'))
+        return cleaned
 
 class CustomPasswordChangeForm(PasswordChangeForm):
     def __init__(self, *args, **kwargs):

@@ -1,4 +1,5 @@
 import logging
+import re
 from collections import OrderedDict
 from html import escape
 
@@ -20,7 +21,7 @@ from django.forms.models import model_to_dict
 
 from django.conf import settings
 
-from .models import Customer, Sample, TestParameter, TestResult, ConsultantReview, CustomUser, AuditTrail, TestCategory
+from .models import Customer, Sample, TestParameter, TestResult, ConsultantReview, CustomUser, AuditTrail, TestCategory, LabProfile
 from .forms import (
     CustomerForm,
     SampleForm,
@@ -29,6 +30,7 @@ from .forms import (
     TestParameterForm,
     AdminUserCreateForm,
     AdminUserUpdateForm,
+    LabProfileForm,
 )
 from .decorators import admin_required, lab_required, frontdesk_required, consultant_required
 from .mixins import AdminRequiredMixin, LabRequiredMixin, FrontDeskRequiredMixin, ConsultantRequiredMixin, RoleRequiredMixin, AuditMixin
@@ -666,6 +668,34 @@ class AdminUserUpdateView(AuditMixin, AdminRequiredMixin, UpdateView):
         return context
 
 
+class LabProfileUpdateView(AuditMixin, AdminRequiredMixin, UpdateView):
+    model = LabProfile
+    form_class = LabProfileForm
+    template_name = 'core/lab_profile_form.html'
+    success_url = reverse_lazy('core:lab_profile')
+
+    def get_object(self, queryset=None):
+        defaults = getattr(settings, 'WATERLAB_SETTINGS', {})
+        profile, _ = LabProfile.objects.get_or_create(
+            defaults={
+                'name': defaults.get('LAB_NAME', 'Biofix Laboratory'),
+                'address_line1': defaults.get('LAB_ADDRESS', ''),
+                'phone': defaults.get('LAB_PHONE', ''),
+                'email': defaults.get('LAB_EMAIL', ''),
+            }
+        )
+        return profile
+
+    def form_valid(self, form):
+        messages.success(self.request, 'Laboratory profile updated successfully.')
+        return super().form_valid(form)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['page_title'] = 'Laboratory profile'
+        return context
+
+
 @login_required
 @admin_required
 @require_POST
@@ -1217,6 +1247,14 @@ def download_sample_report_view(request, pk):
             canvas.saveState()
             page_width, page_height = doc.pagesize
             logo_path = os.path.join(settings.BASE_DIR, 'static', 'images', 'biofix_logo.png')
+            lab_settings = getattr(settings, 'WATERLAB_SETTINGS', {})
+            profile = LabProfile.get_active()
+            lab_name = (profile.name or lab_settings.get('LAB_NAME') or 'Biofix Laboratory').strip()
+            lab_address = (profile.formatted_address or profile.address_line1 or lab_settings.get('LAB_ADDRESS') or '').strip()
+            lab_phone = (profile.phone or lab_settings.get('LAB_PHONE') or '').strip()
+            lab_email = (profile.email or lab_settings.get('LAB_EMAIL') or '').strip()
+            lab_contact = profile.contact_line
+
             top_band_y = page_height - 25*mm
 
             if os.path.exists(logo_path):
@@ -1230,12 +1268,31 @@ def download_sample_report_view(request, pk):
                     preserveAspectRatio=True,
                 )
 
-            canvas.setFont('Helvetica-Bold', 11)
+            draw_x = page_width - doc.rightMargin
+            cursor_y = page_height - 28*mm
+
+            def _draw_line(value: str, font_name: str = 'Helvetica', font_size: int = 9):
+                nonlocal cursor_y
+                text = (value or '').strip()
+                if not text:
+                    return
+                canvas.setFont(font_name, font_size)
+                canvas.drawRightString(draw_x, cursor_y, text)
+                cursor_y -= 4*mm
+
             canvas.setFillColor(colors.HexColor('#0F172A'))
-            canvas.drawRightString(page_width - doc.rightMargin, page_height - 28*mm, 'Biofix Laboratory')
-            canvas.setFont('Helvetica', 9)
-            canvas.drawRightString(page_width - doc.rightMargin, page_height - 32*mm, '123 Science Avenue, Research City, 12345')
-            canvas.drawRightString(page_width - doc.rightMargin, page_height - 36*mm, 'Phone: (123) 456-7890  |  Email: contact@biofixlab.com')
+            _draw_line(lab_name or 'Biofix Laboratory', font_name='Helvetica-Bold', font_size=11)
+            _draw_line(lab_address)
+
+            contact_line = lab_contact
+            if not contact_line:
+                contact_parts = []
+                if lab_phone:
+                    contact_parts.append(f"Phone: {lab_phone}")
+                if lab_email:
+                    contact_parts.append(f"Email: {lab_email}")
+                contact_line = '  |  '.join(contact_parts)
+            _draw_line(contact_line)
 
             canvas.setFont('Helvetica-Bold', 16)
             canvas.setFillColor(colors.HexColor('#0F766E'))
@@ -1453,15 +1510,25 @@ def download_sample_report_view(request, pk):
         ]))
         return table, running_index
 
+    def _labels_redundant(section_heading: str, category_label: str) -> bool:
+        """Treat headings that differ only by filler words as duplicates."""
+        def _canonical(value: str) -> str:
+            tokens = re.findall(r'[a-z0-9]+', value.casefold())
+            filtered = [token for token in tokens if token not in {'parameter', 'parameters', 'category', 'categories'}]
+            return ' '.join(filtered).strip()
+
+        canonical_heading = _canonical(section_heading)
+        canonical_category = _canonical(category_label)
+        return bool(canonical_heading and canonical_heading == canonical_category)
+
     def _render_section(section_key: str, heading: str, serial_counter: int):
         section = section_templates.get(section_key, {'categories': OrderedDict()})
         elements.append(Paragraph(heading, styles['SectionTitle']))
         elements.append(Spacer(1, 6))
         if section['categories']:
-            heading_key = heading.casefold().strip()
             for category_label, category_results in section['categories'].items():
                 label_text = (category_label or '').strip()
-                if label_text and label_text.casefold() != heading_key:
+                if label_text and not _labels_redundant(heading, label_text):
                     elements.append(Paragraph(label_text, styles['CategoryHeading']))
                 table, serial_counter = _build_results_table(category_results, serial_counter)
                 elements.append(table)
