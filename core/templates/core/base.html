@@ -98,22 +98,20 @@
                         </button>
                         <ul class="dropdown-menu dropdown-menu-end shadow app-user__menu">
                             {% if user.is_admin %}
-                            <li><a class="dropdown-item" href="{% url 'core:lab_profile' %}"><i class="material-icons align-middle me-1">business</i>Lab profile</a></li>
-                            <li><a class="dropdown-item" href="{% url 'core:audit_trail' %}"><i class="material-icons align-middle me-1">history</i>Audit trail</a></li>
-                            <li><hr class="dropdown-divider"></li>
+                            <li class="dropdown-label">Administration</li>
+                            <li><a class="dropdown-item" href="{% url 'core:lab_profile' %}"><span class="dropdown-icon material-icons">business</span>Lab profile</a></li>
+                            <li><a class="dropdown-item" href="{% url 'core:audit_trail' %}"><span class="dropdown-icon material-icons">history</span>Audit trail</a></li>
+                            <li><a class="dropdown-item" href="{% url 'admin:index' %}" target="_blank"><span class="dropdown-icon material-icons">settings_applications</span>Django Admin</a></li>
+                            <li class="dropdown-separator" role="separator"></li>
                             {% endif %}
-                            <li><a class="dropdown-item" href="{% url 'core:password_change' %}"><i class="material-icons align-middle me-1">lock_outline</i>Change password</a></li>
-                            <li><hr class="dropdown-divider"></li>
+                            <li class="dropdown-label">Account</li>
+                            <li><a class="dropdown-item" href="{% url 'core:password_change' %}"><span class="dropdown-icon material-icons">lock_outline</span>Change password</a></li>
                             <li>
                                 <form method="post" action="{% url 'core:logout' %}">
                                     {% csrf_token %}
-                                    <button type="submit" class="dropdown-item"><i class="material-icons align-middle me-1">exit_to_app</i>Sign out</button>
+                                    <button type="submit" class="dropdown-item dropdown-item--danger"><span class="dropdown-icon material-icons">logout</span>Sign out</button>
                                 </form>
                             </li>
-                            {% if user.is_admin %}
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="{% url 'admin:index' %}" target="_blank"><i class="material-icons align-middle me-1">settings_applications</i>Django Admin</a></li>
-                            {% endif %}
                         </ul>
                     </div>
                 </div>
