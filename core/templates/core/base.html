@@ -83,18 +83,6 @@
                             Test Setup
                         </a>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link {% if 'lab_profile' == request.resolver_match.url_name %}active{% endif %}" href="{% url 'core:lab_profile' %}">
-                            <i class="material-icons align-middle me-1">business</i>
-                            Lab Profile
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {% if 'audit_trail' == request.resolver_match.url_name %}active{% endif %}" href="{% url 'core:audit_trail' %}">
-                            <i class="material-icons align-middle me-1">history</i>
-                            Audit Trail
-                        </a>
-                    </li>
                     {% endif %}
                 </ul>
 
@@ -109,6 +97,11 @@
                             <i class="material-icons" aria-hidden="true">expand_more</i>
                         </button>
                         <ul class="dropdown-menu dropdown-menu-end shadow app-user__menu">
+                            {% if user.is_admin %}
+                            <li><a class="dropdown-item" href="{% url 'core:lab_profile' %}"><i class="material-icons align-middle me-1">business</i>Lab profile</a></li>
+                            <li><a class="dropdown-item" href="{% url 'core:audit_trail' %}"><i class="material-icons align-middle me-1">history</i>Audit trail</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            {% endif %}
                             <li><a class="dropdown-item" href="{% url 'core:password_change' %}"><i class="material-icons align-middle me-1">lock_outline</i>Change password</a></li>
                             <li><hr class="dropdown-divider"></li>
                             <li>
