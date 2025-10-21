@@ -1266,6 +1266,7 @@ def download_sample_report_view(request, pk):
                     width=45*mm,
                     height=17*mm,
                     preserveAspectRatio=True,
+                    mask='auto',
                 )
 
             draw_x = page_width - doc.rightMargin
