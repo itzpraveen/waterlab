@@ -71,6 +71,7 @@ class LabProfileAdmin(admin.ModelAdmin):
                 ('city', 'state', 'postal_code'),
                 'phone',
                 'email',
+                'logo',
             )
         }),
         ('Metadata', {

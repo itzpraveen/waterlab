@@ -1,4 +1,5 @@
 import logging
+import os
 import uuid
 
 from django.db import models
@@ -8,6 +9,7 @@ from django.core.exceptions import ValidationError
 from django.conf import settings # Recommended way to import User model
 from django.contrib.auth.models import AbstractUser
 from django.utils import timezone
+from django.templatetags.static import static
 from datetime import timedelta
 
 # Validator for Kerala PIN Codes
@@ -164,6 +166,7 @@ class LabProfile(models.Model):
     postal_code = models.CharField(max_length=20, blank=True, default='')
     phone = models.CharField(max_length=50, blank=True, default='')
     email = models.EmailField(blank=True, default='')
+    logo = models.ImageField(upload_to='lab_brands/', blank=True, null=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
@@ -206,6 +209,27 @@ class LabProfile(models.Model):
         if self.email:
             segments.append(f"Email: {self.email}")
         return "  |  ".join(segments)
+
+    @property
+    def logo_url(self) -> str:
+        if self.logo:
+            try:
+                return self.logo.url
+            except (OSError, ValueError):
+                pass
+        return static('images/biofix_logo.png')
+
+    @property
+    def logo_path(self) -> str:
+        if self.logo:
+            try:
+                path = self.logo.path
+            except (OSError, ValueError):
+                pass
+            else:
+                if os.path.exists(path):
+                    return path
+        return os.path.join(settings.BASE_DIR, 'static', 'images', 'biofix_logo.png')
 
 
 class Sample(models.Model):

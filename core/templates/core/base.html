@@ -31,7 +31,7 @@
     <nav class="navbar navbar-expand-lg navbar-light" aria-label="Primary navigation">
         <div class="container-fluid px-4 page-shell app-header__inner">
             <a class="navbar-brand app-brand" href="{% if user.is_authenticated %}{% url 'core:dashboard' %}{% else %}{% url 'core:home' %}{% endif %}">
-                <img src="{% static 'images/biofix_logo.png' %}" alt="{{ lab_profile.name|default:'Laboratory' }} · WaterLab LIMS" class="app-brand__logo" height="40">
+                <img src="{{ lab_profile.logo_url }}" alt="{{ lab_profile.name|default:'Laboratory' }} · WaterLab LIMS" class="app-brand__logo" height="40">
             </a>
             {% if user.is_authenticated %}
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav" aria-controls="mainNav" aria-expanded="false" aria-label="Toggle navigation">
@@ -149,7 +149,7 @@
         <div class="row gy-3 align-items-center">
             <div class="col-lg-6">
                 <div class="d-flex align-items-center gap-3">
-                    <img src="{% static 'images/biofix_logo.png' %}" alt="{{ lab_profile.name|default:'Laboratory' }}" height="36" class="rounded">
+                    <img src="{{ lab_profile.logo_url }}" alt="{{ lab_profile.name|default:'Laboratory' }}" height="36" class="rounded">
                     <div>
                         <p class="mb-0 fw-semibold">WaterLab LIMS<span class="text-muted"> · {{ lab_profile.name }}</span></p>
                         {% if lab_profile_contact_line %}<p class="mb-0 text-muted small">{{ lab_profile_contact_line }}</p>{% endif %}

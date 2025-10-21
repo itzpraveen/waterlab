@@ -469,6 +469,7 @@ class LabProfileForm(forms.ModelForm):
             'postal_code',
             'phone',
             'email',
+            'logo',
         ]
         widgets = {
             'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Laboratory name'}),
@@ -479,6 +480,7 @@ class LabProfileForm(forms.ModelForm):
             'postal_code': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Postal code'}),
             'phone': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Contact phone'}),
             'email': forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'Contact email'}),
+            'logo': forms.ClearableFileInput(attrs={'class': 'form-control'}),
         }
 
     def clean(self):

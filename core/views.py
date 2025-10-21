@@ -1246,9 +1246,9 @@ def download_sample_report_view(request, pk):
         def header(self, canvas, doc):
             canvas.saveState()
             page_width, page_height = doc.pagesize
-            logo_path = os.path.join(settings.BASE_DIR, 'static', 'images', 'biofix_logo.png')
             lab_settings = getattr(settings, 'WATERLAB_SETTINGS', {})
             profile = LabProfile.get_active()
+            logo_path = profile.logo_path
             lab_name = (profile.name or lab_settings.get('LAB_NAME') or 'Biofix Laboratory').strip()
             lab_address = (profile.formatted_address or profile.address_line1 or lab_settings.get('LAB_ADDRESS') or '').strip()
             lab_phone = (profile.phone or lab_settings.get('LAB_PHONE') or '').strip()
@@ -1257,7 +1257,7 @@ def download_sample_report_view(request, pk):
 
             top_band_y = page_height - 25*mm
 
-            if os.path.exists(logo_path):
+            if logo_path and os.path.exists(logo_path):
                 logo = ImageReader(logo_path)
                 canvas.drawImage(
                     logo,
@@ -1547,6 +1547,9 @@ def download_sample_report_view(request, pk):
         recommendations_text = (review.recommendations or '').strip()
     else:
         recommendations_text = ''
+
+    if elements and not isinstance(elements[-1], PageBreak):
+        elements.append(PageBreak())
 
     elements.append(Paragraph("Consultant Recommendations", styles['SectionTitle']))
     if recommendations_text:
