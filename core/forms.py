@@ -6,6 +6,7 @@ from django import forms
 from django.contrib.auth.forms import PasswordChangeForm
 from django.core.exceptions import ValidationError
 from django.utils import timezone
+from django.conf import settings
 from .models import Customer, Sample, TestParameter, CustomUser, TestCategory, LabProfile # Added TestParameter, CustomUser, TestCategory, LabProfile
 
 class CustomerForm(forms.ModelForm):
@@ -142,8 +143,7 @@ class _ParameterGroup:
 
 class SampleForm(forms.ModelForm):
     # Accept formats configured in settings for consistency across the app
-    from django.conf import settings as _settings
-    _input_formats = getattr(_settings, 'DATETIME_INPUT_FORMATS', None) or (
+    _input_formats = getattr(settings, 'DATETIME_INPUT_FORMATS', None) or (
         '%d/%m/%Y %H:%M:%S',
         '%d/%m/%Y %H:%M',
         '%d/%m/%Y',
@@ -281,6 +281,61 @@ class SampleForm(forms.ModelForm):
         if not TestParameter.objects.exists():
             self.fields['tests_requested'].help_text = "⚠️ No test parameters available. Please contact admin to set up test parameters first."
             self.fields['tests_requested'].required = False
+
+class SampleReportMetadataForm(forms.ModelForm):
+    """Allow lab or admin staff to populate report metadata used in PDFs."""
+    _date_input_formats = getattr(settings, 'DATE_INPUT_FORMATS', None) or ('%Y-%m-%d', '%d/%m/%Y')
+
+    test_commenced_on = forms.DateField(
+        required=False,
+        input_formats=_date_input_formats,
+        widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}, format='%Y-%m-%d')
+    )
+    test_completed_on = forms.DateField(
+        required=False,
+        input_formats=_date_input_formats,
+        widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}, format='%Y-%m-%d')
+    )
+
+    class Meta:
+        model = Sample
+        fields = [
+            'report_number',
+            'sampling_location',
+            'quantity_received',
+            'sampling_procedure',
+            'test_commenced_on',
+            'test_completed_on',
+            'reviewed_by',
+            'lab_manager',
+            'food_analyst',
+        ]
+        widgets = {
+            'report_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter report reference number'}),
+            'sampling_location': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g., Customer site or GPS coordinates'}),
+            'quantity_received': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g., 1 litre'}),
+            'sampling_procedure': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Describe sampling procedure'}),
+            'reviewed_by': forms.Select(attrs={'class': 'form-control'}),
+            'lab_manager': forms.Select(attrs={'class': 'form-control'}),
+            'food_analyst': forms.Select(attrs={'class': 'form-control'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        staff_qs = CustomUser.objects.filter(is_active=True).order_by('first_name', 'last_name', 'username')
+        for name in ('reviewed_by', 'lab_manager', 'food_analyst'):
+            field = self.fields.get(name)
+            if field:
+                field.queryset = staff_qs
+                field.empty_label = '— Select user —'
+
+    def clean(self):
+        cleaned_data = super().clean()
+        start = cleaned_data.get('test_commenced_on')
+        end = cleaned_data.get('test_completed_on')
+        if start and end and end < start:
+            self.add_error('test_completed_on', ValidationError('Test completed date cannot be before test commenced date.'))
+        return cleaned_data
 
 class TestResultEntryForm(forms.Form):
     result_value = forms.CharField(

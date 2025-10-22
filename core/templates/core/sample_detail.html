@@ -23,7 +23,16 @@
             <span class="badge-soft info"><i class="material-icons">opacity</i>{{ sample.get_sample_source_display }}</span>
         </div>
     </div>
-    <a href="{% url 'core:sample_list' %}" class="btn btn-outline-secondary"><i class="material-icons me-1">arrow_back</i>Back to samples</a>
+    <div class="d-flex flex-column flex-sm-row gap-2">
+        <a href="{% url 'core:sample_list' %}" class="btn btn-outline-secondary">
+            <i class="material-icons me-1">arrow_back</i>Back to samples
+        </a>
+        {% if user.is_lab_technician or user.is_admin %}
+        <a href="{% url 'core:sample_report_metadata' sample.pk %}" class="btn btn-primary">
+            <i class="material-icons me-1">tune</i>Update report metadata
+        </a>
+        {% endif %}
+    </div>
 </div>
 {% endblock %}
 
@@ -69,9 +78,23 @@
         <span class="summary-icon material-icons">water_drop</span>
         <p class="summary-label">Sample Type</p>
         <p class="summary-value">{{ sample.sample_type|default:"Water" }}</p>
+        {% with sample.sampling_location|default:sample.customer.village_town_city as location %}
         <span class="summary-meta">
             <i class="material-icons">place</i>
-            {{ sample.sampling_location|default:"Location not specified" }}
+            {{ location|default:"Location not recorded" }}
+        </span>
+        {% endwith %}
+        <span class="summary-meta">
+            <i class="material-icons">calendar_month</i>
+            {% if sample.test_commenced_on and sample.test_completed_on %}
+                Commenced {{ sample.test_commenced_on|date:"M d, Y" }} · Completed {{ sample.test_completed_on|date:"M d, Y" }}
+            {% elif sample.test_commenced_on %}
+                Commenced {{ sample.test_commenced_on|date:"M d, Y" }}
+            {% elif sample.test_completed_on %}
+                Completed {{ sample.test_completed_on|date:"M d, Y" }}
+            {% else %}
+                Testing dates not recorded
+            {% endif %}
         </span>
     </div>
 </div>
@@ -107,18 +130,56 @@
                     <dd>{{ sample.referred_by }}</dd>
                 </div>
                 {% endif %}
-                {% if sample.ulr_number %}
-                <div class="data-pair">
-                    <dt>ULR Number</dt>
-                    <dd>{{ sample.ulr_number }}</dd>
-                </div>
-                {% endif %}
-                {% if sample.report_number %}
                 <div class="data-pair">
                     <dt>Report Number</dt>
-                    <dd>{{ sample.report_number }}</dd>
+                    <dd>{{ sample.report_number|default:"Not assigned" }}</dd>
                 </div>
-                {% endif %}
+                <div class="data-pair">
+                    <dt>Location</dt>
+                    {% with sample.sampling_location|default:sample.customer.village_town_city as location %}
+                    <dd>{{ location|default:"Not recorded" }}</dd>
+                    {% endwith %}
+                </div>
+                <div class="data-pair">
+                    <dt>Test Commenced</dt>
+                    <dd>
+                        {% if sample.test_commenced_on %}
+                            {{ sample.test_commenced_on|date:"M d, Y" }}
+                        {% else %}
+                            <span class="text-muted">Not recorded</span>
+                        {% endif %}
+                    </dd>
+                </div>
+                <div class="data-pair">
+                    <dt>Test Completed</dt>
+                    <dd>
+                        {% if sample.test_completed_on %}
+                            {{ sample.test_completed_on|date:"M d, Y" }}
+                        {% else %}
+                            <span class="text-muted">Not recorded</span>
+                        {% endif %}
+                    </dd>
+                </div>
+                <div class="data-pair">
+                    <dt>Quantity Received</dt>
+                    <dd>{{ sample.quantity_received|default:"Not recorded" }}</dd>
+                </div>
+                <div class="data-pair">
+                    <dt>Sampling Procedure</dt>
+                    <dd>{{ sample.sampling_procedure|default:"Not recorded" }}</dd>
+                </div>
+                <div class="data-pair">
+                    <dt>Reviewed By</dt>
+                    <dd>{{ sample.reviewed_by|default:"Not assigned" }}</dd>
+                </div>
+                <div class="data-pair">
+                    <dt>Lab Manager</dt>
+                    <dd>{{ sample.lab_manager|default:"Not assigned" }}</dd>
+                </div>
+                <div class="data-pair">
+                    <dt>Food Analyst</dt>
+                    <dd>{{ sample.food_analyst|default:"Not assigned" }}</dd>
+                </div>
             </dl>
         </div>
 

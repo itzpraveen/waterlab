@@ -1,0 +1,98 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Report Metadata · {{ sample.display_id|default:sample.sample_id }}{% endblock %}
+
+{% block page_header %}
+<div class="page-header">
+    <div class="page-heading">
+        <h1 class="page-title">Update report metadata</h1>
+        <p class="page-subtitle">Add the details that appear on the PDF report for sample {{ sample.display_id|default:sample.sample_id }}.</p>
+    </div>
+    <a href="{% url 'core:sample_detail' sample.pk %}" class="btn btn-outline-secondary"><i class="material-icons me-1">arrow_back</i>Back to sample</a>
+</div>
+{% endblock %}
+
+{% block content %}
+<form method="post" class="form-shell">
+    {% csrf_token %}
+
+    {% if form.non_field_errors %}
+    <div class="alert alert-danger" role="alert">
+        {% for error in form.non_field_errors %}
+        <div>{{ error }}</div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="info-card">
+        <div class="form-section-title"><i class="material-icons">description</i>Report identifiers</div>
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label class="form-label" for="{{ form.report_number.id_for_label }}">Report number</label>
+                {{ form.report_number }}
+                {% if form.report_number.errors %}<div class="invalid-feedback d-block small">{{ form.report_number.errors.0 }}</div>{% endif %}
+            </div>
+            <div class="col-md-6">
+                <label class="form-label" for="{{ form.sampling_location.id_for_label }}">Sampling location</label>
+                {{ form.sampling_location }}
+                {% if form.sampling_location.errors %}<div class="invalid-feedback d-block small">{{ form.sampling_location.errors.0 }}</div>{% endif %}
+                <div class="form-text">Defaults to the customer's locality if left blank.</div>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label" for="{{ form.quantity_received.id_for_label }}">Quantity received</label>
+                {{ form.quantity_received }}
+                {% if form.quantity_received.errors %}<div class="invalid-feedback d-block small">{{ form.quantity_received.errors.0 }}</div>{% endif %}
+            </div>
+            <div class="col-md-6">
+                <label class="form-label" for="{{ form.sampling_procedure.id_for_label }}">Sampling procedure</label>
+                {{ form.sampling_procedure }}
+                {% if form.sampling_procedure.errors %}<div class="invalid-feedback d-block small">{{ form.sampling_procedure.errors.0 }}</div>{% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="info-card">
+        <div class="form-section-title"><i class="material-icons">schedule</i>Timeline</div>
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label class="form-label" for="{{ form.test_commenced_on.id_for_label }}">Test commenced on</label>
+                {{ form.test_commenced_on }}
+                {% if form.test_commenced_on.errors %}<div class="invalid-feedback d-block small">{{ form.test_commenced_on.errors.0 }}</div>{% endif %}
+            </div>
+            <div class="col-md-6">
+                <label class="form-label" for="{{ form.test_completed_on.id_for_label }}">Test completed on</label>
+                {{ form.test_completed_on }}
+                {% if form.test_completed_on.errors %}<div class="invalid-feedback d-block small">{{ form.test_completed_on.errors.0 }}</div>{% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="info-card">
+        <div class="form-section-title"><i class="material-icons">badge</i>Sign-off</div>
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label" for="{{ form.reviewed_by.id_for_label }}">Reviewed by</label>
+                {{ form.reviewed_by }}
+                {% if form.reviewed_by.errors %}<div class="invalid-feedback d-block small">{{ form.reviewed_by.errors.0 }}</div>{% endif %}
+            </div>
+            <div class="col-md-4">
+                <label class="form-label" for="{{ form.lab_manager.id_for_label }}">Lab manager</label>
+                {{ form.lab_manager }}
+                {% if form.lab_manager.errors %}<div class="invalid-feedback d-block small">{{ form.lab_manager.errors.0 }}</div>{% endif %}
+            </div>
+            <div class="col-md-4">
+                <label class="form-label" for="{{ form.food_analyst.id_for_label }}">Food analyst</label>
+                {{ form.food_analyst }}
+                {% if form.food_analyst.errors %}<div class="invalid-feedback d-block small">{{ form.food_analyst.errors.0 }}</div>{% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="form-actions">
+        <a href="{% url 'core:sample_detail' sample.pk %}" class="btn btn-outline-secondary">Cancel</a>
+        <button type="submit" class="btn btn-primary">
+            <i class="material-icons me-1">save</i>Save metadata
+        </button>
+    </div>
+</form>
+{% endblock %}

@@ -31,6 +31,7 @@ from .forms import (
     AdminUserCreateForm,
     AdminUserUpdateForm,
     LabProfileForm,
+    SampleReportMetadataForm,
 )
 from .decorators import admin_required, lab_required, frontdesk_required, consultant_required
 from .mixins import AdminRequiredMixin, LabRequiredMixin, FrontDeskRequiredMixin, ConsultantRequiredMixin, RoleRequiredMixin, AuditMixin
@@ -964,6 +965,41 @@ class SampleUpdateView(AuditMixin, FrontDeskRequiredMixin, UpdateView):
         
         return context
 
+class SampleReportMetadataUpdateView(AuditMixin, LabRequiredMixin, UpdateView):
+    model = Sample
+    form_class = SampleReportMetadataForm
+    template_name = 'core/sample_report_metadata_form.html'
+
+    def get_success_url(self):
+        return reverse_lazy('core:sample_detail', kwargs={'pk': self.object.pk})
+
+    def get_initial(self):
+        initial = super().get_initial()
+        sample = self.get_object()
+        if not sample.sampling_location and sample.customer:
+            # Pre-fill with customer locality if available to reduce N/A entries
+            fallback_location = (
+                sample.customer.street_locality_landmark
+                or sample.customer.village_town_city
+                or sample.customer.district
+            )
+            if fallback_location:
+                initial.setdefault('sampling_location', fallback_location)
+        return initial
+
+    def form_valid(self, form):
+        messages.success(self.request, 'Report metadata updated successfully.')
+        return super().form_valid(form)
+
+    def form_invalid(self, form):
+        messages.error(self.request, 'Please correct the highlighted issues before saving.')
+        return super().form_invalid(form)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['sample'] = self.get_object()
+        return context
+
 @lab_required
 def test_result_entry(request, sample_id):
     sample = get_object_or_404(Sample, sample_id=sample_id)
@@ -1353,17 +1389,31 @@ def download_sample_report_view(request, pk):
     elements = []
     elements.append(Spacer(1, 8))
 
+    def _user_display(user_obj) -> str:
+        if not user_obj:
+            return 'N/A'
+        full_name = (user_obj.get_full_name() or '').strip()
+        return full_name or user_obj.username
+
+    customer = sample.customer
+    location_display = (
+        sample.sampling_location
+        or getattr(customer, 'village_town_city', '') or getattr(customer, 'street_locality_landmark', '')
+        or getattr(customer, 'district', '')
+        or 'N/A'
+    )
+
     meta_rows = [
         [Paragraph('<b>Sample Code</b>', styles['Label']), Paragraph(sample.display_id or 'N/A', styles['Value']),
-         Paragraph('<b>ULR Number</b>', styles['Label']), Paragraph(sample.ulr_number or 'N/A', styles['Value'])],
-        [Paragraph('<b>Customer</b>', styles['Label']), Paragraph(sample.customer.name or 'N/A', styles['Value']),
          Paragraph('<b>Report Number</b>', styles['Label']), Paragraph(sample.report_number or 'N/A', styles['Value'])],
-        [Paragraph('<b>Sample Source</b>', styles['Label']), Paragraph(sample.get_sample_source_display() or 'N/A', styles['Value']),
+        [Paragraph('<b>Customer</b>', styles['Label']), Paragraph(sample.customer.name or 'N/A', styles['Value']),
          Paragraph('<b>Collected On</b>', styles['Label']), Paragraph(sample.collection_datetime.strftime('%d %b %Y %H:%M') if sample.collection_datetime else 'N/A', styles['Value'])],
+        [Paragraph('<b>Sample Source</b>', styles['Label']), Paragraph(sample.get_sample_source_display() or 'N/A', styles['Value']),
+         Paragraph('<b>Location</b>', styles['Label']), Paragraph(location_display, styles['Value'])],
         [Paragraph('<b>Received At Lab</b>', styles['Label']), Paragraph(sample.date_received_at_lab.strftime('%d %b %Y %H:%M') if sample.date_received_at_lab else 'N/A', styles['Value']),
-         Paragraph('<b>Location</b>', styles['Label']), Paragraph(sample.sampling_location or 'N/A', styles['Value'])],
-        [Paragraph('<b>Test Commenced</b>', styles['Label']), Paragraph(sample.test_commenced_on.strftime('%d %b %Y') if sample.test_commenced_on else 'N/A', styles['Value']),
-         Paragraph('<b>Test Completed</b>', styles['Label']), Paragraph(sample.test_completed_on.strftime('%d %b %Y') if sample.test_completed_on else 'N/A', styles['Value'])]
+         Paragraph('<b>Test Commenced</b>', styles['Label']), Paragraph(sample.test_commenced_on.strftime('%d %b %Y') if sample.test_commenced_on else 'N/A', styles['Value'])],
+        [Paragraph('<b>Test Completed</b>', styles['Label']), Paragraph(sample.test_completed_on.strftime('%d %b %Y') if sample.test_completed_on else 'N/A', styles['Value']),
+         Paragraph('<b>Reviewed By</b>', styles['Label']), Paragraph(_user_display(sample.reviewed_by), styles['Value'])]
     ]
     meta_table = Table(meta_rows, colWidths=[32*mm, 55*mm, 32*mm, doc.width - 119*mm])
     meta_table.setStyle(TableStyle([
@@ -1394,7 +1444,7 @@ def download_sample_report_view(request, pk):
     elements.append(address_table)
     elements.append(Spacer(1, 20))
 
-    elements.append(Paragraph("TEST OUTCOMES", styles['SectionTitle']))
+    elements.append(Paragraph("TEST REPORTS", styles['SectionTitle']))
     elements.append(Spacer(1, 6))
 
     # Respect configured display order within categories
@@ -1568,10 +1618,16 @@ def download_sample_report_view(request, pk):
     elements.append(Spacer(1, 18))
 
     elements.append(Paragraph("AUTHORISED SIGNATORIES", styles['SectionTitle']))
+    def _signatory_name(user):
+        if not user:
+            return 'Not assigned'
+        full = (user.get_full_name() or '').strip()
+        return full or user.username
+
     signatory_names = [
-        sample.food_analyst.get_full_name() if sample.food_analyst else 'Food Analyst',
-        sample.reviewed_by.get_full_name() if sample.reviewed_by else 'Deputy Technical Manager – Biological',
-        sample.lab_manager.get_full_name() if sample.lab_manager else 'Technical Manager – Chemical'
+        _signatory_name(sample.food_analyst),
+        _signatory_name(sample.reviewed_by),
+        _signatory_name(sample.lab_manager),
     ]
     signatory_roles = ['Food Analyst', 'Deputy Technical Manager – Biological', 'Technical Manager – Chemical']
 
