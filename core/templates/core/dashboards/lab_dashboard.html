@@ -2,667 +2,177 @@
 
 {% block title %}Lab Dashboard - Water Lab LIMS{% endblock %}
 
-{% block breadcrumbs %}
-<div class="col s12 breadcrumb-container">
-    <nav>
-        <div class="nav-wrapper">
-            <a href="{% if user.is_authenticated %}{% url 'core:dashboard' %}{% else %}{% url 'core:home' %}{% endif %}" class="breadcrumb">Home</a>
-            <span class="breadcrumb active">Laboratory Dashboard</span>
-        </div>
-    </nav>
-</div>
-{% endblock breadcrumbs %}
-
-{% block content %}
-<div class="row section">
-    <div class="col s12 m8">
-        <h4 class="header">🧬 Laboratory Dashboard</h4>
+{% block page_header %}
+<div class="page-header">
+    <div class="page-heading">
+        <h1 class="page-title">Laboratory dashboard</h1>
+        <p class="page-subtitle">Stay on top of testing queues, recent results, and samples you've closed out.</p>
     </div>
-    <div class="col s12 m4 right-align">
-        <p>
-            <span class="role-badge {{ user.role }}">{{ user.get_role_display }}</span>
-            Welcome, {{ user.first_name|default:user.username }}!
-        </p>
-    </div>
-</div>
-
-<!-- Lab Testing Stats -->
-<div class="row section stats-card">
-    <div class="col s12 m6 l4">
-        <a href="{% url 'core:sample_list' %}?status=SENT_TO_LAB" class="black-text">
-            <div class="card-panel hoverable center-align">
-                <i class="material-icons large orange-text text-darken-2">hourglass_empty</i>
-                <h5>{{ pending_tests }}</h5>
-                <p class="grey-text">Pending Tests</p>
-            </div>
-        </a>
-    </div>
-    <div class="col s12 m6 l4">
-        <a href="{% url 'core:sample_list' %}?status=RESULTS_ENTERED&status=REPORT_APPROVED" class="black-text">
-            <div class="card-panel hoverable center-align">
-                <i class="material-icons large green-text text-darken-2">check_circle</i>
-                <h5>{{ completed_tests }}</h5>
-                <p class="grey-text">Completed Tests</p>
-            </div>
-        </a>
-    </div>
-    <div class="col s12 m6 l4">
-        <a href="/admin/core/testresult/?entered_by__id__exact={{ user.id }}" class="black-text">
-            <div class="card-panel hoverable center-align">
-                <i class="material-icons large blue-text text-darken-2">assignment_turned_in</i>
-                <h5>{{ my_tests }}</h5>
-                <p class="grey-text">My Total Tests</p>
-            </div>
-        </a>
-    </div>
-    <div class="col s12 m6 l4">
-         <a href="/admin/core/testresult/?test_date__day={{ now.day }}&test_date__month={{ now.month }}&test_date__year={{ now.year }}" class="black-text">
-            <div class="card-panel hoverable center-align">
-                <i class="material-icons large teal-text text-darken-2">today</i>
-                <h5>{{ today_tests }}</h5>
-                <p class="grey-text">Today's Tests</p>
-            </div>
-        </a>
-    </div>
-    <div class="col s12 m6 l4">
-        <a href="{% url 'core:setup_test_parameters' %}" class="black-text">
-            <div class="card-panel hoverable center-align">
-                <i class="material-icons large purple-text text-darken-2">settings_input_component</i>
-                <h5>{{ total_parameters }}</h5>
-                <p class="grey-text">Test Parameters</p>
-            </div>
-        </a>
-    </div>
-</div>
-
-<!-- Quick Actions -->
-<div class="row section">
-    <div class="col s12">
-        <h5 class="header">⚡ Quick Actions</h5>
-        <a href="{% url 'core:sample_list' %}?status=SENT_TO_LAB" class="btn waves-effect waves-light"><i class="material-icons left">colorize</i>Enter Test Results</a>
-        <a href="{% url 'core:sample_list' %}" class="btn-flat waves-effect waves-teal"><i class="material-icons left">view_list</i>View All Samples</a>
-        <a href="{% url 'core:setup_test_parameters' %}" class="btn-flat waves-effect waves-teal"><i class="material-icons left">science</i>Manage Parameters</a>
-        <a href="/admin/core/testresult/" class="btn-flat waves-effect waves-teal"><i class="material-icons left">assessment</i>All Test Results</a>
-    </div>
-</div>
-
-<div class="row section">
-    <!-- Samples for Testing - Full Width -->
-    <div class="col s12">
-        <div class="card dashboard-card">
-            <div class="card-content">
-                <span class="card-title"><i class="material-icons left">colorize</i>Samples Awaiting Testing</span>
-            </div>
-            {% if samples_for_testing %}
-            <div class="p-3">
-                <div class="sample-list">
-                    {% for sample in samples_for_testing %}
-                    <div class="sample-item">
-                        <div class="sample-info">
-                            <a href="{% url 'core:sample_detail' sample.pk %}" class="sample-id">
-                                {{ sample.sample_id|truncatechars:13 }}
-                            </a>
-                            <div class="sample-meta">
-                                👤 {{ sample.customer.name }}
-                            </div>
-                            <div class="sample-meta">
-                                📅 Collected: {{ sample.collection_datetime|date:"M d, H:i" }}
-                            </div>
-                            <div class="sample-meta">
-                                🏷️ {{ sample.get_sample_source_display }}
-                            </div>
-                        </div>
-                        <div class="sample-actions">
-                            <span class="badge badge-warning">{{ sample.get_current_status_display }}</span>
-                            <a href="{% url 'core:test_result_entry' sample.pk %}" class="btn btn-sm btn-primary">
-                                Enter Results
-                            </a>
-                        </div>
-                    </div>
-                    {% endfor %}
-                </div>
-            </div>
-            {% else %}
-            <div class="p-3 text-center text-muted">
-                <p>No samples pending testing</p>
-                <p>Great job! All samples are up to date.</p>
-            </div>
-            {% endif %}
-        </div>
-    </div>
-</div>
-
-<div class="row section">
-    <!-- My Recent Test Results -->
-    <div class="col s12 m6">
-        <div class="card dashboard-card">
-            <div class="card-content">
-                <span class="card-title"><i class="material-icons left">playlist_add_check</i>My Recent Test Results</span>
-            </div>
-            {% if recent_results %}
-            <div class="p-3">
-                <div class="results-list">
-                    {% for result in recent_results %}
-                    <div class="result-item">
-                        <div class="result-info">
-                            <div class="result-parameter">{{ result.parameter.name }}</div>
-                            <div class="result-sample">
-                                Sample: <a href="{% url 'core:sample_detail' result.sample.pk %}" class="link">
-                                    {{ result.sample.sample_id|truncatechars:10 }}
-                                </a>
-                            </div>
-                            <div class="result-value">
-                                Result: <strong>{{ result.result_value }} {{ result.parameter.unit }}</strong>
-                            </div>
-                            <div class="result-date">{{ result.test_date|date:"M d, H:i" }}</div>
-                        </div>
-                        {% if result.parameter.min_permissible_limit and result.parameter.max_permissible_limit %}
-                        <div class="result-status">
-                            {% with result.result_value|floatformat:3|add:0 as numeric_value %}
-                            {% if numeric_value >= result.parameter.min_permissible_limit and numeric_value <= result.parameter.max_permissible_limit %}
-                                <span class="badge badge-success">Within Limits</span>
-                            {% else %}
-                                <span class="badge badge-danger">Out of Range</span>
-                            {% endif %}
-                            {% endwith %}
-                        </div>
-                        {% endif %}
-                    </div>
-                    {% endfor %}
-                </div>
-            </div>
-            {% else %}
-            <div class="p-3 text-center text-muted">
-                <p>No test results entered yet</p>
-            </div>
-            {% endif %}
-        </div>
-    </div>
-
-    <!-- My Recently Completed Samples -->
-    <div class="col s12 m6">
-        <div class="card dashboard-card">
-            <div class="card-content">
-                <span class="card-title"><i class="material-icons left">fact_check</i>My Recently Completed Samples</span>
-            </div>
-            {% if recently_completed_samples %}
-            <div class="p-3">
-                <div class="sample-list">
-                    {% for sample in recently_completed_samples %}
-                    <div class="sample-item">
-                        <div class="sample-info">
-                            <a href="{% url 'core:sample_detail' sample.pk %}" class="sample-id">
-                                {{ sample.sample_id|truncatechars:13 }}
-                            </a>
-                            <div class="sample-meta">
-                                👤 {{ sample.customer.name }}
-                            </div>
-                            <div class="sample-meta">
-                                📅 Completed: {{ sample.updated_at|date:"M d, H:i" }}
-                            </div>
-                            <div class="sample-meta">
-                                🏷️ {{ sample.get_sample_source_display }}
-                            </div>
-                        </div>
-                        <div class="sample-actions">
-                            {% if sample.current_status == 'RESULTS_ENTERED' %}
-                                <span class="badge badge-success">{{ sample.get_current_status_display }}</span>
-                            {% elif sample.current_status == 'REVIEW_PENDING' %}
-                                <span class="badge badge-warning">{{ sample.get_current_status_display }}</span>
-                            {% elif sample.current_status == 'REPORT_APPROVED' %}
-                                <span class="badge badge-success">{{ sample.get_current_status_display }}</span>
-                            {% else %}
-                                <span class="badge badge-info">{{ sample.get_current_status_display }}</span>
-                            {% endif %}
-                            <a href="{% url 'core:sample_detail' sample.pk %}" class="btn btn-sm btn-outline">
-                                View Details
-                            </a>
-                        </div>
-                    </div>
-                    {% endfor %}
-                </div>
-            </div>
-            {% else %}
-            <div class="p-3 text-center text-muted">
-                <p>No completed samples yet</p>
-                <p>Samples you've worked on will appear here after completion.</p>
-            </div>
-            {% endif %}
-        </div>
-    </div>
-</div>
-
-<div class="row section">
-    <!-- Laboratory Equipment Status -->
-    <div class="col s12 m6">
-        <div class="card dashboard-card">
-            <div class="card-content">
-                <span class="card-title"><i class="material-icons left">build_circle</i>Laboratory Status</span>
-            </div>
-            <div class="p-3">
-                <div class="equipment-grid">
-                    <div class="equipment-item">
-                        <div class="equipment-name">pH Meter</div>
-                        <span class="badge badge-success">Operational</span>
-                        <div class="equipment-meta">Last calibrated: 2 days ago</div>
-                    </div>
-                    <div class="equipment-item">
-                        <div class="equipment-name">Turbidity Meter</div>
-                        <span class="badge badge-success">Operational</span>
-                        <div class="equipment-meta">Last calibrated: 1 day ago</div>
-                    </div>
-                    <div class="equipment-item">
-                        <div class="equipment-name">Conductivity Meter</div>
-                        <span class="badge badge-warning">Needs Calibration</span>
-                        <div class="equipment-meta">Last calibrated: 7 days ago</div>
-                    </div>
-                    <div class="equipment-item">
-                        <div class="equipment-name">Spectrophotometer</div>
-                        <span class="badge badge-success">Operational</span>
-                        <div class="equipment-meta">Last calibrated: 3 days ago</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Quality Control Reminders -->
-    <div class="col s12 m6">
-        <div class="card dashboard-card">
-            <div class="card-content">
-                <span class="card-title"><i class="material-icons left">checklist_rtl</i>Quality Control Checklist</span>
-            </div>
-    <div class="p-3">
-        <div class="qc-list">
-            <div class="qc-item">
-                <input type="checkbox" id="qc1" checked>
-                <label for="qc1">Daily equipment calibration check</label>
-                <span class="qc-status completed">✓</span>
-            </div>
-            <div class="qc-item">
-                <input type="checkbox" id="qc2" checked>
-                <label for="qc2">Reagent preparation and labeling</label>
-                <span class="qc-status completed">✓</span>
-            </div>
-            <div class="qc-item">
-                <input type="checkbox" id="qc3">
-                <label for="qc3">Run quality control standards</label>
-                <span class="qc-status pending">Pending</span>
-            </div>
-            <div class="qc-item">
-                <input type="checkbox" id="qc4">
-                <label for="qc4">Laboratory temperature and humidity log</label>
-                <span class="qc-status pending">Pending</span>
-            </div>
-            <div class="qc-item">
-                <input type="checkbox" id="qc5">
-                <label for="qc5">Waste disposal documentation</label>
-                <span class="qc-status pending">Pending</span>
-            </div>
-        </div>
+    <div class="badge-soft warning">
+        <i class="material-icons">science</i>
+        {{ user.get_role_display }}
     </div>
 </div>
 {% endblock %}
 
-{% block extra_css %}
-<style>
-    .section {
-        margin-bottom: 2rem;
-    }
-    .header { /* For h4, h5 used as section titles */
-        font-weight: 400; /* Adjusted for M3 feel */
-        margin-top: 1rem;
-        margin-bottom: 1.5rem;
-        color: var(--text-color-dark);
-    }
-    .card-panel.hoverable { /* Ensure card panels in stats section use surface color */
-        background-color: var(--surface-color);
-    }
-    .card-panel h5 {
-        margin-top: 0.5rem;
-        margin-bottom: 0.5rem;
-        font-size: 1.8rem;
-        font-weight: 500; /* Slightly bolder for stat numbers */
-        color: var(--text-color-dark);
-    }
-    .card-panel p {
-        font-size: 0.9rem;
-        color: var(--text-color-medium);
-    }
+{% block content %}
+<section class="stat-grid mb-4">
+    <a class="stat-card stat-card--link" href="{% url 'core:sample_list' %}?status=SENT_TO_LAB&status=TESTING_IN_PROGRESS">
+        <div class="stat-icon"><i class="material-icons">hourglass_empty</i></div>
+        <div class="stat-value">{{ pending_tests }}</div>
+        <p class="stat-label mb-0">Pending tests</p>
+    </a>
+    <a class="stat-card stat-card--link" href="{% url 'core:sample_list' %}?status=RESULTS_ENTERED">
+        <div class="stat-icon"><i class="material-icons">fact_check</i></div>
+        <div class="stat-value">{{ completed_tests }}</div>
+        <p class="stat-label mb-0">Results entered</p>
+    </a>
+    <a class="stat-card stat-card--link" href="/admin/core/testresult/?entered_by__id__exact={{ user.id }}">
+        <div class="stat-icon"><i class="material-icons">assignment_turned_in</i></div>
+        <div class="stat-value">{{ my_tests }}</div>
+        <p class="stat-label mb-0">My total tests</p>
+    </a>
+    <a class="stat-card stat-card--link" href="/admin/core/testresult/?test_date__day={% now 'd' %}&test_date__month={% now 'm' %}&test_date__year={% now 'Y' %}">
+        <div class="stat-icon"><i class="material-icons">today</i></div>
+        <div class="stat-value">{{ today_tests }}</div>
+        <p class="stat-label mb-0">Today's tests</p>
+    </a>
+    <a class="stat-card stat-card--link" href="{% url 'core:setup_test_parameters' %}">
+        <div class="stat-icon"><i class="material-icons">tune</i></div>
+        <div class="stat-value">{{ total_parameters }}</div>
+        <p class="stat-label mb-0">Test parameters</p>
+    </a>
+</section>
 
-    /* Styles for compact stat cards */
-    .stats-card .card-panel {
-        padding: 15px !important; /* Slightly adjusted padding */
-        border-radius: var(--m3-border-radius-medium) !important; /* Ensure M3 radius */
-        border-left: 5px solid var(--primary-color); /* Default left border */
-        transition: box-shadow 0.3s ease-in-out, transform 0.2s ease-in-out;
-    }
-    .stats-card .card-panel:hover {
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15), 0 2px 8px rgba(0,0,0,0.1) !important;
-        transform: translateY(-2px);
-    }
+<section class="info-card mb-4">
+    <div class="section-title"><i class="material-icons">flash_on</i>Quick actions</div>
+    <div class="quick-link-bar">
+        <a href="{% url 'core:sample_list' %}?status=SENT_TO_LAB" class="action-chip action-chip--primary">
+            <i class="material-icons">colorize</i>
+            Enter results
+        </a>
+        <a href="{% url 'core:sample_list' %}" class="action-chip">
+            <i class="material-icons">inventory_2</i>
+            View samples
+        </a>
+        <a href="{% url 'core:test_result_list' %}" class="action-chip">
+            <i class="material-icons">list_alt</i>
+            My results queue
+        </a>
+        <a href="{% url 'core:setup_test_parameters' %}" class="action-chip">
+            <i class="material-icons">science</i>
+            Manage parameters
+        </a>
+    </div>
+</section>
 
-    .stats-card .card-panel .material-icons.large {
-        font-size: 2.5rem !important; /* Reduced icon size */
-        margin-bottom: 0; /* Remove extra space below icon */
-    }
-    .stats-card .card-panel h5 {
-        font-size: 1.5rem !important; /* Reduced number size */
-        margin-top: 0.25rem;
-        margin-bottom: 0.25rem;
-    }
-    .stats-card .card-panel p {
-        font-size: 0.8rem !important; /* Reduced label size */
-        margin-bottom: 0; /* Remove extra space below label */
-    }
-    /* Specific adjustments for 5 stat cards to fit better */
-    .stats-card .col.l2 .card-panel .material-icons.large,
-    .stats-card .col.l2 .card-panel h5 {
-        font-size: 2rem !important; /* Even smaller for 5-column layout on large screens */
-    }
-     .stats-card .col.l2 .card-panel h5 {
-        font-size: 1.3rem !important;
-    }
-    .stats-card .col.l2 .card-panel p {
-        font-size: 0.7rem !important;
-    }
+<div class="row g-4">
+    <div class="col-12 col-xl-7">
+        <div class="info-card h-100">
+            <div class="section-title"><i class="material-icons">playlist_add</i>Samples awaiting testing</div>
+            {% if samples_for_testing %}
+            <div class="list-group list-group-flush">
+                {% for sample in samples_for_testing %}
+                <div class="list-group-item d-flex flex-column flex-lg-row gap-3 align-items-lg-center justify-content-between">
+                    <div>
+                        <div class="fw-semibold">{{ sample.sample_id }}</div>
+                        <div class="text-muted small">
+                            {{ sample.customer.name }} · Collected {{ sample.collection_datetime|date:"M d, Y H:i" }}
+                        </div>
+                        <div class="text-muted small">
+                            {{ sample.get_sample_source_display }}
+                        </div>
+                    </div>
+                    <div class="d-flex flex-column align-items-start align-items-lg-end gap-2">
+                        <span class="badge bg-warning-subtle text-warning-emphasis">{{ sample.get_current_status_display }}</span>
+                        <div class="btn-group btn-group-sm">
+                            <a href="{% url 'core:sample_detail' sample.pk %}" class="btn btn-outline-secondary">Details</a>
+                            <a href="{% url 'core:test_result_entry' sample.pk %}" class="btn btn-primary">Enter results</a>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <i class="material-icons">task_alt</i>
+                <p class="mb-0">There are no samples waiting for lab processing.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    <div class="col-12 col-xl-5">
+        <div class="info-card h-100">
+            <div class="section-title"><i class="material-icons">history</i>My recent test results</div>
+            {% if recent_results %}
+            <div class="list-group list-group-flush">
+                {% for result in recent_results %}
+                <div class="list-group-item d-flex flex-column gap-2">
+                    <div class="d-flex justify-content-between align-items-start gap-3">
+                        <div>
+                            <div class="fw-semibold">{{ result.parameter.name }}</div>
+                            <div class="text-muted small">
+                                Sample {{ result.sample.sample_id }} · {{ result.test_date|date:"M d, Y H:i" }}
+                            </div>
+                        </div>
+                        <span class="badge bg-primary-subtle text-primary-emphasis">
+                            {{ result.result_value }} {{ result.parameter.unit }}
+                        </span>
+                    </div>
+                    {% if result.parameter.min_permissible_limit and result.parameter.max_permissible_limit %}
+                    <div class="small">
+                        <span class="text-muted">Permissible:</span>
+                        {{ result.parameter.min_permissible_limit }} – {{ result.parameter.max_permissible_limit }} {{ result.parameter.unit }}
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <i class="material-icons">pending_actions</i>
+                <p class="mb-0">Your latest test entries will appear here once submitted.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
 
-
-    .mt-3 { /* For User Distribution title */
-        margin-top: 1.5rem !important;
-    }
-    .collection .collection-item.avatar .secondary-content.chip {
-        top: 25px; /* Adjust chip position in avatar collection items */
-        font-weight: 500;
-    }
-    .collection .collection-header {
-        background-color: var(--primary-color-light);
-        color: var(--primary-color-dark);
-        font-weight: 500;
-        padding-top: 0.5rem;
-        padding-bottom: 0.5rem;
-    }
-    .collection .collection-item {
-        border-bottom-color: var(--primary-color-light);
-    }
-    .collection a.collection-item { /* Ensure links in collections are styled correctly */
-        color: var(--text-color-dark);
-    }
-    .collection a.collection-item:hover {
-        background-color: var(--primary-color-light);
-        color: var(--primary-color-dark);
-    }
-    .card .card-action a:not(.btn):not(.btn-large):not(.btn-small):not(.btn-large):not(.btn-floating) {
-        color: var(--primary-color) !important; /* Ensure card action links use primary color */
-    }
-    .card .card-action a:not(.btn):not(.btn-large):not(.btn-small):not(.btn-large):not(.btn-floating):hover {
-        color: var(--primary-color-dark) !important;
-    }
-    .card.dashboard-card .card-content .card-title {
-        display: flex;
-        align-items: center;
-        font-size: 1.2rem; /* Consistent card title size */
-        font-weight: 500;
-    }
-    .card.dashboard-card .card-content .card-title .material-icons {
-        margin-right: 8px; /* Space between icon and title text */
-        font-size: 1.5rem; /* Icon size in card titles */
-        color: var(--primary-color); /* Match icon color to primary theme */
-    }
-
-
-    @media screen and (max-width: 600px) {
-        /* Header section adjustments */
-        .row.section:first-child h4.header { /* Target the main dashboard title */
-            font-size: 1.6rem; /* Reduce font size for mobile */
-            margin-bottom: 0.25rem;
-            line-height: 1.2;
-        }
-
-        .row.section:first-child .col.s12.m4.right-align p { /* Welcome message */
-            text-align: left;
-            font-size: 0.85rem;
-            margin-top: 0;
-            line-height: 1.3;
-        }
-        .row.section:first-child .col.s12.m4.right-align p .role-badge {
-            font-size: 0.7rem; /* Smaller role badge */
-            padding: 2px 6px;
-            vertical-align: middle;
-        }
-
-        /* Stat Cards - make them more compact on small screens (now 2-column s6) */
-        .stats-card .col.s6 .card-panel,
-        .stats-card .col.m4 .card-panel { /* Ensure m4 also gets these styles for 5-card layout */
-            padding: 10px !important;
-            display: flex; /* Use flexbox for better alignment */
-            flex-direction: column;
-            align-items: center; /* Center content horizontally */
-            justify-content: center; /* Center content vertically */
-            min-height: 100px; /* Ensure a minimum tap height, but allow shrinking */
-        }
-
-        .stats-card .col.s6 .card-panel .material-icons.large,
-        .stats-card .col.m4 .card-panel .material-icons.large {
-            font-size: 2rem !important; /* Smaller icons */
-            margin-bottom: 2px; /* Minimal margin */
-        }
-
-        .stats-card .col.s6 .card-panel h5,
-        .stats-card .col.m4 .card-panel h5 {
-            font-size: 1.2rem !important; /* Smaller numbers */
-            margin-top: 0;
-            margin-bottom: 2px;
-        }
-
-        .stats-card .col.s6 .card-panel p,
-        .stats-card .col.m4 .card-panel p {
-            font-size: 0.7rem !important; /* Smaller text label */
-            line-height: 1.2;
-        }
-
-
-        /* Quick Actions buttons styling for mobile */
-        .row.section .btn, 
-        .row.section .btn-flat {
-            display: block;
-            width: 100%;
-            margin-left: 0; /* Ensure no horizontal margin inherited */
-            margin-right: 0; /* Ensure no horizontal margin inherited */
-            margin-bottom: 10px; /* Space between stacked buttons */
-            text-align: center;
-            padding-top: 8px; /* Adjust padding for better appearance */
-            padding-bottom: 8px;
-            height: auto; /* Allow height to adjust to content */
-            line-height: 1.5; /* Adjust line height for button text */
-        }
-
-        .row.section .btn:last-child,
-        .row.section .btn-flat:last-child {
-            margin-bottom: 0; /* No margin for the last button */
-        }
-
-        .row.section .btn i.material-icons.left,
-        .row.section .btn-flat i.material-icons.left {
-            float: none;
-            margin-right: 5px;
-            line-height: inherit;
-            vertical-align: middle; /* Better vertical alignment of icon */
-            font-size: 1.2em; /* Adjust icon size relative to button text */
-        }
-        
-        /* Reduce margin for sections on mobile */
-        .section {
-            margin-bottom: 1.5rem;
-        }
-        h5.header { /* Quick Actions title, etc. */
-            font-size: 1.3rem;
-        }
-
-        /* Further refinements for dashboard cards on mobile */
-        .dashboard-card .collection .collection-item {
-            padding-top: 8px;
-            padding-bottom: 8px;
-        }
-
-        .dashboard-card .collection .collection-item.avatar {
-            min-height: 0; /* Reset min-height if Materialize default is too large */
-            padding-left: 65px; /* Adjust if avatar icon size changes */
-        }
-        
-        .dashboard-card .collection .collection-item.avatar .circle {
-            width: 32px; /* Smaller avatar icon */
-            height: 32px;
-            line-height: 32px;
-            font-size: 1.2rem; /* Smaller icon within circle */
-        }
-
-        .dashboard-card .collection .collection-item.avatar .title {
-            font-size: 0.9rem; /* Slightly smaller title in list items */
-            line-height: 1.3;
-        }
-
-        .dashboard-card .collection .collection-item.avatar p {
-            font-size: 0.75rem; /* Smaller paragraph text in list items */
-            line-height: 1.2;
-            margin-bottom: 2px;
-        }
-        
-        .dashboard-card .collection .collection-item.avatar .secondary-content.chip {
-            font-size: 0.7rem;
-            padding: 2px 6px;
-            height: auto;
-            line-height: 1.2;
-            top: 15px; /* Re-adjust chip position based on new item padding/sizing */
-        }
-
-        .dashboard-card .card-content .card-title { /* Card titles within dashboard cards */
-            font-size: 1.1rem;
-            margin-bottom: 0.5rem; /* Less space below card titles */
-        }
-        .dashboard-card .card-content h6 { /* Sub-headers like "Latest Samples" */
-            font-size: 0.95rem;
-            margin: 0.5rem 0;
-        }
-    }
-
-    /* Lab Dashboard Specific Styles - Keep these below common styles */
-    .sample-list, .results-list {
-    max-height: 400px;
-    overflow-y: auto;
-}
-
-.sample-item, .result-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 1rem 0;
-    border-bottom: 1px solid var(--border-color);
-}
-
-.sample-item:last-child, .result-item:last-child {
-    border-bottom: none;
-}
-
-.sample-info, .result-info {
-    flex: 1;
-}
-
-.sample-id {
-    font-weight: 600;
-    color: var(--primary-color);
-    text-decoration: none;
-}
-
-.sample-id:hover {
-    text-decoration: underline;
-}
-
-.sample-meta {
-    font-size: 0.85rem;
-    color: var(--secondary-color);
-    margin-top: 0.25rem;
-}
-
-.sample-actions {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 0.5rem;
-}
-
-.result-parameter {
-    font-weight: 600;
-    color: var(--primary-color);
-}
-
-.result-sample, .result-value, .result-date {
-    font-size: 0.85rem;
-    color: var(--secondary-color);
-    margin-top: 0.25rem;
-}
-
-.result-value {
-    color: var(--dark-color);
-}
-
-.equipment-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 1rem;
-}
-
-.equipment-item {
-    padding: 1rem;
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    background: var(--light-color);
-}
-
-.equipment-name {
-    font-weight: 600;
-    margin-bottom: 0.5rem;
-}
-
-.equipment-meta {
-    font-size: 0.85rem;
-    color: var(--secondary-color);
-    margin-top: 0.5rem;
-}
-
-.qc-list {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-}
-
-.qc-item {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.75rem;
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-}
-
-.qc-item input[type="checkbox"] {
-    margin: 0;
-}
-
-.qc-item label {
-    flex: 1;
-    margin: 0;
-    cursor: pointer;
-}
-
-.qc-status.completed {
-    color: var(--success-color);
-    font-weight: 600;
-}
-
-.qc-status.pending {
-    color: var(--warning-color);
-    font-weight: 600;
-}
-</style>
+<div class="row g-4 mt-1">
+    <div class="col-12 col-lg-6">
+        <div class="info-card h-100">
+            <div class="section-title"><i class="material-icons">task_alt</i>My recently completed samples</div>
+            {% if recently_completed_samples %}
+            <div class="list-group list-group-flush">
+                {% for sample in recently_completed_samples %}
+                <div class="list-group-item d-flex justify-content-between align-items-start gap-3">
+                    <div>
+                        <a href="{% url 'core:sample_detail' sample.pk %}" class="fw-semibold text-decoration-none">
+                            {{ sample.sample_id }}
+                        </a>
+                        <div class="text-muted small">
+                            {{ sample.customer.name }} · {{ sample.collection_datetime|date:"M d, Y H:i" }}
+                        </div>
+                    </div>
+                    <span class="badge bg-success-subtle text-success-emphasis">{{ sample.get_current_status_display }}</span>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="text-muted mb-0">Completed samples you participated in will be listed here.</p>
+            {% endif %}
+        </div>
+    </div>
+    <div class="col-12 col-lg-6">
+        <div class="info-card h-100">
+            <div class="section-title"><i class="material-icons">tips_and_updates</i>Testing toolkit</div>
+            <p class="text-muted mb-3">Need to revisit limits or update parameters? Jump straight into the configuration screens.</p>
+            <div class="d-flex flex-wrap gap-2">
+                <a href="{% url 'core:setup_test_parameters' %}" class="btn btn-outline-secondary btn-sm"><i class="material-icons me-1">tune</i>Parameter library</a>
+                <a href="{% url 'core:test_result_list' %}" class="btn btn-outline-secondary btn-sm"><i class="material-icons me-1">table_chart</i>Results archive</a>
+                <a href="{% url 'core:sample_list' %}?status=RESULTS_ENTERED" class="btn btn-outline-secondary btn-sm"><i class="material-icons me-1">done_all</i>Awaiting review</a>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
