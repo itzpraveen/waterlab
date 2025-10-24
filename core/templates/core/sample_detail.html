@@ -209,7 +209,9 @@
                                 <td>{{ entry.item.method|default:"--" }}</td>
                                 <td>{{ entry.item.unit }}</td>
                                 <td>
-                                    {% if entry.item.min_permissible_limit and entry.item.max_permissible_limit %}
+                                    {% if entry.item.max_limit_display %}
+                                        {{ entry.item.max_limit_display }}
+                                    {% elif entry.item.min_permissible_limit and entry.item.max_permissible_limit %}
                                         {{ entry.item.min_permissible_limit }} – {{ entry.item.max_permissible_limit }}
                                     {% elif entry.item.max_permissible_limit %}
                                         ≤ {{ entry.item.max_permissible_limit }}
@@ -260,7 +262,9 @@
                                 <td class="text-center fw-semibold">{{ entry.item.result_value }}</td>
                                 <td>{{ entry.item.parameter.unit }}</td>
                                 <td>
-                                    {% if entry.item.parameter.min_permissible_limit and entry.item.parameter.max_permissible_limit %}
+                                    {% if entry.item.parameter.max_limit_display %}
+                                        {{ entry.item.parameter.max_limit_display }}
+                                    {% elif entry.item.parameter.min_permissible_limit and entry.item.parameter.max_permissible_limit %}
                                         {{ entry.item.parameter.min_permissible_limit }} – {{ entry.item.parameter.max_permissible_limit }}
                                     {% elif entry.item.parameter.max_permissible_limit %}
                                         ≤ {{ entry.item.parameter.max_permissible_limit }}
@@ -271,7 +275,9 @@
                                     {% endif %}
                                 </td>
                                 <td class="text-center">
-                                    {% if entry.item.parameter.min_permissible_limit is not None and entry.item.parameter.max_permissible_limit is not None %}
+                                    {% if entry.item.parameter.max_limit_display %}
+                                        <span class="badge-soft">Qualitative limit</span>
+                                    {% elif entry.item.parameter.min_permissible_limit is not None and entry.item.parameter.max_permissible_limit is not None %}
                                         {% with status=entry.item.get_limit_status %}
                                             {% if status == 'WITHIN_LIMITS' %}
                                                 <span class="badge-soft success">Within limits</span>

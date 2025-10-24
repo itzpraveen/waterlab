@@ -119,7 +119,12 @@
                             {{ result.result_value }} {{ result.parameter.unit }}
                         </span>
                     </div>
-                    {% if result.parameter.min_permissible_limit and result.parameter.max_permissible_limit %}
+                    {% if result.parameter.max_limit_display %}
+                    <div class="small">
+                        <span class="text-muted">Permissible:</span>
+                        {{ result.parameter.max_limit_display }}
+                    </div>
+                    {% elif result.parameter.min_permissible_limit and result.parameter.max_permissible_limit %}
                     <div class="small">
                         <span class="text-muted">Permissible:</span>
                         {{ result.parameter.min_permissible_limit }} – {{ result.parameter.max_permissible_limit }} {{ result.parameter.unit }}

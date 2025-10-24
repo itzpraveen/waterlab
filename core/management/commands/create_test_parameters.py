@@ -105,6 +105,7 @@ class Command(BaseCommand):
             unit = param_data.get('unit', '')
             min_limit = None
             max_limit = None
+            max_limit_display = None
 
             # Regex to parse limit string
             range_match = re.match(r'([\d\.]+) to ([\d\.]+)', limit_str)
@@ -128,11 +129,15 @@ class Command(BaseCommand):
                 if unit_search:
                     unit = unit_search.group(0).strip()
 
-            if not unit and 'Absent/ml' in limit_str:
-                unit = 'Absent/ml'
+            if 'Absent/ml' in limit_str:
+                max_limit_display = 'Absent/ml'
+                if not unit:
+                    unit = 'Absent/ml'
             
             if 'Agreeable' in limit_str or 'Colourless' in limit_str:
                 unit = limit_str
+                if not max_limit_display:
+                    max_limit_display = limit_str
 
             if param_data['name'] == 'pH':
                 unit = 'pH'
@@ -140,6 +145,7 @@ class Command(BaseCommand):
             defaults['unit'] = unit
             defaults['min_permissible_limit'] = min_limit
             defaults['max_permissible_limit'] = max_limit
+            defaults['max_limit_display'] = max_limit_display
 
             parameter, created = TestParameter.objects.update_or_create(
                 name=param_data['name'],

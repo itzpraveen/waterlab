@@ -56,7 +56,9 @@
                         <td>{{ result.result_value }}</td>
                         <td>{{ result.parameter.unit }}</td>
                         <td>
-                            {% if result.parameter.max_permissible_limit and not result.parameter.min_permissible_limit %}
+                            {% if result.parameter.max_limit_display %}
+                                {{ result.parameter.max_limit_display }}
+                            {% elif result.parameter.max_permissible_limit and not result.parameter.min_permissible_limit %}
                                 Max {{ result.parameter.max_permissible_limit }}
                             {% else %}
                                 {{ result.parameter.min_permissible_limit|default:"" }} - {{ result.parameter.max_permissible_limit|default:"" }}

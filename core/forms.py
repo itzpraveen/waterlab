@@ -370,7 +370,7 @@ class TestParameterForm(forms.ModelForm):
     class Meta:
         model = TestParameter
         fields = [
-            'name', 'unit', 'method', 'min_permissible_limit', 'max_permissible_limit',
+            'name', 'unit', 'method', 'min_permissible_limit', 'max_permissible_limit', 'max_limit_display',
             'group', 'discipline', 'fssai_limit', 'category_obj', 'display_order', 'parent'
         ]
         widgets = {
@@ -379,6 +379,11 @@ class TestParameterForm(forms.ModelForm):
             'method': forms.TextInput(attrs={'class': 'form-control'}),
             'min_permissible_limit': forms.NumberInput(attrs={'class': 'form-control', 'step': 'any'}),
             'max_permissible_limit': forms.NumberInput(attrs={'class': 'form-control', 'step': 'any'}),
+            'max_limit_display': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'e.g. Absent/ml',
+                'list': 'max-limit-presets',
+            }),
             'group': forms.TextInput(attrs={'class': 'form-control'}),
             'discipline': forms.TextInput(attrs={'class': 'form-control'}),
             'fssai_limit': forms.TextInput(attrs={'class': 'form-control'}),
@@ -389,10 +394,12 @@ class TestParameterForm(forms.ModelForm):
         labels = {
             'min_permissible_limit': 'Min. Permissible Limit',
             'max_permissible_limit': 'Max. Permissible Limit',
+            'max_limit_display': 'Max. Limit Display Override',
         }
         help_texts = {
             'min_permissible_limit': 'Leave blank if no minimum limit.',
             'max_permissible_limit': 'Leave blank if no maximum limit.',
+            'max_limit_display': 'Optional text (e.g., "Absent/ml") to show instead of a numeric maximum.',
         }
 
     def __init__(self, *args, **kwargs):

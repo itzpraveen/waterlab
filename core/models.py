@@ -425,6 +425,12 @@ class TestParameter(models.Model):
     method = models.CharField(max_length=255, blank=True, null=True)
     min_permissible_limit = models.DecimalField(max_digits=10, decimal_places=3, null=True, blank=True)
     max_permissible_limit = models.DecimalField(max_digits=10, decimal_places=3, null=True, blank=True)
+    max_limit_display = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True,
+        help_text="Override displayed maximum limit text (e.g., 'Absent/ml')."
+    )
     # Legacy free-text category retained for backward compatibility
     category = models.CharField(max_length=100, blank=True, null=True)
     # Preferred: structured category
@@ -464,6 +470,37 @@ class TestParameter(models.Model):
     def category_label(self) -> str:
         """Display-friendly category name (structured first, else legacy text)."""
         return (self.category_obj.name if getattr(self, 'category_obj', None) else (self.category or ''))
+
+    @property
+    def has_qualitative_max_limit(self) -> bool:
+        """Return True when maximum limit is expressed as a text override."""
+        return bool(self.max_limit_display)
+
+    @property
+    def limit_display(self) -> str:
+        """Human-friendly limit text without repeating units column."""
+        if self.max_limit_display:
+            return self.max_limit_display
+
+        min_limit = self.min_permissible_limit
+        max_limit = self.max_permissible_limit
+
+        if min_limit is None and max_limit is None:
+            return '—'
+        if min_limit is None:
+            return f"≤ {max_limit}"
+        if max_limit is None:
+            return f"≥ {min_limit}"
+        return f"{min_limit} – {max_limit}"
+
+    @property
+    def limit_display_with_unit(self) -> str:
+        """Limit text suitable for reports where unit should accompany numeric limits."""
+        base = self.limit_display
+        if base == '—' or self.max_limit_display:
+            return base
+        unit = (self.unit or '').strip()
+        return f"{base} {unit}".strip() if unit else base
 
 class TestResult(models.Model):
     result_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -520,6 +557,9 @@ class TestResult(models.Model):
         if self.parameter_id is None: # Check FK ID directly
             return None
             
+        if getattr(self.parameter, 'has_qualitative_max_limit', False):
+            return True
+
         try:
             numeric_value = float(self.result_value)
             
@@ -538,6 +578,9 @@ class TestResult(models.Model):
         if self.parameter_id is None: # Check FK ID directly
             return "UNKNOWN"
             
+        if getattr(self.parameter, 'has_qualitative_max_limit', False):
+            return "NON_NUMERIC"
+
         try:
             numeric_value = float(self.result_value)
             

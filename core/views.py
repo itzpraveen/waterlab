@@ -1507,6 +1507,8 @@ def download_sample_report_view(request, pk):
         table_data = [header]
 
         def format_limits(param):
+            if getattr(param, 'max_limit_display', None):
+                return param.max_limit_display
             if param.min_permissible_limit is None and param.max_permissible_limit is None:
                 return '—'
             if param.min_permissible_limit is None:

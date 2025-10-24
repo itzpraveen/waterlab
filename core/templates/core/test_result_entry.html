@@ -76,7 +76,9 @@
                 <p class="text-muted small mb-0">
                     Unit: {{ param.unit|default:"--" }}
                     {% if param.method %} · Method: {{ param.method }}{% endif %}
-                    {% if param.min_permissible_limit is not None or param.max_permissible_limit is not None %}
+                    {% if param.max_limit_display %}
+                        · Acceptable: {{ param.max_limit_display }}
+                    {% elif param.min_permissible_limit is not None or param.max_permissible_limit is not None %}
                         · Acceptable:
                         {% if param.min_permissible_limit is not None %}{{ param.min_permissible_limit }}{% else %}–∞{% endif %}
                         –
@@ -100,6 +102,15 @@
                 {% endif %}
                 <small id="status-{{ field.id_for_label }}" class="form-hint" data-unit="{{ param.unit|default:"" }}">
                     {% if param.unit %}Unit: {{ param.unit }}{% endif %}
+                    {% if param.max_limit_display %}
+                        · Limit: {{ param.max_limit_display }}
+                    {% elif param.min_permissible_limit is not None or param.max_permissible_limit is not None %}
+                        · Limits:
+                        {% if param.min_permissible_limit is not None %}{{ param.min_permissible_limit }}{% else %}–∞{% endif %}
+                        –
+                        {% if param.max_permissible_limit is not None %}{{ param.max_permissible_limit }}{% else %}+∞{% endif %}
+                        {{ param.unit|default:"" }}
+                    {% endif %}
                 </small>
             </div>
             {% endwith %}

@@ -24,8 +24,8 @@ def _standard_parameter_definitions():
         {"name": "Fluoride", "unit": "mg/L", "min": Decimal("0"), "max": Decimal("1.0"), "method": "IS 3025 (Part 60)", "category": "Physical & Chemical"},
         {"name": "Nitrate", "unit": "mg/L", "min": Decimal("0"), "max": Decimal("45"), "method": "IS 3025 (Part 34)", "category": "Physical & Chemical"},
         {"name": "Residual Chlorine", "unit": "mg/L", "min": Decimal("0.2"), "max": Decimal("1.0"), "method": "IS 3025 (Part 26)", "category": "Physical & Chemical"},
-        {"name": "Total Coliform", "unit": "CFU/100mL", "min": Decimal("0"), "max": Decimal("0"), "method": "IS 5401 (Part 1)", "category": "Microbiological"},
-        {"name": "E. Coli", "unit": "CFU/100mL", "min": Decimal("0"), "max": Decimal("0"), "method": "IS 5887 (Part 1)", "category": "Microbiological"},
+        {"name": "Total Coliform", "unit": "CFU/100mL", "min": Decimal("0"), "max": Decimal("0"), "max_display": "Absent/ml", "method": "IS 5401 (Part 1)", "category": "Microbiological"},
+        {"name": "E. Coli", "unit": "CFU/100mL", "min": Decimal("0"), "max": Decimal("0"), "max_display": "Absent/ml", "method": "IS 5887 (Part 1)", "category": "Microbiological"},
     ]
 
     for index, definition in enumerate(definitions, start=1):
@@ -58,6 +58,8 @@ def seed_standard_parameters(user=None) -> Tuple[int, int]:
                     existing.min_permissible_limit = p.get("min"); updated = True
                 if existing.max_permissible_limit != p.get("max"):
                     existing.max_permissible_limit = p.get("max"); updated = True
+                if existing.max_limit_display != p.get("max_display"):
+                    existing.max_limit_display = p.get("max_display"); updated = True
                 # Preserve existing.display_order unconditionally to respect admin customisation
                 # (i.e., do not reset to the default seed order on re-run)
 
@@ -72,6 +74,7 @@ def seed_standard_parameters(user=None) -> Tuple[int, int]:
                 method=p.get("method"),
                 min_permissible_limit=p.get("min"),
                 max_permissible_limit=p.get("max"),
+                max_limit_display=p.get("max_display"),
                 display_order=p["order"],
                 category_obj=TestCategory.objects.filter(name__iexact=p.get("category", "")).first(),
             )

@@ -150,6 +150,12 @@
                 {% if form.max_permissible_limit.errors %}<div class="form-error">{{ form.max_permissible_limit.errors.0 }}</div>{% endif %}
             </div>
             <div class="form-field">
+                <label for="{{ form.max_limit_display.id_for_label }}">Max limit text override</label>
+                {{ form.max_limit_display }}
+                <div class="help-text">Use for qualitative limits such as “Absent/ml”. Leave empty to show numeric limits.</div>
+                {% if form.max_limit_display.errors %}<div class="form-error">{{ form.max_limit_display.errors.0 }}</div>{% endif %}
+            </div>
+            <div class="form-field">
                 <label for="{{ form.group.id_for_label }}">Group</label>
                 {{ form.group }}
                 {% if form.group.errors %}<div class="form-error">{{ form.group.errors.0 }}</div>{% endif %}
@@ -194,6 +200,11 @@
             </button>
         </div>
     </form>
+    <datalist id="max-limit-presets">
+        <option value="Absent/ml">
+        <option value="Absent/100mL">
+        <option value="Absent/250mL">
+    </datalist>
 </section>
 
 {% if existing_params %}
@@ -239,7 +250,15 @@
                     {# Removed explicit order; visual order + drag handle indicates position #}
                     <td>{{ param.unit }}</td>
                     <td>{{ param.min_permissible_limit|default:"-" }}</td>
-                    <td>{{ param.max_permissible_limit|default:"-" }}</td>
+                    <td>
+                        {% if param.max_limit_display %}
+                            {{ param.max_limit_display }}
+                        {% elif param.max_permissible_limit is not None %}
+                            {{ param.max_permissible_limit }}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
                     <td>{{ param.method|default:"-" }}</td>
                     <td>{{ param.group|default:"-" }}</td>
                     <td>{{ param.discipline|default:"-" }}</td>

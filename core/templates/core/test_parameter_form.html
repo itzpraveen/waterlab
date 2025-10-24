@@ -66,6 +66,13 @@
                 </div>
             </div>
 
+            <div class="form-field">
+                <label for="{{ form.max_limit_display.id_for_label }}">Max. limit text override</label>
+                {{ form.max_limit_display }}
+                {% if form.max_limit_display.help_text %}<small class="form-hint">{{ form.max_limit_display.help_text }}</small>{% endif %}
+                {% if form.max_limit_display.errors %}<p class="form-error">{{ form.max_limit_display.errors.0 }}</p>{% endif %}
+            </div>
+
             <div class="grid-two">
                 <div class="form-field">
                     <label for="{{ form.discipline.id_for_label }}">Discipline</label>
@@ -121,6 +128,11 @@
                     {% if is_edit %}Save changes{% else %}Create parameter{% endif %}
                 </button>
             </div>
+            <datalist id="max-limit-presets">
+                <option value="Absent/ml">
+                <option value="Absent/100mL">
+                <option value="Absent/250mL">
+            </datalist>
         </form>
     </section>
 
