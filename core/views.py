@@ -1253,6 +1253,9 @@ def consultant_review(request, sample_id):
 def download_sample_report_view(request, pk):
     sample = get_object_or_404(Sample, pk=pk)
 
+    layout = (request.GET.get('layout') or 'branded').casefold()
+    include_branding = layout != 'plain'
+
     if sample.current_status not in ['REPORT_APPROVED', 'REPORT_SENT']:
         messages.error(request, "Report is not yet approved or available for download.")
         return redirect('core:sample_detail', pk=sample.pk)
@@ -1270,14 +1273,23 @@ def download_sample_report_view(request, pk):
     buffer = BytesIO()
 
     class ReportDocTemplate(BaseDocTemplate):
-        def __init__(self, filename, **kwargs):
+        def __init__(self, filename, include_branding=True, **kwargs):
+            self.include_branding = include_branding
             super().__init__(filename, **kwargs)
             self.addPageTemplates([
                 PageTemplate(id='ReportPage',
                              frames=[Frame(self.leftMargin, self.bottomMargin, self.width, self.height, id='main_frame')],
-                             onPage=self.header,
-                             onPageEnd=self.footer)
+                             onPage=self._maybe_header,
+                             onPageEnd=self._maybe_footer)
             ])
+
+        def _maybe_header(self, canvas, doc):
+            if self.include_branding:
+                self.header(canvas, doc)
+
+        def _maybe_footer(self, canvas, doc):
+            if self.include_branding:
+                self.footer(canvas, doc)
 
         def header(self, canvas, doc):
             canvas.saveState()
@@ -1353,9 +1365,27 @@ def download_sample_report_view(request, pk):
         pagesize=A4,
         rightMargin=18*mm,
         leftMargin=18*mm,
-        topMargin=60*mm,
-        bottomMargin=22*mm
+        topMargin=60*mm if include_branding else 25*mm,
+        bottomMargin=22*mm if include_branding else 20*mm,
+        include_branding=include_branding,
     )
+
+    palette = {
+        'surface': colors.HexColor('#F8FAFC') if include_branding else colors.white,
+        'primary': colors.HexColor('#0F766E') if include_branding else colors.black,
+        'text': colors.HexColor('#0F172A') if include_branding else colors.black,
+        'muted': colors.HexColor('#6B7280') if include_branding else colors.HexColor('#1F2937'),
+        'grid': colors.HexColor('#E2E8F0') if include_branding else colors.HexColor('#9CA3AF'),
+        'row_alt': colors.HexColor('#F1F5F9') if include_branding else colors.white,
+    }
+
+    surface = palette['surface']
+    primary = palette['primary']
+    text_color = palette['text']
+    muted_color = palette['muted']
+    grid_color = palette['grid']
+    row_alt_color = palette['row_alt']
+    header_text_color = colors.white if include_branding else text_color
 
     styles = getSampleStyleSheet()
     styles.add(ParagraphStyle(name='Center', alignment=TA_CENTER))
@@ -1363,14 +1393,10 @@ def download_sample_report_view(request, pk):
     styles.add(ParagraphStyle(name='Left', alignment=TA_LEFT))
     styles.add(ParagraphStyle(name='ReportTitle', parent=styles['h1'], alignment=TA_CENTER, spaceAfter=14, fontSize=18))
     styles.add(ParagraphStyle(name='SectionTitle', parent=styles['h2'], spaceAfter=10, fontSize=12, leading=14))
-    styles.add(ParagraphStyle(name='Label', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=9, textColor=colors.HexColor('#6B7280')))
-    styles.add(ParagraphStyle(name='Value', parent=styles['Normal'], fontSize=10, textColor=colors.HexColor('#0F172A')))
-    styles.add(ParagraphStyle(name='TableHead', parent=styles['Normal'], fontName='Helvetica-Bold', alignment=TA_CENTER, textColor=colors.white, fontSize=9))
+    styles.add(ParagraphStyle(name='Label', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=9, textColor=muted_color))
+    styles.add(ParagraphStyle(name='Value', parent=styles['Normal'], fontSize=10, textColor=text_color))
+    styles.add(ParagraphStyle(name='TableHead', parent=styles['Normal'], fontName='Helvetica-Bold', alignment=TA_CENTER, textColor=header_text_color, fontSize=9))
     styles.add(ParagraphStyle(name='TableCell', parent=styles['Normal'], alignment=TA_LEFT, leading=12, fontSize=9))
-
-    surface = colors.HexColor('#F8FAFC')
-    primary = colors.HexColor('#0F766E')
-    text_color = colors.HexColor('#0F172A')
 
     styles.add(ParagraphStyle(
         name='CategoryHeading',
@@ -1418,8 +1444,8 @@ def download_sample_report_view(request, pk):
     meta_table = Table(meta_rows, colWidths=[32*mm, 55*mm, 32*mm, doc.width - 119*mm])
     meta_table.setStyle(TableStyle([
         ('BACKGROUND', (0,0), (-1,-1), surface),
-        ('BOX', (0,0), (-1,-1), 0.75, colors.HexColor('#E2E8F0')),
-        ('INNERGRID', (0,0), (-1,-1), 0.25, colors.HexColor('#E2E8F0')),
+        ('BOX', (0,0), (-1,-1), 0.75, grid_color),
+        ('INNERGRID', (0,0), (-1,-1), 0.25, grid_color),
         ('VALIGN', (0,0), (-1,-1), 'TOP'),
         ('LEFTPADDING', (0,0), (-1,-1), 6),
         ('RIGHTPADDING', (0,0), (-1,-1), 6),
@@ -1434,12 +1460,12 @@ def download_sample_report_view(request, pk):
         [Paragraph(sample.customer.address or 'N/A', styles['Value'])]
     ], colWidths=[doc.width])
     address_table.setStyle(TableStyle([
-        ('BOX', (0,0), (-1,-1), 0.75, colors.HexColor('#E2E8F0')),
+        ('BOX', (0,0), (-1,-1), 0.75, grid_color),
         ('LEFTPADDING', (0,0), (-1,-1), 8),
         ('RIGHTPADDING', (0,0), (-1,-1), 8),
         ('TOPPADDING', (0,0), (-1,-1), 6),
         ('BOTTOMPADDING', (0,0), (-1,-1), 6),
-        ('BACKGROUND', (0,0), (-1,-1), colors.white),
+        ('BACKGROUND', (0,0), (-1,-1), surface),
     ]))
     elements.append(address_table)
     elements.append(Spacer(1, 20))
@@ -1494,6 +1520,13 @@ def download_sample_report_view(request, pk):
         available_width * 0.10,  # Status
     ]
 
+    status_styles = {
+        'WITHIN_LIMITS': ('Within limits', '#0F766E'),
+        'BELOW_LIMIT': ('Below minimum', '#B45309'),
+        'ABOVE_LIMIT': ('Above maximum', '#DC2626'),
+        'NON_NUMERIC': ('Non-numeric', None),
+    }
+
     def _build_results_table(category_results, start_index):
         header = [
             Paragraph('Sl. No', styles['TableHead']),
@@ -1522,14 +1555,12 @@ def download_sample_report_view(request, pk):
             param = result.parameter
             limits_text = format_limits(param)
             status = getattr(result, 'get_limit_status', lambda: None)()
-            if status == 'WITHIN_LIMITS':
-                status_label = '<font color="#0F766E">Within limits</font>'
-            elif status == 'BELOW_LIMIT':
-                status_label = '<font color="#B45309">Below minimum</font>'
-            elif status == 'ABOVE_LIMIT':
-                status_label = '<font color="#DC2626">Above maximum</font>'
-            elif status == 'NON_NUMERIC':
-                status_label = 'Non-numeric'
+            if status in status_styles:
+                label_text, label_color = status_styles[status]
+                if include_branding and label_color:
+                    status_label = f'<font color="{label_color}">{label_text}</font>'
+                else:
+                    status_label = label_text
             else:
                 status_label = '—'
 
@@ -1545,19 +1576,25 @@ def download_sample_report_view(request, pk):
             running_index += 1
 
         table = Table(table_data, colWidths=column_widths, repeatRows=1)
-        table.setStyle(TableStyle([
-            ('BACKGROUND', (0,0), (-1,0), primary),
-            ('TEXTCOLOR', (0,0), (-1,0), colors.white),
+        table_style = [
             ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
             ('ALIGN', (0,0), (-1,0), 'CENTER'),
             ('VALIGN', (0,0), (-1,-1), 'TOP'),
-            ('ROWBACKGROUNDS', (0,1), (-1,-1), (colors.white, colors.HexColor('#F1F5F9'))),
-            ('GRID', (0,0), (-1,-1), 0.4, colors.HexColor('#E2E8F0')),
+            ('GRID', (0,0), (-1,-1), 0.4, grid_color),
             ('LEFTPADDING', (0,0), (-1,-1), 6),
             ('RIGHTPADDING', (0,0), (-1,-1), 6),
             ('TOPPADDING', (0,0), (-1,-1), 6),
             ('BOTTOMPADDING', (0,0), (-1,-1), 6),
-        ]))
+        ]
+        if include_branding:
+            table_style.extend([
+                ('BACKGROUND', (0,0), (-1,0), primary),
+                ('TEXTCOLOR', (0,0), (-1,0), colors.white),
+                ('ROWBACKGROUNDS', (0,1), (-1,-1), (colors.white, row_alt_color)),
+            ])
+        else:
+            table_style.append(('LINEBELOW', (0,0), (-1,0), 0.5, grid_color))
+        table.setStyle(TableStyle(table_style))
         return table, running_index
 
     def _labels_redundant(section_heading: str, category_label: str) -> bool:
@@ -1649,7 +1686,8 @@ def download_sample_report_view(request, pk):
     doc.build(elements)
 
     buffer.seek(0)
-    response = FileResponse(buffer, as_attachment=True, filename=f'WaterQualityReport_{sample.display_id}.pdf')
+    filename_suffix = '_plain' if not include_branding else ''
+    response = FileResponse(buffer, as_attachment=True, filename=f'WaterQualityReport_{sample.display_id}{filename_suffix}.pdf')
     
     if sample.current_status == 'REPORT_APPROVED':
         try:
