@@ -1,6 +1,18 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from .models import Customer, Sample, TestParameter, TestResult, ConsultantReview, KeralaLocation, CustomUser, AuditTrail, TestCategory, LabProfile
+from .models import (
+    Customer,
+    Sample,
+    TestParameter,
+    TestResult,
+    ConsultantReview,
+    KeralaLocation,
+    CustomUser,
+    AuditTrail,
+    TestCategory,
+    LabProfile,
+    ResultStatusOverride,
+)
 
 @admin.register(Customer)
 class CustomerAdmin(admin.ModelAdmin):
@@ -87,6 +99,28 @@ class LabProfileAdmin(admin.ModelAdmin):
 
     def has_delete_permission(self, request, obj=None):
         return False
+
+
+@admin.register(ResultStatusOverride)
+class ResultStatusOverrideAdmin(admin.ModelAdmin):
+    list_display = ('text_value', 'status', 'parameter', 'is_active', 'updated_at')
+    list_filter = ('status', 'is_active', 'parameter')
+    search_fields = ('text_value', 'parameter__name')
+    readonly_fields = ('normalized_value', 'created_at', 'updated_at')
+    fieldsets = (
+        (None, {
+            'fields': (
+                'parameter',
+                'text_value',
+                'status',
+                'is_active',
+            )
+        }),
+        ('Metadata', {
+            'fields': ('normalized_value', 'created_at', 'updated_at'),
+            'classes': ('collapse',),
+        }),
+    )
 
 admin.site.register(Sample)
 admin.site.register(TestParameter)

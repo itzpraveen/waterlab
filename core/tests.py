@@ -1,6 +1,13 @@
 from django.test import TestCase
-from django.conf import settings
-from .models import Customer, Sample, TestParameter, CustomUser, TestResult, ConsultantReview
+from .models import (
+    Customer,
+    Sample,
+    TestParameter,
+    CustomUser,
+    TestResult,
+    ConsultantReview,
+    ResultStatusOverride,
+)
 from django.utils import timezone
 from django.core.exceptions import ValidationError
 from datetime import timedelta
@@ -585,21 +592,32 @@ class TestResultModelTests(TestCase):
 
     def test_get_limit_status_text_override(self):
         """Textual results use configured status overrides when provided."""
-        overrides = dict(getattr(settings, 'WATERLAB_SETTINGS', {}))
-        overrides['TEXT_RESULT_STATUS_OVERRIDES'] = {
-            'global': {
-                'BDL': 'WITHIN_LIMITS',
-            },
-        }
-        with self.settings(WATERLAB_SETTINGS=overrides):
-            result = TestResult.objects.create(
-                sample=self.sample,
-                parameter=self.parameter_numeric,
-                result_value="BDL",
-                technician=self.lab_tech
-            )
-            self.assertEqual(result.get_limit_status(), "WITHIN_LIMITS")
-            self.assertTrue(result.is_within_limits())
+        ResultStatusOverride.objects.create(text_value="BDL", status="WITHIN_LIMITS")
+        result = TestResult.objects.create(
+            sample=self.sample,
+            parameter=self.parameter_numeric,
+            result_value="BDL",
+            technician=self.lab_tech
+        )
+        self.assertEqual(result.get_limit_status(), "WITHIN_LIMITS")
+        self.assertTrue(result.is_within_limits())
+
+    def test_get_limit_status_parameter_specific_override(self):
+        """Parameter-specific override should take precedence over global mapping."""
+        ResultStatusOverride.objects.create(text_value="Present", status="WITHIN_LIMITS")
+        ResultStatusOverride.objects.create(
+            parameter=self.parameter_text,
+            text_value="Present",
+            status="BELOW_LIMIT",
+        )
+        result = TestResult.objects.create(
+            sample=self.sample,
+            parameter=self.parameter_text,
+            result_value="Present",
+            technician=self.lab_tech,
+        )
+        self.assertEqual(result.get_limit_status(), "BELOW_LIMIT")
+        self.assertFalse(result.is_within_limits())
 
 
     def test_is_within_limits_min_only_param(self):

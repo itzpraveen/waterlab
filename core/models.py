@@ -2,15 +2,15 @@ import logging
 import os
 import uuid
 
-from django.db import models
-from django.core.validators import RegexValidator
-from django.core.exceptions import ValidationError
-# import json # Not directly used, JSONField handles serialization
+from datetime import timedelta
+
 from django.conf import settings # Recommended way to import User model
 from django.contrib.auth.models import AbstractUser
-from django.utils import timezone
+from django.core.exceptions import ValidationError
+from django.core.validators import RegexValidator
+from django.db import models
 from django.templatetags.static import static
-from datetime import timedelta
+from django.utils import timezone
 
 # Validator for Kerala PIN Codes
 def validate_kerala_pincode(value):
@@ -29,6 +29,21 @@ def validate_kerala_pincode(value):
         )
 
 logger = logging.getLogger(__name__)
+
+RESULT_STATUS_CHOICES = [
+    ('WITHIN_LIMITS', 'Within limits'),
+    ('ABOVE_LIMIT', 'Above maximum'),
+    ('BELOW_LIMIT', 'Below minimum'),
+    ('NON_NUMERIC', 'Non-numeric'),
+    ('UNKNOWN', 'Unknown'),
+]
+
+VALID_RESULT_STATUSES = {choice[0] for choice in RESULT_STATUS_CHOICES}
+
+
+def normalize_text_value(value: str) -> str:
+    """Normalize textual result values for consistent comparisons."""
+    return (value or '').strip().casefold()
 
 
 class CustomUser(AbstractUser):
@@ -502,6 +517,87 @@ class TestParameter(models.Model):
         unit = (self.unit or '').strip()
         return f"{base} {unit}".strip() if unit else base
 
+
+class ResultStatusOverride(models.Model):
+    """Allow administrators to map textual lab results to limit status outcomes."""
+    override_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    parameter = models.ForeignKey(
+        TestParameter,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='status_overrides',
+        help_text="Leave blank to apply this override to all parameters."
+    )
+    text_value = models.CharField(
+        max_length=255,
+        help_text="Result value (case-insensitive) that should trigger the selected status."
+    )
+    normalized_value = models.CharField(
+        max_length=255,
+        editable=False,
+        db_index=True,
+    )
+    status = models.CharField(
+        max_length=32,
+        choices=RESULT_STATUS_CHOICES,
+        default='WITHIN_LIMITS',
+    )
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['normalized_value', 'parameter__name']
+        unique_together = ('parameter', 'normalized_value')
+        indexes = [
+            models.Index(fields=['normalized_value', 'parameter'], name='result_override_lookup_idx'),
+        ]
+
+    def __str__(self):
+        scope = self.parameter.name if self.parameter else 'All parameters'
+        return f"{self.text_value} → {self.status} ({scope})"
+
+    def clean(self):
+        self.normalized_value = normalize_text_value(self.text_value)
+        if not self.normalized_value:
+            raise ValidationError({'text_value': 'Result text cannot be empty.'})
+
+        if self.status not in VALID_RESULT_STATUSES:
+            raise ValidationError({'status': 'Invalid status selection.'})
+
+    def save(self, *args, **kwargs):
+        self.normalized_value = normalize_text_value(self.text_value)
+        super().save(*args, **kwargs)
+
+    @classmethod
+    def get_override(cls, parameter_id, normalized_value):
+        """Return the override status for the given parameter/value combo, if configured."""
+        if not normalized_value:
+            return None
+
+        matches = list(
+            cls.objects.filter(
+                normalized_value=normalized_value,
+                is_active=True,
+            ).values_list('parameter_id', 'status')
+        )
+
+        if not matches:
+            return None
+
+        if parameter_id:
+            for match_parameter_id, status in matches:
+                if match_parameter_id == parameter_id:
+                    return status
+
+        for match_parameter_id, status in matches:
+            if match_parameter_id is None:
+                return status
+
+        return None
+
+
 class TestResult(models.Model):
     result_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     sample = models.ForeignKey(Sample, on_delete=models.CASCADE, related_name='results')
@@ -525,51 +621,49 @@ class TestResult(models.Model):
     def __str__(self):
         return f"Result for {self.sample.display_id} - {self.parameter.name}: {self.result_value}"
 
-    VALID_LIMIT_STATUSES = {
-        'WITHIN_LIMITS',
-        'ABOVE_LIMIT',
-        'BELOW_LIMIT',
-        'NON_NUMERIC',
-        'UNKNOWN',
-    }
-
-    @staticmethod
-    def _normalize_text_value(value: str) -> str:
-        return (value or '').strip().casefold()
+    STATUS_CHOICES = RESULT_STATUS_CHOICES
+    VALID_LIMIT_STATUSES = VALID_RESULT_STATUSES
 
     @classmethod
     def _validated_limit_status(cls, status):
         if not status:
             return None
         normalized_status = status.strip().upper()
-        if normalized_status in cls.VALID_LIMIT_STATUSES:
+        if normalized_status in VALID_RESULT_STATUSES:
             return normalized_status
         logger.warning("Ignored invalid limit status override '%s'.", status)
         return None
 
     def _resolve_text_status_override(self):
         """Return configured status override for textual results."""
+        result_key = normalize_text_value(self.result_value)
+        if not result_key:
+            return None
+
+        db_status = ResultStatusOverride.get_override(self.parameter_id, result_key)
+        if db_status:
+            return self._validated_limit_status(db_status)
+
         overrides_config = getattr(settings, 'WATERLAB_SETTINGS', {}).get('TEXT_RESULT_STATUS_OVERRIDES')
-        result_key = self._normalize_text_value(self.result_value)
-        if not overrides_config or not result_key:
+        if not overrides_config:
             return None
 
         def _find_override(mapping):
             if not isinstance(mapping, dict):
                 return None
             for raw_value, status in mapping.items():
-                if isinstance(status, str) and self._normalize_text_value(raw_value) == result_key:
+                if isinstance(status, str) and normalize_text_value(raw_value) == result_key:
                     return self._validated_limit_status(status)
             return None
 
         if isinstance(overrides_config, dict):
-            parameter_name = self._normalize_text_value(getattr(self.parameter, 'name', None))
+            parameter_name = normalize_text_value(getattr(self.parameter, 'name', None))
 
             parameter_section = overrides_config.get('parameters')
             if parameter_section and parameter_name:
                 if isinstance(parameter_section, dict):
                     for raw_param, mapping in parameter_section.items():
-                        if self._normalize_text_value(raw_param) == parameter_name:
+                        if normalize_text_value(raw_param) == parameter_name:
                             override = _find_override(mapping)
                             if override:
                                 return override
@@ -578,7 +672,7 @@ class TestResult(models.Model):
                 for raw_param, mapping in overrides_config.items():
                     if raw_param in ('parameters', 'global', 'default', '*'):
                         continue
-                    if isinstance(mapping, dict) and self._normalize_text_value(raw_param) == parameter_name:
+                    if isinstance(mapping, dict) and normalize_text_value(raw_param) == parameter_name:
                         override = _find_override(mapping)
                         if override:
                             return override

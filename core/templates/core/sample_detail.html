@@ -281,8 +281,14 @@
                                         {% with status=entry.item.get_limit_status %}
                                             {% if status == 'WITHIN_LIMITS' %}
                                                 <span class="badge-soft success">Within limits</span>
+                                            {% elif status == 'BELOW_LIMIT' %}
+                                                <span class="badge-soft danger">Below minimum</span>
+                                            {% elif status == 'ABOVE_LIMIT' %}
+                                                <span class="badge-soft danger">Above maximum</span>
                                             {% elif status == 'NON_NUMERIC' %}
                                                 <span class="badge-soft warning">Result not numeric</span>
+                                            {% elif status == 'UNKNOWN' %}
+                                                <span class="badge-soft">Status unavailable</span>
                                             {% else %}
                                                 <span class="badge-soft danger">Out of range</span>
                                             {% endif %}

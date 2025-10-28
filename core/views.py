@@ -1528,6 +1528,7 @@ def download_sample_report_view(request, pk):
         'BELOW_LIMIT': ('Below minimum', '#B45309'),
         'ABOVE_LIMIT': ('Above maximum', '#DC2626'),
         'NON_NUMERIC': ('Non-numeric', None),
+        'UNKNOWN': ('Status unavailable', None),
     }
 
     def _build_results_table(category_results, start_index):
