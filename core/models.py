@@ -524,6 +524,75 @@ class TestResult(models.Model):
 
     def __str__(self):
         return f"Result for {self.sample.display_id} - {self.parameter.name}: {self.result_value}"
+
+    VALID_LIMIT_STATUSES = {
+        'WITHIN_LIMITS',
+        'ABOVE_LIMIT',
+        'BELOW_LIMIT',
+        'NON_NUMERIC',
+        'UNKNOWN',
+    }
+
+    @staticmethod
+    def _normalize_text_value(value: str) -> str:
+        return (value or '').strip().casefold()
+
+    @classmethod
+    def _validated_limit_status(cls, status):
+        if not status:
+            return None
+        normalized_status = status.strip().upper()
+        if normalized_status in cls.VALID_LIMIT_STATUSES:
+            return normalized_status
+        logger.warning("Ignored invalid limit status override '%s'.", status)
+        return None
+
+    def _resolve_text_status_override(self):
+        """Return configured status override for textual results."""
+        overrides_config = getattr(settings, 'WATERLAB_SETTINGS', {}).get('TEXT_RESULT_STATUS_OVERRIDES')
+        result_key = self._normalize_text_value(self.result_value)
+        if not overrides_config or not result_key:
+            return None
+
+        def _find_override(mapping):
+            if not isinstance(mapping, dict):
+                return None
+            for raw_value, status in mapping.items():
+                if isinstance(status, str) and self._normalize_text_value(raw_value) == result_key:
+                    return self._validated_limit_status(status)
+            return None
+
+        if isinstance(overrides_config, dict):
+            parameter_name = self._normalize_text_value(getattr(self.parameter, 'name', None))
+
+            parameter_section = overrides_config.get('parameters')
+            if parameter_section and parameter_name:
+                if isinstance(parameter_section, dict):
+                    for raw_param, mapping in parameter_section.items():
+                        if self._normalize_text_value(raw_param) == parameter_name:
+                            override = _find_override(mapping)
+                            if override:
+                                return override
+
+            if parameter_name:
+                for raw_param, mapping in overrides_config.items():
+                    if raw_param in ('parameters', 'global', 'default', '*'):
+                        continue
+                    if isinstance(mapping, dict) and self._normalize_text_value(raw_param) == parameter_name:
+                        override = _find_override(mapping)
+                        if override:
+                            return override
+
+            for fallback_key in ('global', 'default', '*'):
+                override = _find_override(overrides_config.get(fallback_key))
+                if override:
+                    return override
+
+            override = _find_override(overrides_config)
+            if override:
+                return override
+
+        return None
     
     def clean(self):
         from django.core.exceptions import ValidationError
@@ -556,6 +625,12 @@ class TestResult(models.Model):
         """Check if result is within permissible limits"""
         if self.parameter_id is None: # Check FK ID directly
             return None
+
+        override_status = self._resolve_text_status_override()
+        if override_status:
+            if override_status == 'UNKNOWN':
+                return None
+            return override_status in {'WITHIN_LIMITS', 'NON_NUMERIC'}
             
         if getattr(self.parameter, 'has_qualitative_max_limit', False):
             return True
@@ -577,6 +652,10 @@ class TestResult(models.Model):
         """Get status of result relative to limits"""
         if self.parameter_id is None: # Check FK ID directly
             return "UNKNOWN"
+
+        override_status = self._resolve_text_status_override()
+        if override_status:
+            return override_status
             
         if getattr(self.parameter, 'has_qualitative_max_limit', False):
             return "NON_NUMERIC"

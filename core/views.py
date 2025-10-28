@@ -1360,13 +1360,16 @@ def download_sample_report_view(request, pk):
             
             canvas.restoreState()
 
+    top_margin_mm = 60 if include_branding else 53  # branded header vs 5.3 cm blank space for plain layout
+    bottom_margin_mm = 22 if include_branding else 30  # branded footer vs 3 cm clearance on plain layout
+
     doc = ReportDocTemplate(
         buffer,
         pagesize=A4,
         rightMargin=18*mm,
         leftMargin=18*mm,
-        topMargin=60*mm if include_branding else 25*mm,
-        bottomMargin=22*mm if include_branding else 20*mm,
+        topMargin=top_margin_mm * mm,
+        bottomMargin=bottom_margin_mm * mm,
         include_branding=include_branding,
     )
 

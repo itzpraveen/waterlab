@@ -231,4 +231,9 @@ WATERLAB_SETTINGS = {
     'REPORT_VALIDITY_DAYS': 30,
     'MAX_SAMPLES_PER_BATCH': 50,
     'BACKUP_RETENTION_DAYS': 365,
+    'TEXT_RESULT_STATUS_OVERRIDES': {
+        'global': {
+            'BDL': 'WITHIN_LIMITS',
+        },
+    },
 }
