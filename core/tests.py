@@ -1062,6 +1062,71 @@ class TestResultEntryViewTests(TestCase):
         self.assertTrue(TestResult.objects.filter(sample=self.sample, parameter=self.parameter).exists())
 
 
+class TestResultListViewTests(TestCase):
+    def setUp(self):
+        self.customer = Customer.objects.create(
+            name="Results Index Customer",
+            phone="8888888888",
+            email="results@example.com",
+            street_locality_landmark="Results Street",
+            village_town_city="Resultown",
+            district="Ernakulam",
+            pincode="682001"
+        )
+        self.lab_user = CustomUser.objects.create_user(
+            username="results_lab",
+            password="password",
+            role="lab"
+        )
+        self.parameter = TestParameter.objects.create(
+            name=f"Index Param {uuid.uuid4()}",
+            unit="mg/L"
+        )
+
+        self.sample_a = Sample.objects.create(
+            customer=self.customer,
+            collection_datetime=timezone.now() - timedelta(days=1),
+            sample_source='WELL',
+            collected_by='CUSTOMER',
+            current_status='RESULTS_ENTERED'
+        )
+        self.sample_a.tests_requested.add(self.parameter)
+        TestResult.objects.create(sample=self.sample_a, parameter=self.parameter, result_value='5', technician=self.lab_user)
+
+        self.sample_b = Sample.objects.create(
+            customer=self.customer,
+            collection_datetime=timezone.now() - timedelta(days=10),
+            sample_source='WELL',
+            collected_by='CUSTOMER',
+            current_status='REPORT_SENT'
+        )
+        self.sample_b.tests_requested.add(self.parameter)
+        TestResult.objects.create(sample=self.sample_b, parameter=self.parameter, result_value='7', technician=self.lab_user)
+
+    def test_search_filters_results(self):
+        self.client.force_login(self.lab_user)
+        response = self.client.get(reverse('core:test_result_list'), {'q': self.sample_a.display_id})
+        self.assertEqual(response.status_code, 200)
+        samples = response.context['samples_with_results']
+        self.assertEqual(list(samples), [self.sample_a])
+
+    def test_status_filter_with_virtual_bucket(self):
+        self.client.force_login(self.lab_user)
+        response = self.client.get(reverse('core:test_result_list'), {'status': 'COMPLETED'})
+        self.assertEqual(response.status_code, 200)
+        samples = list(response.context['samples_with_results'])
+        self.assertIn(self.sample_b, samples)
+        self.assertNotIn(self.sample_a, samples)
+
+    def test_collected_filter_limits_date_range(self):
+        self.client.force_login(self.lab_user)
+        response = self.client.get(reverse('core:test_result_list'), {'collected': 'week'})
+        self.assertEqual(response.status_code, 200)
+        samples = list(response.context['samples_with_results'])
+        self.assertIn(self.sample_a, samples)
+        self.assertNotIn(self.sample_b, samples)
+
+
 class AuditTrailModelTests(TestCase):
     def setUp(self):
         self.user = CustomUser.objects.create_user(username="auditlogger", password="password", role="admin")

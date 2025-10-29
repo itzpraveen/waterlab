@@ -744,25 +744,111 @@ class TestResultListView(LoginRequiredMixin, ListView):
     model = Sample
     template_name = 'core/test_result_list.html'
     context_object_name = 'samples_with_results'
-    paginate_by = 20
+    paginate_by = 15
+
+    def get_search_query(self):
+        return (self.request.GET.get('q') or '').strip()
+
+    def get_status_filter(self):
+        status = (self.request.GET.get('status') or '').upper().strip()
+        if status in {code for code, _ in Sample.SAMPLE_STATUS_CHOICES}:
+            return status
+        if status in {'PENDING', 'IN_LAB', 'AWAITING_REVIEW', 'COMPLETED'}:
+            mapping = {
+                'PENDING': ['RECEIVED_FRONT_DESK'],
+                'IN_LAB': ['SENT_TO_LAB', 'TESTING_IN_PROGRESS'],
+                'AWAITING_REVIEW': ['REVIEW_PENDING'],
+                'COMPLETED': ['REPORT_APPROVED', 'REPORT_SENT'],
+            }
+            return mapping[status]
+        return None
+
+    def get_status_label(self, raw_value):
+        if not raw_value:
+            return ''
+        raw_upper = raw_value.upper()
+        friendly = {
+            'PENDING': 'Pending intake',
+            'IN_LAB': 'In laboratory',
+            'AWAITING_REVIEW': 'Awaiting review',
+            'COMPLETED': 'Completed',
+        }.get(raw_upper)
+        if friendly:
+            return friendly
+        status_choices = dict(Sample.SAMPLE_STATUS_CHOICES)
+        return status_choices.get(raw_value, raw_value)
+
+    def get_filter_dates(self):
+        collected = (self.request.GET.get('collected') or '').lower()
+        if collected == 'today':
+            return timezone.now().date(), None
+        if collected == 'week':
+            return timezone.now().date() - timedelta(days=7), None
+        if collected == 'month':
+            return timezone.now().date() - timedelta(days=30), None
+        return None, None
+
+    def get_collected_label(self, raw_value):
+        mapping = {
+            'today': 'Collected today',
+            'week': 'Past 7 days',
+            'month': 'Past 30 days',
+        }
+        return mapping.get((raw_value or '').lower(), raw_value)
 
     def get_queryset(self):
-        queryset = Sample.objects.annotate(
-            latest_test_date=Max('results__test_date')
-        ).filter(
-            results__isnull=False
-        ).select_related(
-            'customer'
-        ).prefetch_related(
-            'results',
-            'tests_requested'
-        ).distinct().order_by('-latest_test_date', '-collection_datetime')
-        
+        queryset = (
+            Sample.objects.annotate(
+                latest_test_date=Max('results__test_date')
+            )
+            .filter(results__isnull=False)
+            .select_related('customer')
+            .prefetch_related('results__parameter', 'tests_requested')
+            .distinct()
+            .order_by('-latest_test_date', '-collection_datetime')
+        )
+
+        query = self.get_search_query()
+        if query:
+            queryset = queryset.filter(
+                Q(display_id__icontains=query)
+                | Q(customer__name__icontains=query)
+                | Q(customer__street_locality_landmark__icontains=query)
+                | Q(customer__village_town_city__icontains=query)
+            )
+
+        status_filter = self.get_status_filter()
+        if status_filter:
+            if isinstance(status_filter, (list, tuple, set)):
+                queryset = queryset.filter(current_status__in=status_filter)
+            else:
+                queryset = queryset.filter(current_status=status_filter)
+
+        start_date, end_date = self.get_filter_dates()
+        if start_date:
+            queryset = queryset.filter(collection_datetime__date__gte=start_date)
+        if end_date:
+            queryset = queryset.filter(collection_datetime__date__lte=end_date)
+
         return queryset
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['page_title'] = 'Samples with Test Results'
+        context['search_query'] = self.get_search_query()
+        context['status_filter'] = self.request.GET.get('status', '')
+        context['collected_filter'] = self.request.GET.get('collected', '')
+        context['status_filter_label'] = self.get_status_label(context['status_filter'])
+        context['collected_filter_label'] = self.get_collected_label(context['collected_filter'])
+        context['active_filters'] = {
+            'status': context['status_filter'],
+            'collected': context['collected_filter'],
+        }
+        context['sample_status_choices'] = Sample.SAMPLE_STATUS_CHOICES
+
+        if context['search_query'] or context['status_filter'] or context['collected_filter']:
+            context['show_reset_filters'] = True
+
         return context
 
 class TestResultDetailView(LoginRequiredMixin, DetailView):

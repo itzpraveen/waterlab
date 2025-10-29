@@ -17,6 +17,58 @@
 
 {% block content %}
 <div class="results-shell">
+    <form method="get" class="results-filters" role="search">
+        <div class="filters-grid">
+            <div class="filter-item">
+                <label for="filter-search" class="form-label">Search samples</label>
+                <div class="input-group">
+                    <span class="input-group-text"><i class="material-icons" aria-hidden="true">search</i></span>
+                    <input id="filter-search" type="search" name="q" class="form-control" placeholder="Sample ID or customer" value="{{ search_query }}" autocomplete="off">
+                </div>
+            </div>
+            <div class="filter-item">
+                <label for="filter-status" class="form-label">Status</label>
+                <select id="filter-status" name="status" class="form-select">
+                    <option value="">All statuses</option>
+                    <option value="PENDING" {% if status_filter|upper == 'PENDING' %}selected{% endif %}>Pending intake</option>
+                    <option value="IN_LAB" {% if status_filter|upper == 'IN_LAB' %}selected{% endif %}>In laboratory</option>
+                    <option value="AWAITING_REVIEW" {% if status_filter|upper == 'AWAITING_REVIEW' %}selected{% endif %}>Awaiting review</option>
+                    <option value="COMPLETED" {% if status_filter|upper == 'COMPLETED' %}selected{% endif %}>Completed</option>
+                    {% for code,label in sample_status_choices %}
+                    <option value="{{ code }}" {% if status_filter == code %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="filter-item">
+                <label for="filter-collected" class="form-label">Collection window</label>
+                <select id="filter-collected" name="collected" class="form-select">
+                    <option value="">Any time</option>
+                    <option value="today" {% if collected_filter == 'today' %}selected{% endif %}>Collected today</option>
+                    <option value="week" {% if collected_filter == 'week' %}selected{% endif %}>Past 7 days</option>
+                    <option value="month" {% if collected_filter == 'month' %}selected{% endif %}>Past 30 days</option>
+                </select>
+            </div>
+            <div class="filter-actions">
+                <button type="submit" class="btn btn-primary"><i class="material-icons me-1 align-middle">filter_alt</i>Apply</button>
+                {% if show_reset_filters %}
+                <a href="{% url 'core:test_result_list' %}" class="btn btn-outline-secondary"><i class="material-icons me-1 align-middle">close</i>Reset</a>
+                {% endif %}
+            </div>
+        </div>
+    </form>
+
+    {% if search_query or status_filter or collected_filter %}
+    <div class="active-filters" aria-live="polite">
+        <i class="material-icons" aria-hidden="true">tune</i>
+        <span>Filtered results</span>
+        <ul class="active-filters__list">
+            {% if search_query %}<li><span class="badge rounded-pill bg-primary">Search: {{ search_query }}</span></li>{% endif %}
+            {% if status_filter %}<li><span class="badge rounded-pill bg-info text-dark">Status: {{ status_filter_label }}</span></li>{% endif %}
+            {% if collected_filter %}<li><span class="badge rounded-pill bg-secondary">Collected: {{ collected_filter_label }}</span></li>{% endif %}
+        </ul>
+    </div>
+    {% endif %}
+
     {% if samples_with_results %}
         {% for sample in samples_with_results %}
         <article class="results-card">
