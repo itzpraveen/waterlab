@@ -91,7 +91,20 @@
                         <li><i class="material-icons" aria-hidden="true">biotech</i>{{ sample.results.count }} result{{ sample.results.count|pluralize }}</li>
                     </ul>
                 </div>
-                <a href="{% url 'core:sample_detail' pk=sample.pk %}" class="btn btn-outline-primary btn-sm">View sample</a>
+                <div class="results-card__actions">
+                    {% if user.is_lab_technician or user.is_admin %}
+                        {% if sample.current_status == 'RESULTS_ENTERED' %}
+                        <form method="post" action="{% url 'core:sample_status_update' sample.pk %}" class="d-inline">
+                            {% csrf_token %}
+                            <input type="hidden" name="new_status" value="REVIEW_PENDING">
+                            <button type="submit" class="btn btn-outline-secondary btn-sm" title="Send for consultant review">
+                                <i class="material-icons align-middle me-1">forward_to_inbox</i>Send for review
+                            </button>
+                        </form>
+                        {% endif %}
+                    {% endif %}
+                    <a href="{% url 'core:sample_detail' pk=sample.pk %}" class="btn btn-outline-primary btn-sm">View sample</a>
+                </div>
             </header>
 
             {% regroup sample.results.all by parameter.category as results_by_category %}

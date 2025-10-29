@@ -1126,6 +1126,11 @@ class TestResultListViewTests(TestCase):
         self.assertIn(self.sample_a, samples)
         self.assertNotIn(self.sample_b, samples)
 
+    def test_send_for_review_button_visible_for_lab_tech(self):
+        self.client.force_login(self.lab_user)
+        response = self.client.get(reverse('core:test_result_list'))
+        self.assertContains(response, 'Send for review')
+
 
 class AuditTrailModelTests(TestCase):
     def setUp(self):
