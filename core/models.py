@@ -363,6 +363,30 @@ class Sample(models.Model):
         }
         return new_status in valid_transitions.get(self.current_status, [])
     
+    def generate_report_number(self) -> str:
+        """Generate a sequential report number per calendar year when missing."""
+        if self.report_number:
+            return self.report_number
+
+        current_year = timezone.now().year
+        prefix = f"RPT{current_year}-"
+        last_with_number = (
+            Sample.objects.exclude(report_number__isnull=True)
+            .filter(report_number__startswith=prefix)
+            .order_by('report_number')
+            .last()
+        )
+
+        sequence = 1
+        if last_with_number and last_with_number.report_number:
+            try:
+                sequence = int(last_with_number.report_number.split('-')[-1]) + 1
+            except (ValueError, IndexError):
+                sequence = 1
+
+        self.report_number = f"{prefix}{sequence:04d}"
+        return self.report_number
+
     def update_status(self, new_status, user=None):
         """Safely update sample status with validation"""
         from django.core.exceptions import ValidationError
@@ -384,6 +408,7 @@ class Sample(models.Model):
         old_date_received = self.date_received_at_lab
         old_test_commenced = self.test_commenced_on
         old_test_completed = self.test_completed_on
+        old_report_number = self.report_number
         
         self.current_status = new_status
         now = timezone.now()
@@ -409,6 +434,9 @@ class Sample(models.Model):
         
         if new_status in ('REPORT_APPROVED', 'REPORT_SENT') and not self.test_completed_on:
             self.test_completed_on = today
+
+        if new_status in ('RESULTS_ENTERED', 'REVIEW_PENDING', 'REPORT_APPROVED', 'REPORT_SENT'):
+            self.generate_report_number()
         
         self.save()
         
@@ -424,12 +452,14 @@ class Sample(models.Model):
                     'date_received_at_lab': old_date_received,
                     'test_commenced_on': old_test_commenced,
                     'test_completed_on': old_test_completed,
+                    'report_number': old_report_number,
                 },
                 new_values={
                     'current_status': new_status,
                     'date_received_at_lab': self.date_received_at_lab,
                     'test_commenced_on': self.test_commenced_on,
                     'test_completed_on': self.test_completed_on,
+                    'report_number': self.report_number,
                 }
             )
     

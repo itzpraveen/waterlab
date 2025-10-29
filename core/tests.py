@@ -281,6 +281,7 @@ class SampleModelTests(TestCase):
         TestResult.objects.create(sample=sample, parameter=param1, result_value="7.0", technician=self.lab_user)
         sample.update_status('RESULTS_ENTERED', user=self.lab_user) # Should now pass
         self.assertEqual(sample.current_status, 'RESULTS_ENTERED')
+        self.assertIsNotNone(sample.report_number)
 
     def test_sample_update_status_to_cancelled(self):
         """Test transitioning to CANCELLED status from an intermediate state."""
@@ -336,6 +337,14 @@ class SampleModelTests(TestCase):
         self.assertIsNone(sample.test_completed_on)
         self.assertIsNotNone(sample.test_commenced_on)
         self.assertNotEqual(sample.test_commenced_on, original_commenced_on - timedelta(days=3))
+        self.assertIsNotNone(sample.report_number)
+        initial_number = sample.report_number
+
+        sample.update_status('RESULTS_ENTERED', self.lab_user)
+        sample.update_status('REVIEW_PENDING', self.lab_user)
+        sample.update_status('REPORT_APPROVED', self.lab_user)
+        sample.refresh_from_db()
+        self.assertEqual(sample.report_number, initial_number)
 
     def test_sample_update_status_date_received_at_lab_not_overwritten(self):
         """Test that date_received_at_lab is not overwritten if already set."""
@@ -351,6 +360,31 @@ class SampleModelTests(TestCase):
         self.assertEqual(sample.current_status, 'SENT_TO_LAB')
         self.assertEqual(sample.date_received_at_lab, initial_received_time, 
                          "date_received_at_lab should not be updated if already set.")
+
+    def test_report_number_generated_sequentially(self):
+        parameter = TestParameter.objects.create(name=f"Seq Param {uuid.uuid4()}", unit="mg/L")
+
+        sample1 = Sample.objects.create(**self.sample_data)
+        sample1.tests_requested.add(parameter)
+        sample1.update_status('SENT_TO_LAB', self.lab_user)
+        sample1.update_status('TESTING_IN_PROGRESS', self.lab_user)
+        TestResult.objects.create(sample=sample1, parameter=parameter, result_value='4', technician=self.lab_user)
+        sample1.update_status('RESULTS_ENTERED', self.lab_user)
+        sample1.refresh_from_db()
+        first_report_number = sample1.report_number
+        self.assertTrue(first_report_number.startswith(f"RPT{timezone.now().year}-"))
+
+        sample2 = Sample.objects.create(**self.sample_data)
+        sample2.tests_requested.add(parameter)
+        sample2.update_status('SENT_TO_LAB', self.lab_user)
+        sample2.update_status('TESTING_IN_PROGRESS', self.lab_user)
+        TestResult.objects.create(sample=sample2, parameter=parameter, result_value='5', technician=self.lab_user)
+        sample2.update_status('RESULTS_ENTERED', self.lab_user)
+        sample2.refresh_from_db()
+        second_report_number = sample2.report_number
+
+        self.assertNotEqual(first_report_number, second_report_number)
+        self.assertTrue(int(second_report_number.split('-')[-1]) > int(first_report_number.split('-')[-1]))
 
     def test_sample_has_all_test_results(self):
         """Test the has_all_test_results method."""
