@@ -820,6 +820,9 @@ class CustomUserModelTests(TestCase):
         lab_tech = CustomUser.objects.create_user(username="labtech1", role="lab")
         front_desk = CustomUser.objects.create_user(username="frontdesk1", role="frontdesk")
         consultant = CustomUser.objects.create_user(username="consultant1", role="consultant")
+        food = CustomUser.objects.create_user(username="food1", role="food_analyst")
+        bio = CustomUser.objects.create_user(username="bio1", role="bio_manager")
+        chem = CustomUser.objects.create_user(username="chem1", role="chem_manager")
 
         self.assertTrue(admin.is_admin())
         self.assertFalse(admin.is_lab_tech())
@@ -832,6 +835,10 @@ class CustomUserModelTests(TestCase):
 
         self.assertTrue(consultant.is_consultant())
         self.assertFalse(consultant.is_frontdesk())
+
+        self.assertTrue(food.is_food_analyst())
+        self.assertTrue(bio.is_bio_manager())
+        self.assertTrue(chem.is_chem_manager())
 
     def test_create_superuser(self):
         """Test creating a superuser."""

@@ -52,6 +52,9 @@ class CustomUser(AbstractUser):
         ('lab', 'Lab Technician'),
         ('frontdesk', 'Front Desk'),
         ('consultant', 'Consultant'),
+        ('food_analyst', 'Food Analyst'),
+        ('bio_manager', 'Deputy Technical Manager – Biological'),
+        ('chem_manager', 'Technical Manager – Chemical'),
     ]
     
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='frontdesk')
@@ -73,6 +76,15 @@ class CustomUser(AbstractUser):
     
     def is_consultant(self):
         return self.role == 'consultant'
+
+    def is_food_analyst(self):
+        return self.role == 'food_analyst'
+
+    def is_bio_manager(self):
+        return self.role == 'bio_manager'
+
+    def is_chem_manager(self):
+        return self.role == 'chem_manager'
 
     class Meta(AbstractUser.Meta):
         indexes = [
