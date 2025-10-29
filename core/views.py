@@ -1633,8 +1633,8 @@ def download_sample_report_view(request, pk):
         'WITHIN_LIMITS': ('Within limits', '#0F766E'),
         'BELOW_LIMIT': ('Below minimum', '#B45309'),
         'ABOVE_LIMIT': ('Above maximum', '#DC2626'),
-        'NON_NUMERIC': ('Non-numeric', '#0F172A'),
-        'UNKNOWN': ('Status unavailable', '#0F172A'),
+        'NON_NUMERIC': ('', '#0F172A'),
+        'UNKNOWN': ('', '#0F172A'),
     }
 
     def _build_results_table(category_results, start_index):
@@ -1664,12 +1664,12 @@ def download_sample_report_view(request, pk):
             param = result.parameter
             limits_text = format_limits(param)
             status = getattr(result, 'get_limit_status', lambda: None)()
-            label_text, label_color = status_styles.get(status, ('Status unavailable', '#0F172A'))
+            label_text, label_color = status_styles.get(status, ('', '#0F172A'))
             result_value = (result.result_value or '—').strip() or '—'
             colour = label_color or '#0F172A'
             result_label = f'<font color="{colour}">{escape(result_value)}</font>'
-            # Add subtle status caption for clarity
-            if label_text and label_text not in {'Status unavailable'}:
+            # Add subtle status caption only when meaningful
+            if label_text:
                 result_label += f'<br/><font size="8" color="#6B7280">{escape(label_text)}</font>'
 
             table_data.append([
