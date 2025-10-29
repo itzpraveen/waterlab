@@ -379,14 +379,36 @@ class Sample(models.Model):
             if not self.has_all_test_results():
                 raise ValidationError("Cannot send for review - missing test results")
         
-        # Update status and related fields
+        # Track previous values for logging/comparison
         old_status = self.current_status
+        old_date_received = self.date_received_at_lab
+        old_test_commenced = self.test_commenced_on
+        old_test_completed = self.test_completed_on
+        
         self.current_status = new_status
+        now = timezone.now()
+        today = now.date()
         
         # Auto-update related timestamps
         if new_status == 'SENT_TO_LAB' and not self.date_received_at_lab:
-            from django.utils import timezone
-            self.date_received_at_lab = timezone.now()
+            self.date_received_at_lab = now
+        
+        if new_status == 'TESTING_IN_PROGRESS':
+            if old_status == 'REVIEW_PENDING':
+                # Retesting starts afresh if consultant rejected the report
+                self.test_commenced_on = today
+                self.test_completed_on = None
+            elif not self.test_commenced_on:
+                self.test_commenced_on = today
+        
+        if new_status == 'RESULTS_ENTERED' and not self.test_completed_on:
+            self.test_completed_on = today
+        
+        if new_status == 'REVIEW_PENDING' and not self.test_completed_on:
+            self.test_completed_on = today
+        
+        if new_status in ('REPORT_APPROVED', 'REPORT_SENT') and not self.test_completed_on:
+            self.test_completed_on = today
         
         self.save()
         
@@ -397,8 +419,18 @@ class Sample(models.Model):
                 user=user,
                 action='UPDATE',
                 instance=self,
-                old_values={'current_status': old_status},
-                new_values={'current_status': new_status}
+                old_values={
+                    'current_status': old_status,
+                    'date_received_at_lab': old_date_received,
+                    'test_commenced_on': old_test_commenced,
+                    'test_completed_on': old_test_completed,
+                },
+                new_values={
+                    'current_status': new_status,
+                    'date_received_at_lab': self.date_received_at_lab,
+                    'test_commenced_on': self.test_commenced_on,
+                    'test_completed_on': self.test_completed_on,
+                }
             )
     
     def has_all_test_results(self):

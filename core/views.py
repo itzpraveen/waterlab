@@ -1014,6 +1014,8 @@ def test_result_entry(request, sample_id):
         return redirect('core:sample_detail', pk=sample.sample_id)
     
     if request.method == 'POST':
+        submit_action = request.POST.get('submit_action', 'save')
+        send_for_review = submit_action == 'save_and_review'
         try:
             with transaction.atomic():
                 original_status_was_review_pending = (sample.current_status == 'REVIEW_PENDING')
@@ -1087,9 +1089,24 @@ def test_result_entry(request, sample_id):
                     completed_tests = sample.results.count()
                     
                     if completed_tests >= total_tests and total_tests > 0:
-                        sample.update_status('RESULTS_ENTERED', request.user)
-                        messages.success(request, f'All test results entered for sample {sample.sample_id}. Sample moved to "Results Entered" status.')
+                        status_now = sample.current_status
+                        if status_now != 'RESULTS_ENTERED':
+                            sample.update_status('RESULTS_ENTERED', request.user)
+                            messages.success(request, f'All test results entered for sample {sample.sample_id}. Sample moved to "Results Entered" status.')
+                        else:
+                            messages.success(request, f'All test results for sample {sample.sample_id} have been updated.')
+
+                        if send_for_review:
+                            try:
+                                sample.update_status('REVIEW_PENDING', request.user)
+                                messages.success(request, f'Sample {sample.sample_id} sent for consultant review.')
+                            except ValidationError as exc:
+                                error_message = str(exc.message_dict) if hasattr(exc, 'message_dict') else str(exc)
+                                messages.error(request, f"Could not send for review: {error_message}")
+                                return redirect('core:sample_detail', pk=sample.sample_id)
                     else:
+                        if send_for_review:
+                            messages.warning(request, 'All requested tests must have results before sending for review.')
                         messages.info(request, f'Results saved. {completed_tests}/{total_tests} tests completed.')
                 
                 if results_entered_count > 0:
@@ -1134,7 +1151,8 @@ def test_result_entry(request, sample_id):
     context = {
         'sample': sample,
         'form_data': form_data,
-        'can_edit': sample.current_status in ['SENT_TO_LAB', 'TESTING_IN_PROGRESS', 'RESULTS_ENTERED'] or (request.user.is_admin() and sample.current_status == 'REVIEW_PENDING')
+        'can_edit': sample.current_status in ['SENT_TO_LAB', 'TESTING_IN_PROGRESS', 'RESULTS_ENTERED'] or (request.user.is_admin() and sample.current_status == 'REVIEW_PENDING'),
+        'can_send_for_review': sample.current_status in ['SENT_TO_LAB', 'TESTING_IN_PROGRESS', 'RESULTS_ENTERED'] and sample.tests_requested.exists()
     }
     
     return render(request, 'core/test_result_entry.html', context)

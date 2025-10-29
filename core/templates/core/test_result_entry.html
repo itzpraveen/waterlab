@@ -45,6 +45,26 @@
                 <span class="summary-label">Collection Date</span>
                 <span class="summary-value">{{ sample.collection_datetime|date:"M d, Y H:i" }}</span>
             </div>
+            <div class="summary-item">
+                <span class="summary-label">Testing commenced</span>
+                <span class="summary-value">
+                    {% if sample.test_commenced_on %}
+                        {{ sample.test_commenced_on|date:"M d, Y" }}
+                    {% else %}
+                        <span class="text-muted">Not recorded</span>
+                    {% endif %}
+                </span>
+            </div>
+            <div class="summary-item">
+                <span class="summary-label">Testing completed</span>
+                <span class="summary-value">
+                    {% if sample.test_completed_on %}
+                        {{ sample.test_completed_on|date:"M d, Y" }}
+                    {% else %}
+                        <span class="text-muted">Not recorded</span>
+                    {% endif %}
+                </span>
+            </div>
         </div>
     </section>
 
@@ -142,7 +162,13 @@
     {% if sample.tests_requested.count > 0 %}
     <div class="form-actions">
         <a href="{% url 'core:sample_detail' pk=sample.sample_id %}" class="btn btn-light">Cancel</a>
-        <button type="submit" class="btn btn-primary">
+        {% if can_send_for_review %}
+        <button type="submit" name="submit_action" value="save_and_review" class="btn btn-outline-primary">
+            <i class="material-icons align-middle me-1">forward_to_inbox</i>
+            Save &amp; send for review
+        </button>
+        {% endif %}
+        <button type="submit" name="submit_action" value="save" class="btn btn-primary">
             <i class="material-icons align-middle me-1">save</i>
             Save test results
         </button>

@@ -1,4 +1,7 @@
+import uuid
+
 from django.test import TestCase
+from django.urls import reverse
 from .models import (
     Customer,
     Sample,
@@ -287,6 +290,52 @@ class SampleModelTests(TestCase):
         
         sample.update_status('CANCELLED', user=self.lab_user)
         self.assertEqual(sample.current_status, 'CANCELLED')
+
+    def test_status_transitions_update_testing_dates(self):
+        parameter = TestParameter.objects.create(
+            name=f"Parameter {uuid.uuid4()}",
+            unit="mg/L"
+        )
+        sample = Sample.objects.create(**self.sample_data)
+        sample.tests_requested.add(parameter)
+
+        sample.update_status('SENT_TO_LAB', self.lab_user)
+        sample.refresh_from_db()
+        self.assertIsNotNone(sample.date_received_at_lab)
+        self.assertIsNone(sample.test_commenced_on)
+        self.assertIsNone(sample.test_completed_on)
+
+        sample.update_status('TESTING_IN_PROGRESS', self.lab_user)
+        sample.refresh_from_db()
+        self.assertIsNotNone(sample.test_commenced_on)
+        original_commenced_on = sample.test_commenced_on
+
+        TestResult.objects.create(
+            sample=sample,
+            parameter=parameter,
+            result_value='5',
+            technician=self.lab_user
+        )
+
+        sample.update_status('RESULTS_ENTERED', self.lab_user)
+        sample.refresh_from_db()
+        self.assertIsNotNone(sample.test_completed_on)
+        initial_completed_on = sample.test_completed_on
+
+        sample.update_status('REVIEW_PENDING', self.lab_user)
+        sample.refresh_from_db()
+        self.assertEqual(sample.test_completed_on, initial_completed_on)
+
+        Sample.objects.filter(pk=sample.pk).update(
+            test_commenced_on=original_commenced_on - timedelta(days=3),
+            test_completed_on=initial_completed_on - timedelta(days=1)
+        )
+        sample.refresh_from_db()
+        sample.update_status('TESTING_IN_PROGRESS', self.lab_user)
+        sample.refresh_from_db()
+        self.assertIsNone(sample.test_completed_on)
+        self.assertIsNotNone(sample.test_commenced_on)
+        self.assertNotEqual(sample.test_commenced_on, original_commenced_on - timedelta(days=3))
 
     def test_sample_update_status_date_received_at_lab_not_overwritten(self):
         """Test that date_received_at_lab is not overwritten if already set."""
@@ -882,6 +931,56 @@ class ConsultantReviewModelTests(TestCase):
         self.sample_for_review.refresh_from_db()
         self.assertEqual(review.reviewer, self.admin_user)
         self.assertEqual(self.sample_for_review.current_status, 'REPORT_APPROVED')
+
+
+class TestResultEntryViewTests(TestCase):
+    def setUp(self):
+        self.customer = Customer.objects.create(
+            name="Result Entry Customer",
+            phone="9999999999",
+            email="resultentry@example.com",
+            street_locality_landmark="789 Lab Street",
+            village_town_city="Resultville",
+            district="Ernakulam",
+            pincode="682001"
+        )
+        self.lab_user = CustomUser.objects.create_user(
+            username="labtech_view",
+            password="password",
+            role="lab"
+        )
+        self.parameter = TestParameter.objects.create(
+            name=f"Result Parameter {uuid.uuid4()}",
+            unit="mg/L"
+        )
+        self.sample = Sample.objects.create(
+            customer=self.customer,
+            collection_datetime=timezone.now() - timedelta(days=1),
+            sample_source='WELL',
+            collected_by='CUSTOMER'
+        )
+        self.sample.tests_requested.add(self.parameter)
+        self.sample.update_status('SENT_TO_LAB', self.lab_user)
+
+    def test_save_and_send_for_review_sets_status_and_dates(self):
+        self.client.force_login(self.lab_user)
+        url = reverse('core:test_result_entry', args=[self.sample.sample_id])
+        form_prefix = f'param_{self.parameter.parameter_id}'
+        payload = {
+            f'{form_prefix}-result_value': '5',
+            f'{form_prefix}-observation': '',
+            f'{form_prefix}-remarks': '',
+            'submit_action': 'save_and_review',
+        }
+
+        response = self.client.post(url, data=payload)
+        self.assertEqual(response.status_code, 302)
+
+        self.sample.refresh_from_db()
+        self.assertEqual(self.sample.current_status, 'REVIEW_PENDING')
+        self.assertIsNotNone(self.sample.test_commenced_on)
+        self.assertIsNotNone(self.sample.test_completed_on)
+        self.assertTrue(TestResult.objects.filter(sample=self.sample, parameter=self.parameter).exists())
 
 
 class AuditTrailModelTests(TestCase):
