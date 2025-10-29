@@ -1621,21 +1621,20 @@ def download_sample_report_view(request, pk):
 
     available_width = doc.width
     column_widths = [
-        available_width * 0.06,  # Sl. No
-        available_width * 0.26,  # Parameter
-        available_width * 0.10,  # Unit
+        available_width * 0.07,  # Sl. No
+        available_width * 0.28,  # Parameter
+        available_width * 0.11,  # Unit
         available_width * 0.20,  # Method
-        available_width * 0.12,  # Results
+        available_width * 0.18,  # Results (now colour-coded)
         available_width * 0.16,  # Limit
-        available_width * 0.10,  # Status
     ]
 
     status_styles = {
         'WITHIN_LIMITS': ('Within limits', '#0F766E'),
         'BELOW_LIMIT': ('Below minimum', '#B45309'),
         'ABOVE_LIMIT': ('Above maximum', '#DC2626'),
-        'NON_NUMERIC': ('Non-numeric', None),
-        'UNKNOWN': ('Status unavailable', None),
+        'NON_NUMERIC': ('Non-numeric', '#0F172A'),
+        'UNKNOWN': ('Status unavailable', '#0F172A'),
     }
 
     def _build_results_table(category_results, start_index):
@@ -1646,7 +1645,6 @@ def download_sample_report_view(request, pk):
             Paragraph('Method', styles['TableHead']),
             Paragraph('Results', styles['TableHead']),
             Paragraph('Limit', styles['TableHead']),
-            Paragraph('Status', styles['TableHead']),
         ]
         table_data = [header]
 
@@ -1666,23 +1664,21 @@ def download_sample_report_view(request, pk):
             param = result.parameter
             limits_text = format_limits(param)
             status = getattr(result, 'get_limit_status', lambda: None)()
-            if status in status_styles:
-                label_text, label_color = status_styles[status]
-                if include_branding and label_color:
-                    status_label = f'<font color="{label_color}">{label_text}</font>'
-                else:
-                    status_label = label_text
-            else:
-                status_label = '—'
+            label_text, label_color = status_styles.get(status, ('Status unavailable', '#0F172A'))
+            result_value = (result.result_value or '—').strip() or '—'
+            colour = label_color or '#0F172A'
+            result_label = f'<font color="{colour}">{escape(result_value)}</font>'
+            # Add subtle status caption for clarity
+            if label_text and label_text not in {'Status unavailable'}:
+                result_label += f'<br/><font size="8" color="#6B7280">{escape(label_text)}</font>'
 
             table_data.append([
                 Paragraph(str(running_index), styles['TableCell']),
                 Paragraph(param.name or '—', styles['TableCell']),
                 Paragraph(param.unit or '—', styles['TableCell']),
                 Paragraph(param.method or '—', styles['TableCell']),
-                Paragraph(result.result_value or '—', styles['TableCell']),
+                Paragraph(result_label, styles['TableCell']),
                 Paragraph(limits_text, styles['TableCell']),
-                Paragraph(status_label, styles['TableCell']),
             ])
             running_index += 1
 
