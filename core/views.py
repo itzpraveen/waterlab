@@ -1778,6 +1778,9 @@ def download_sample_report_view(request, pk):
     elements.append(sign_table)
     elements.append(Spacer(1, 18))
 
+    # Keep recommendations and remarks on a fresh page for readability
+    elements.append(PageBreak())
+
     elements.append(Paragraph("Consultant Recommendations", styles['SectionTitle']))
     if recommendations_text:
         safe_text = escape(recommendations_text).replace('\n', '<br/>')
