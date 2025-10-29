@@ -532,6 +532,9 @@ class LabProfileForm(forms.ModelForm):
             'phone',
             'email',
             'logo',
+            'signatory_food_analyst',
+            'signatory_bio_manager',
+            'signatory_chem_manager',
         ]
         widgets = {
             'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Laboratory name'}),
@@ -543,7 +546,19 @@ class LabProfileForm(forms.ModelForm):
             'phone': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Contact phone'}),
             'email': forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'Contact email'}),
             'logo': forms.ClearableFileInput(attrs={'class': 'form-control'}),
+            'signatory_food_analyst': forms.Select(attrs={'class': 'form-control'}),
+            'signatory_bio_manager': forms.Select(attrs={'class': 'form-control'}),
+            'signatory_chem_manager': forms.Select(attrs={'class': 'form-control'}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        staff_qs = CustomUser.objects.filter(is_active=True).order_by('first_name', 'last_name', 'username')
+        for field_name in ('signatory_food_analyst', 'signatory_bio_manager', 'signatory_chem_manager'):
+            field = self.fields.get(field_name)
+            if field:
+                field.queryset = staff_qs
+                field.empty_label = '— Select user —'
 
     def clean(self):
         cleaned = super().clean()

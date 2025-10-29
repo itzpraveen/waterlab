@@ -90,6 +90,28 @@
         </div>
     </div>
 
+    <div class="info-card">
+        <div class="form-section-title"><i class="material-icons">assignment_ind</i>Authorised signatories</div>
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label for="{{ form.signatory_food_analyst.id_for_label }}" class="form-label">Default Food Analyst</label>
+                {{ form.signatory_food_analyst }}
+                {% if form.signatory_food_analyst.errors %}<div class="invalid-feedback d-block small">{{ form.signatory_food_analyst.errors.0 }}</div>{% endif %}
+            </div>
+            <div class="col-md-4">
+                <label for="{{ form.signatory_bio_manager.id_for_label }}" class="form-label">Deputy Technical Manager – Biological</label>
+                {{ form.signatory_bio_manager }}
+                {% if form.signatory_bio_manager.errors %}<div class="invalid-feedback d-block small">{{ form.signatory_bio_manager.errors.0 }}</div>{% endif %}
+            </div>
+            <div class="col-md-4">
+                <label for="{{ form.signatory_chem_manager.id_for_label }}" class="form-label">Technical Manager – Chemical</label>
+                {{ form.signatory_chem_manager }}
+                {% if form.signatory_chem_manager.errors %}<div class="invalid-feedback d-block small">{{ form.signatory_chem_manager.errors.0 }}</div>{% endif %}
+            </div>
+        </div>
+        <p class="text-muted small mt-3 mb-0">These defaults appear on reports when a specific sample has no assigned signatory.</p>
+    </div>
+
     <div class="form-actions">
         <a href="{% url 'core:dashboard' %}" class="btn btn-outline-secondary">Cancel</a>
         <button type="submit" class="btn btn-primary">

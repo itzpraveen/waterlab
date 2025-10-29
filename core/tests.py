@@ -10,6 +10,7 @@ from .models import (
     TestResult,
     ConsultantReview,
     ResultStatusOverride,
+    LabProfile,
 )
 from django.utils import timezone
 from django.core.exceptions import ValidationError
@@ -386,6 +387,50 @@ class SampleModelTests(TestCase):
         self.assertNotEqual(first_report_number, second_report_number)
         self.assertTrue(int(second_report_number.split('-')[-1]) > int(first_report_number.split('-')[-1]))
 
+    def test_resolve_signatories_uses_lab_profile_defaults(self):
+        default_food = CustomUser.objects.create_user(username="default_food", role="lab")
+        default_bio = CustomUser.objects.create_user(username="default_bio", role="lab")
+        default_chem = CustomUser.objects.create_user(username="default_chem", role="lab")
+        profile = LabProfile.objects.create(
+            name="Profile Defaults",
+            signatory_food_analyst=default_food,
+            signatory_bio_manager=default_bio,
+            signatory_chem_manager=default_chem,
+        )
+        sample = Sample.objects.create(**self.sample_data)
+        signatories = sample.resolve_signatories(profile)
+        self.assertEqual(signatories['food_analyst'], default_food)
+        self.assertEqual(signatories['bio_manager'], default_bio)
+        self.assertEqual(signatories['chem_manager'], default_chem)
+
+    def test_resolve_signatories_prefers_sample_assignments(self):
+        default_food = CustomUser.objects.create_user(username="fallback_food", role="lab")
+        default_bio = CustomUser.objects.create_user(username="fallback_bio", role="lab")
+        default_chem = CustomUser.objects.create_user(username="fallback_chem", role="lab")
+        profile = LabProfile.objects.create(
+            name="Profile Defaults",
+            signatory_food_analyst=default_food,
+            signatory_bio_manager=default_bio,
+            signatory_chem_manager=default_chem,
+        )
+        assigned_food = CustomUser.objects.create_user(username="assigned_food", role="lab")
+        assigned_bio = CustomUser.objects.create_user(username="assigned_bio", role="lab")
+        assigned_chem = CustomUser.objects.create_user(username="assigned_chem", role="lab")
+
+        sample = Sample.objects.create(
+            customer=self.customer,
+            collection_datetime=timezone.now() - timedelta(days=1),
+            sample_source='TAP',
+            collected_by="Override",
+            food_analyst=assigned_food,
+            reviewed_by=assigned_bio,
+            lab_manager=assigned_chem,
+        )
+        signatories = sample.resolve_signatories(profile)
+        self.assertEqual(signatories['food_analyst'], assigned_food)
+        self.assertEqual(signatories['bio_manager'], assigned_bio)
+        self.assertEqual(signatories['chem_manager'], assigned_chem)
+ 
     def test_sample_has_all_test_results(self):
         """Test the has_all_test_results method."""
         sample = Sample.objects.create(**self.sample_data)

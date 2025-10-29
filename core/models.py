@@ -182,6 +182,30 @@ class LabProfile(models.Model):
     phone = models.CharField(max_length=50, blank=True, default='')
     email = models.EmailField(blank=True, default='')
     logo = models.ImageField(upload_to='lab_brands/', blank=True, null=True)
+    signatory_food_analyst = models.ForeignKey(
+        'CustomUser',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='default_food_analyst_profiles',
+        verbose_name='Default Food Analyst'
+    )
+    signatory_bio_manager = models.ForeignKey(
+        'CustomUser',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='default_bio_manager_profiles',
+        verbose_name='Default Deputy Technical Manager – Biological'
+    )
+    signatory_chem_manager = models.ForeignKey(
+        'CustomUser',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='default_chem_manager_profiles',
+        verbose_name='Default Technical Manager – Chemical'
+    )
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
@@ -473,6 +497,20 @@ class Sample(models.Model):
         """Get list of test parameters that don't have results yet"""
         completed_params = self.results.values_list('parameter_id', flat=True)
         return self.tests_requested.exclude(parameter_id__in=completed_params)
+    
+    def resolve_signatories(self, profile=None):
+        """Return dict of signatory users using sample-specific assignments or lab defaults."""
+        lab_profile = profile or LabProfile.get_active()
+        defaults = {
+            'food_analyst': getattr(lab_profile, 'signatory_food_analyst', None) if lab_profile else None,
+            'bio_manager': getattr(lab_profile, 'signatory_bio_manager', None) if lab_profile else None,
+            'chem_manager': getattr(lab_profile, 'signatory_chem_manager', None) if lab_profile else None,
+        }
+        return {
+            'food_analyst': self.food_analyst or defaults['food_analyst'],
+            'bio_manager': self.reviewed_by or defaults['bio_manager'],
+            'chem_manager': self.lab_manager or defaults['chem_manager'],
+        }
     
     def can_be_reviewed(self):
         """Check if sample is ready for consultant review"""

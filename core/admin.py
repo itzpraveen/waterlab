@@ -86,6 +86,13 @@ class LabProfileAdmin(admin.ModelAdmin):
                 'logo',
             )
         }),
+        ('Authorised Signatories', {
+            'fields': (
+                'signatory_food_analyst',
+                'signatory_bio_manager',
+                'signatory_chem_manager',
+            )
+        }),
         ('Metadata', {
             'fields': ('updated_at',),
         })

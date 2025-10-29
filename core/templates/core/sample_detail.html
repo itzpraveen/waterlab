@@ -170,15 +170,39 @@
                 </div>
                 <div class="data-pair">
                     <dt>Reviewed By</dt>
-                    <dd>{{ sample.reviewed_by|default:"Not assigned" }}</dd>
+                    {% with signatory=resolved_signatories.bio_manager %}
+                    <dd>
+                        {% if signatory %}
+                            {{ signatory.get_full_name|default:signatory.username }}
+                        {% else %}
+                            <span class="text-muted">Not assigned</span>
+                        {% endif %}
+                    </dd>
+                    {% endwith %}
                 </div>
                 <div class="data-pair">
                     <dt>Lab Manager</dt>
-                    <dd>{{ sample.lab_manager|default:"Not assigned" }}</dd>
+                    {% with signatory=resolved_signatories.chem_manager %}
+                    <dd>
+                        {% if signatory %}
+                            {{ signatory.get_full_name|default:signatory.username }}
+                        {% else %}
+                            <span class="text-muted">Not assigned</span>
+                        {% endif %}
+                    </dd>
+                    {% endwith %}
                 </div>
                 <div class="data-pair">
                     <dt>Food Analyst</dt>
-                    <dd>{{ sample.food_analyst|default:"Not assigned" }}</dd>
+                    {% with signatory=resolved_signatories.food_analyst %}
+                    <dd>
+                        {% if signatory %}
+                            {{ signatory.get_full_name|default:signatory.username }}
+                        {% else %}
+                            <span class="text-muted">Not assigned</span>
+                        {% endif %}
+                    </dd>
+                    {% endwith %}
                 </div>
             </dl>
         </div>

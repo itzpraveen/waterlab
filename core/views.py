@@ -905,6 +905,9 @@ class SampleDetailView(DetailView): # New DetailView for Sample
         context['tests_by_category'] = _group_by_category(tests_qs, lambda param: param.category_label)
         context['ordered_results'] = results_qs
         context['results_by_category'] = _group_by_category(results_qs, lambda result: result.parameter.category_label)
+        lab_profile = LabProfile.get_active()
+        context['lab_profile'] = lab_profile
+        context['resolved_signatories'] = sample.resolve_signatories(lab_profile)
         return context
 
 class SampleCreateView(AuditMixin, FrontDeskRequiredMixin, CreateView):
@@ -1663,22 +1666,9 @@ def download_sample_report_view(request, pk):
     if elements and not isinstance(elements[-1], PageBreak):
         elements.append(PageBreak())
 
-    elements.append(Paragraph("Consultant Recommendations", styles['SectionTitle']))
-    if recommendations_text:
-        safe_text = escape(recommendations_text).replace('\n', '<br/>')
-        elements.append(Paragraph(safe_text, styles['Normal']))
-    else:
-        elements.append(Paragraph("No consultant recommendations recorded for this sample.", styles['Normal']))
-    elements.append(Spacer(1, 18))
-
-    elements.append(Paragraph("REMARKS", styles['SectionTitle']))
-    elements.append(Paragraph(
-        "The sample has been analysed in accordance with IS 10500:2012 guidelines. Outcomes above include automated compliance status for each parameter.",
-        styles['Normal']
-    ))
-    elements.append(Spacer(1, 18))
-
     elements.append(Paragraph("AUTHORISED SIGNATORIES", styles['SectionTitle']))
+    signatories = sample.resolve_signatories(profile)
+
     def _signatory_name(user):
         if not user:
             return 'Not assigned'
@@ -1686,9 +1676,9 @@ def download_sample_report_view(request, pk):
         return full or user.username
 
     signatory_names = [
-        _signatory_name(sample.food_analyst),
-        _signatory_name(sample.reviewed_by),
-        _signatory_name(sample.lab_manager),
+        _signatory_name(signatories.get('food_analyst')),
+        _signatory_name(signatories.get('bio_manager')),
+        _signatory_name(signatories.get('chem_manager')),
     ]
     signatory_roles = ['Food Analyst', 'Deputy Technical Manager – Biological', 'Technical Manager – Chemical']
 
@@ -1704,6 +1694,22 @@ def download_sample_report_view(request, pk):
         ('TOPPADDING', (0,0), (-1,-1), 12)
     ]))
     elements.append(sign_table)
+    elements.append(Spacer(1, 18))
+
+    elements.append(Paragraph("Consultant Recommendations", styles['SectionTitle']))
+    if recommendations_text:
+        safe_text = escape(recommendations_text).replace('\n', '<br/>')
+        elements.append(Paragraph(safe_text, styles['Normal']))
+    else:
+        elements.append(Paragraph("No consultant recommendations recorded for this sample.", styles['Normal']))
+    elements.append(Spacer(1, 18))
+
+    elements.append(Paragraph("REMARKS", styles['SectionTitle']))
+    elements.append(Paragraph(
+        "The sample has been analysed in accordance with IS 10500:2012 guidelines. Outcomes above include automated compliance status for each parameter.",
+        styles['Normal']
+    ))
+    elements.append(Spacer(1, 18))
 
     doc.build(elements)
 
