@@ -1753,7 +1753,7 @@ def download_sample_report_view(request, pk):
         elements.append(PageBreak())
 
     elements.append(Paragraph("AUTHORISED SIGNATORIES", styles['SectionTitle']))
-    signatories = sample.resolve_signatories(profile)
+    signatories = sample.resolve_signatories()
 
     def _signatory_name(user):
         if not user:
