@@ -1549,7 +1549,7 @@ def download_sample_report_view(request, pk):
         [Paragraph('<b>Received At Lab</b>', styles['Label']), Paragraph(sample.date_received_at_lab.strftime('%d %b %Y %H:%M') if sample.date_received_at_lab else 'N/A', styles['Value']),
          Paragraph('<b>Test Commenced</b>', styles['Label']), Paragraph(sample.test_commenced_on.strftime('%d %b %Y') if sample.test_commenced_on else 'N/A', styles['Value'])],
         [Paragraph('<b>Test Completed</b>', styles['Label']), Paragraph(sample.test_completed_on.strftime('%d %b %Y') if sample.test_completed_on else 'N/A', styles['Value']),
-         Paragraph('<b>Reviewed By</b>', styles['Label']), Paragraph(_user_display(sample.reviewed_by), styles['Value'])]
+         Paragraph('<b>Chief of Quality - Microbiology</b>', styles['Label']), Paragraph(_user_display(sample.reviewed_by), styles['Value'])]
     ]
     meta_table = Table(meta_rows, colWidths=[32*mm, 55*mm, 32*mm, doc.width - 119*mm])
     meta_table.setStyle(TableStyle([
@@ -1757,17 +1757,15 @@ def download_sample_report_view(request, pk):
         full = (user.get_full_name() or '').strip()
         return full or user.username
 
-    signatory_names = [
-        _signatory_name(signatories.get('food_analyst')),
-        _signatory_name(signatories.get('bio_manager')),
-        _signatory_name(signatories.get('chem_manager')),
+    signatory_slots = [
+        (_signatory_name(signatories.get('chem_manager')), 'Chief of Quality - Chemistry'),
+        (_signatory_name(signatories.get('bio_manager')), 'Chief of Quality - Microbiology'),
+        (_signatory_name(signatories.get('food_analyst')), 'Chief Scientific Officer'),
     ]
-    signatory_roles = ['Food Analyst', 'Deputy Technical Manager – Biological', 'Technical Manager – Chemical']
 
     sign_rows = [[
-        Paragraph(f"<b>{signatory_names[0]}</b><br/>{signatory_roles[0]}", styles['Center']),
-        Paragraph(f"<b>{signatory_names[1]}</b><br/>{signatory_roles[1]}", styles['Center']),
-        Paragraph(f"<b>{signatory_names[2]}</b><br/>{signatory_roles[2]}", styles['Center'])
+        Paragraph(f"<b>{name}</b><br/>{role}", styles['Center'])
+        for name, role in signatory_slots
     ]]
     sign_table = Table(sign_rows, colWidths=[58*mm, 58*mm, 58*mm])
     sign_table.setStyle(TableStyle([

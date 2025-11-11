@@ -52,9 +52,9 @@ class CustomUser(AbstractUser):
         ('lab', 'Lab Technician'),
         ('frontdesk', 'Front Desk'),
         ('consultant', 'Consultant'),
-        ('food_analyst', 'Food Analyst'),
-        ('bio_manager', 'Deputy Technical Manager – Biological'),
-        ('chem_manager', 'Technical Manager – Chemical'),
+        ('food_analyst', 'Chief Scientific Officer'),
+        ('bio_manager', 'Chief of Quality - Microbiology'),
+        ('chem_manager', 'Chief of Quality - Chemistry'),
     ]
     
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='frontdesk')
@@ -200,7 +200,7 @@ class LabProfile(models.Model):
         null=True,
         blank=True,
         related_name='default_food_analyst_profiles',
-        verbose_name='Default Food Analyst'
+        verbose_name='Default Chief Scientific Officer'
     )
     signatory_bio_manager = models.ForeignKey(
         'CustomUser',
@@ -208,7 +208,7 @@ class LabProfile(models.Model):
         null=True,
         blank=True,
         related_name='default_bio_manager_profiles',
-        verbose_name='Default Deputy Technical Manager – Biological'
+        verbose_name='Default Chief of Quality - Microbiology'
     )
     signatory_chem_manager = models.ForeignKey(
         'CustomUser',
@@ -216,7 +216,7 @@ class LabProfile(models.Model):
         null=True,
         blank=True,
         related_name='default_chem_manager_profiles',
-        verbose_name='Default Technical Manager – Chemical'
+        verbose_name='Default Chief of Quality - Chemistry'
     )
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -331,9 +331,9 @@ class Sample(models.Model):
     test_completed_on = models.DateField(null=True, blank=True, verbose_name="Test Completed On")
 
     # Fields for signatories
-    reviewed_by = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True, blank=True, related_name='reviewed_samples', verbose_name="Reviewed By")
-    lab_manager = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True, blank=True, related_name='managed_samples', verbose_name="Lab Manager")
-    food_analyst = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True, blank=True, related_name='analyzed_samples', verbose_name="Food Analyst")
+    reviewed_by = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True, blank=True, related_name='reviewed_samples', verbose_name="Chief of Quality - Microbiology")
+    lab_manager = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True, blank=True, related_name='managed_samples', verbose_name="Chief of Quality - Chemistry")
+    food_analyst = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True, blank=True, related_name='analyzed_samples', verbose_name="Chief Scientific Officer")
 
     class Meta:
         indexes = [

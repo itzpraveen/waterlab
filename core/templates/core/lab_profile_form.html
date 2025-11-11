@@ -94,17 +94,17 @@
         <div class="form-section-title"><i class="material-icons">assignment_ind</i>Authorised signatories</div>
         <div class="row g-3">
             <div class="col-md-4">
-                <label for="{{ form.signatory_food_analyst.id_for_label }}" class="form-label">Default Food Analyst</label>
+                <label for="{{ form.signatory_food_analyst.id_for_label }}" class="form-label">Default Chief Scientific Officer</label>
                 {{ form.signatory_food_analyst }}
                 {% if form.signatory_food_analyst.errors %}<div class="invalid-feedback d-block small">{{ form.signatory_food_analyst.errors.0 }}</div>{% endif %}
             </div>
             <div class="col-md-4">
-                <label for="{{ form.signatory_bio_manager.id_for_label }}" class="form-label">Deputy Technical Manager – Biological</label>
+                <label for="{{ form.signatory_bio_manager.id_for_label }}" class="form-label">Chief of Quality - Microbiology</label>
                 {{ form.signatory_bio_manager }}
                 {% if form.signatory_bio_manager.errors %}<div class="invalid-feedback d-block small">{{ form.signatory_bio_manager.errors.0 }}</div>{% endif %}
             </div>
             <div class="col-md-4">
-                <label for="{{ form.signatory_chem_manager.id_for_label }}" class="form-label">Technical Manager – Chemical</label>
+                <label for="{{ form.signatory_chem_manager.id_for_label }}" class="form-label">Chief of Quality - Chemistry</label>
                 {{ form.signatory_chem_manager }}
                 {% if form.signatory_chem_manager.errors %}<div class="invalid-feedback d-block small">{{ form.signatory_chem_manager.errors.0 }}</div>{% endif %}
             </div>
