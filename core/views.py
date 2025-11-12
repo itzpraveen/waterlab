@@ -1732,23 +1732,11 @@ def download_sample_report_view(request, pk):
             elements.append(Spacer(1, 12))
         return serial_counter
 
-    serial_counter = 1
-    for index, section_key in enumerate(section_order):
-        if index > 0:
-            elements.append(PageBreak())
-        heading = section_headings.get(section_key, section_headings['other'])
-        serial_counter = _render_section(section_key, heading, serial_counter)
-
     review = getattr(sample, 'review', None)
     if review:
         recommendations_text = (review.recommendations or '').strip()
     else:
         recommendations_text = ''
-
-    if elements and not isinstance(elements[-1], PageBreak):
-        elements.append(PageBreak())
-
-    elements.append(Paragraph("AUTHORISED SIGNATORIES", styles['SectionTitle']))
     signatories = sample.resolve_signatories()
 
     def _signatory_name(user):
@@ -1781,21 +1769,38 @@ def download_sample_report_view(request, pk):
             return elements[0]
         return KeepTogether(elements)
 
-    signatory_slots = [
-        _signatory_payload(signatories.get('chem_manager'), 'Chief of Quality - Chemistry'),
-        _signatory_payload(signatories.get('bio_manager'), 'Chief of Quality - Microbiology'),
-        _signatory_payload(signatories.get('food_analyst'), 'Chief Scientific Officer'),
-    ]
+    def _append_signatories_section():
+        elements.append(Paragraph("AUTHORISED SIGNATORIES", styles['SectionTitle']))
+        signatory_slots = [
+            _signatory_payload(signatories.get('chem_manager'), 'Chief of Quality - Chemistry'),
+            _signatory_payload(signatories.get('bio_manager'), 'Chief of Quality - Microbiology'),
+            _signatory_payload(signatories.get('food_analyst'), 'Chief Scientific Officer'),
+        ]
+        sign_rows = [[_signature_cell(slot) for slot in signatory_slots]]
+        sign_table = Table(sign_rows, colWidths=[58*mm, 58*mm, 58*mm])
+        sign_table.setStyle(TableStyle([
+            ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+            ('VALIGN', (0,0), (-1,-1), 'TOP'),
+            ('TOPPADDING', (0,0), (-1,-1), 12)
+        ]))
+        elements.append(sign_table)
+        elements.append(Spacer(1, 18))
 
-    sign_rows = [[_signature_cell(slot) for slot in signatory_slots]]
-    sign_table = Table(sign_rows, colWidths=[58*mm, 58*mm, 58*mm])
-    sign_table.setStyle(TableStyle([
-        ('ALIGN', (0,0), (-1,-1), 'CENTER'),
-        ('VALIGN', (0,0), (-1,-1), 'TOP'),
-        ('TOPPADDING', (0,0), (-1,-1), 12)
-    ]))
-    elements.append(sign_table)
-    elements.append(Spacer(1, 18))
+    serial_counter = 1
+    sign_section_inserted = False
+    for index, section_key in enumerate(section_order):
+        if index > 0:
+            elements.append(PageBreak())
+        heading = section_headings.get(section_key, section_headings['other'])
+        serial_counter = _render_section(section_key, heading, serial_counter)
+        if not sign_section_inserted and section_key == 'microbiological':
+            _append_signatories_section()
+            sign_section_inserted = True
+
+    if not sign_section_inserted:
+        if elements and not isinstance(elements[-1], PageBreak):
+            elements.append(PageBreak())
+        _append_signatories_section()
 
     # Keep recommendations and remarks on a fresh page for readability
     elements.append(PageBreak())
