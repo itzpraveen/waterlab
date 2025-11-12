@@ -46,12 +46,12 @@ class CustomUserAdmin(UserAdmin):
     list_filter = ['role', 'is_active', 'is_staff']
     fieldsets = UserAdmin.fieldsets + (
         ('Role Information', {
-            'fields': ('role', 'phone', 'department', 'employee_id')
+            'fields': ('role', 'phone', 'department', 'employee_id', 'signature')
         }),
     )
     add_fieldsets = UserAdmin.add_fieldsets + (
         ('Role Information', {
-            'fields': ('role', 'phone', 'department', 'employee_id')
+            'fields': ('role', 'phone', 'department', 'employee_id', 'signature')
         }),
     )
 

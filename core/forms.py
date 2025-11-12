@@ -423,7 +423,10 @@ class _BaseAdminUserForm(forms.ModelForm):
 
     class Meta:
         model = CustomUser
-        fields = ['username', 'first_name', 'last_name', 'email', 'phone', 'department', 'role', 'is_active']
+        fields = ['username', 'first_name', 'last_name', 'email', 'phone', 'department', 'signature', 'role', 'is_active']
+        widgets = {
+            'signature': forms.ClearableFileInput(attrs={'class': 'form-control'}),
+        }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

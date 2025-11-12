@@ -1372,7 +1372,7 @@ def download_sample_report_view(request, pk):
     from reportlab.lib import colors
     from reportlab.lib.pagesizes import A4
     from reportlab.lib.units import mm
-    from reportlab.platypus import BaseDocTemplate, Frame, PageTemplate, Table, TableStyle, Paragraph, Spacer, Image, PageBreak
+    from reportlab.platypus import BaseDocTemplate, Frame, PageTemplate, Table, TableStyle, Paragraph, Spacer, Image, PageBreak, KeepTogether
     from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
     from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
     from reportlab.lib.utils import ImageReader
@@ -1757,16 +1757,37 @@ def download_sample_report_view(request, pk):
         full = (user.get_full_name() or '').strip()
         return full or user.username
 
+    def _signatory_payload(user, role):
+        return {
+            'name': _signatory_name(user),
+            'role': role,
+            'signature_path': getattr(user, 'signature_path', '') if user else '',
+        }
+
+    def _signature_cell(data):
+        elements = []
+        signature_path = (data.get('signature_path') or '').strip()
+        if signature_path:
+            try:
+                signature_img = Image(signature_path)
+                signature_img._restrictSize(48 * mm, 20 * mm)
+            except Exception as exc:
+                logger.warning("Unable to load signature image for %s", data.get('name'), exc_info=settings.DEBUG)
+            else:
+                elements.append(signature_img)
+                elements.append(Spacer(1, 4))
+        elements.append(Paragraph(f"<b>{data['name']}</b><br/>{data['role']}", styles['Center']))
+        if len(elements) == 1:
+            return elements[0]
+        return KeepTogether(elements)
+
     signatory_slots = [
-        (_signatory_name(signatories.get('chem_manager')), 'Chief of Quality - Chemistry'),
-        (_signatory_name(signatories.get('bio_manager')), 'Chief of Quality - Microbiology'),
-        (_signatory_name(signatories.get('food_analyst')), 'Chief Scientific Officer'),
+        _signatory_payload(signatories.get('chem_manager'), 'Chief of Quality - Chemistry'),
+        _signatory_payload(signatories.get('bio_manager'), 'Chief of Quality - Microbiology'),
+        _signatory_payload(signatories.get('food_analyst'), 'Chief Scientific Officer'),
     ]
 
-    sign_rows = [[
-        Paragraph(f"<b>{name}</b><br/>{role}", styles['Center'])
-        for name, role in signatory_slots
-    ]]
+    sign_rows = [[_signature_cell(slot) for slot in signatory_slots]]
     sign_table = Table(sign_rows, colWidths=[58*mm, 58*mm, 58*mm])
     sign_table.setStyle(TableStyle([
         ('ALIGN', (0,0), (-1,-1), 'CENTER'),

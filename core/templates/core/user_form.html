@@ -21,7 +21,7 @@
 {% endblock %}
 
 {% block content %}
-<form method="post" class="info-card user-form" novalidate>
+<form method="post" enctype="multipart/form-data" class="info-card user-form" novalidate>
     {% csrf_token %}
     {% if form.non_field_errors %}
     <div class="alert alert-danger" role="alert">
@@ -61,6 +61,20 @@
             <label for="{{ form.department.id_for_label }}" class="form-label">Department</label>
             {{ form.department }}
             {% if form.department.errors %}<div class="form-error">{{ form.department.errors.0 }}</div>{% endif %}
+        </div>
+        <div class="form-field">
+            <label for="{{ form.signature.id_for_label }}" class="form-label">Signature image</label>
+            {{ form.signature }}
+            <div class="form-text">PNG or JPG, preferably on a transparent background. Appears on PDF reports.</div>
+            {% if form.signature.errors %}<div class="form-error">{{ form.signature.errors.0 }}</div>{% endif %}
+            {% if form.instance.signature_url %}
+            <div class="mt-2">
+                <span class="form-text d-block mb-1">Current signature</span>
+                <div class="border rounded p-2 bg-white d-inline-block">
+                    <img src="{{ form.instance.signature_url }}" alt="Current signature preview" style="max-height: 70px;">
+                </div>
+            </div>
+            {% endif %}
         </div>
         <div class="form-field">
             <label for="{{ form.role.id_for_label }}" class="form-label">Role *</label>

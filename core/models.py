@@ -61,6 +61,7 @@ class CustomUser(AbstractUser):
     phone = models.CharField(max_length=15, blank=True, null=True)
     department = models.CharField(max_length=100, blank=True, null=True)
     employee_id = models.CharField(max_length=20, unique=True, blank=True, null=True)
+    signature = models.ImageField(upload_to='signatures/', blank=True, null=True)
     
     def __str__(self):
         return f"{self.username} ({self.get_role_display()})"
@@ -85,6 +86,27 @@ class CustomUser(AbstractUser):
 
     def is_chem_manager(self):
         return self.role == 'chem_manager'
+
+    @property
+    def signature_url(self) -> str:
+        if self.signature:
+            try:
+                return self.signature.url
+            except (OSError, ValueError):
+                pass
+        return ''
+
+    @property
+    def signature_path(self) -> str:
+        if self.signature:
+            try:
+                path = self.signature.path
+            except (OSError, ValueError):
+                pass
+            else:
+                if os.path.exists(path):
+                    return path
+        return ''
 
     class Meta(AbstractUser.Meta):
         indexes = [
