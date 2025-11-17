@@ -1366,6 +1366,7 @@ def download_sample_report_view(request, pk):
     layout = (request.GET.get('layout') or 'branded').casefold()
     include_branding = layout != 'plain'
     background_template = None
+    watermark_image = None
     if include_branding:
         template_path = finders.find('report_templates/biofix_wl_template_page.png')
         if template_path and os.path.exists(template_path):
@@ -1373,6 +1374,12 @@ def download_sample_report_view(request, pk):
                 background_template = ImageReader(template_path)
             except Exception:
                 logger.warning("Failed to load branded report template image from %s", template_path)
+        watermark_path = finders.find('report_templates/biofix_wl_watermark.png')
+        if watermark_path and os.path.exists(watermark_path):
+            try:
+                watermark_image = ImageReader(watermark_path)
+            except Exception:
+                logger.warning("Failed to load watermark image from %s", watermark_path)
 
     if sample.current_status not in ['REPORT_APPROVED', 'REPORT_SENT']:
         messages.error(request, "Report is not yet approved or available for download.")
@@ -1389,9 +1396,10 @@ def download_sample_report_view(request, pk):
     buffer = BytesIO()
 
     class ReportDocTemplate(BaseDocTemplate):
-        def __init__(self, filename, include_branding=True, background_image=None, **kwargs):
+        def __init__(self, filename, include_branding=True, background_image=None, watermark_image=None, **kwargs):
             self.include_branding = include_branding
             self.background_image = background_image
+            self.watermark_image = watermark_image
             super().__init__(filename, **kwargs)
             self.addPageTemplates([
                 PageTemplate(
@@ -1423,6 +1431,28 @@ def download_sample_report_view(request, pk):
                     preserveAspectRatio=True,
                     mask='auto',
                 )
+                if self.watermark_image:
+                    wm_width, wm_height = self.watermark_image.getSize()
+                    target_width = page_width * 0.55
+                    scale = target_width / wm_width
+                    target_height = wm_height * scale
+                    wm_x = (page_width - target_width) / 2
+                    wm_y = (page_height - target_height) / 2 - 10 * mm
+                    canvas.saveState()
+                    try:
+                        canvas.setFillAlpha(0.22)
+                    except AttributeError:
+                        pass
+                    canvas.drawImage(
+                        self.watermark_image,
+                        wm_x,
+                        wm_y,
+                        width=target_width,
+                        height=target_height,
+                        mask='auto',
+                        preserveAspectRatio=True,
+                    )
+                    canvas.restoreState()
             else:
                 lab_settings = getattr(settings, 'WATERLAB_SETTINGS', {})
                 profile = LabProfile.get_active()
@@ -1496,6 +1526,7 @@ def download_sample_report_view(request, pk):
         bottomMargin=bottom_margin_mm * mm,
         include_branding=include_branding,
         background_image=background_template,
+        watermark_image=watermark_image,
     )
 
     palette = {
