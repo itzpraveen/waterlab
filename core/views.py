@@ -1786,6 +1786,25 @@ def download_sample_report_view(request, pk):
         elements.append(sign_table)
         elements.append(Spacer(1, 18))
 
+    def _append_consultant_signature_section():
+        """Render the consultant sign-off below remarks."""
+        reviewer = review.reviewer if review else None
+        role_label = 'Chief of Solutions - Water Quality'
+        if reviewer:
+            consultant_slot = _signatory_payload(reviewer, role_label)
+            consultant_cell = _signature_cell(consultant_slot)
+            table = Table([[consultant_cell]], colWidths=[doc.width])
+            table.setStyle(TableStyle([
+                ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+                ('VALIGN', (0,0), (-1,-1), 'TOP'),
+                ('TOPPADDING', (0,0), (-1,-1), 6),
+            ]))
+            elements.append(table)
+            elements.append(Spacer(1, 18))
+        else:
+            elements.append(Paragraph(f"{role_label}: Not assigned", styles['Normal']))
+            elements.append(Spacer(1, 12))
+
     serial_counter = 1
     sign_section_inserted = False
     for index, section_key in enumerate(section_order):
@@ -1818,7 +1837,8 @@ def download_sample_report_view(request, pk):
         "The sample has been analysed in accordance with IS 10500:2012 guidelines. Outcomes above include automated compliance status for each parameter.",
         styles['Normal']
     ))
-    elements.append(Spacer(1, 18))
+    elements.append(Spacer(1, 12))
+    _append_consultant_signature_section()
 
     doc.build(elements)
 
