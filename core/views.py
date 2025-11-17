@@ -1,4 +1,5 @@
 import logging
+import os
 import re
 from collections import OrderedDict
 from html import escape
@@ -20,6 +21,7 @@ from django.db.models.deletion import ProtectedError
 from django.forms.models import model_to_dict
 
 from django.conf import settings
+from django.contrib.staticfiles import finders
 
 from .models import Customer, Sample, TestParameter, TestResult, ConsultantReview, CustomUser, AuditTrail, TestCategory, LabProfile
 from .forms import (
@@ -42,6 +44,7 @@ from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.units import inch
 from io import BytesIO
+from reportlab.lib.utils import ImageReader
 
 
 logger = logging.getLogger(__name__)
@@ -1362,12 +1365,19 @@ def download_sample_report_view(request, pk):
 
     layout = (request.GET.get('layout') or 'branded').casefold()
     include_branding = layout != 'plain'
+    background_template = None
+    if include_branding:
+        template_path = finders.find('report_templates/biofix_wl_template_page.png')
+        if template_path and os.path.exists(template_path):
+            try:
+                background_template = ImageReader(template_path)
+            except Exception:
+                logger.warning("Failed to load branded report template image from %s", template_path)
 
     if sample.current_status not in ['REPORT_APPROVED', 'REPORT_SENT']:
         messages.error(request, "Report is not yet approved or available for download.")
         return redirect('core:sample_detail', pk=sample.pk)
 
-    import os
     from django.conf import settings
     from reportlab.lib import colors
     from reportlab.lib.pagesizes import A4
@@ -1375,19 +1385,21 @@ def download_sample_report_view(request, pk):
     from reportlab.platypus import BaseDocTemplate, Frame, PageTemplate, Table, TableStyle, Paragraph, Spacer, Image, PageBreak, KeepTogether
     from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
     from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
-    from reportlab.lib.utils import ImageReader
 
     buffer = BytesIO()
 
     class ReportDocTemplate(BaseDocTemplate):
-        def __init__(self, filename, include_branding=True, **kwargs):
+        def __init__(self, filename, include_branding=True, background_image=None, **kwargs):
             self.include_branding = include_branding
+            self.background_image = background_image
             super().__init__(filename, **kwargs)
             self.addPageTemplates([
-                PageTemplate(id='ReportPage',
-                             frames=[Frame(self.leftMargin, self.bottomMargin, self.width, self.height, id='main_frame')],
-                             onPage=self._maybe_header,
-                             onPageEnd=self._maybe_footer)
+                PageTemplate(
+                    id='ReportPage',
+                    frames=[Frame(self.leftMargin, self.bottomMargin, self.width, self.height, id='main_frame')],
+                    onPage=self._maybe_header,
+                    onPageEnd=self._maybe_footer
+                )
             ])
 
         def _maybe_header(self, canvas, doc):
@@ -1401,58 +1413,63 @@ def download_sample_report_view(request, pk):
         def header(self, canvas, doc):
             canvas.saveState()
             page_width, page_height = doc.pagesize
-            lab_settings = getattr(settings, 'WATERLAB_SETTINGS', {})
-            profile = LabProfile.get_active()
-            logo_path = profile.logo_path
-            lab_name = (profile.name or lab_settings.get('LAB_NAME') or 'Biofix Laboratory').strip()
-            lab_address = (profile.formatted_address or profile.address_line1 or lab_settings.get('LAB_ADDRESS') or '').strip()
-            lab_phone = (profile.phone or lab_settings.get('LAB_PHONE') or '').strip()
-            lab_email = (profile.email or lab_settings.get('LAB_EMAIL') or '').strip()
-            lab_contact = profile.contact_line
-
-            top_band_y = page_height - 25*mm
-
-            if logo_path and os.path.exists(logo_path):
-                logo = ImageReader(logo_path)
+            if self.background_image:
                 canvas.drawImage(
-                    logo,
-                    doc.leftMargin,
-                    page_height - 38*mm,
-                    width=45*mm,
-                    height=17*mm,
+                    self.background_image,
+                    0,
+                    0,
+                    width=page_width,
+                    height=page_height,
                     preserveAspectRatio=True,
                     mask='auto',
                 )
+            else:
+                lab_settings = getattr(settings, 'WATERLAB_SETTINGS', {})
+                profile = LabProfile.get_active()
+                logo_path = profile.logo_path
+                lab_name = (profile.name or lab_settings.get('LAB_NAME') or 'Biofix Laboratory').strip()
+                lab_address = (profile.formatted_address or profile.address_line1 or lab_settings.get('LAB_ADDRESS') or '').strip()
+                lab_phone = (profile.phone or lab_settings.get('LAB_PHONE') or '').strip()
+                lab_email = (profile.email or lab_settings.get('LAB_EMAIL') or '').strip()
+                lab_contact = profile.contact_line
 
-            draw_x = page_width - doc.rightMargin
-            cursor_y = page_height - 28*mm
+                if logo_path and os.path.exists(logo_path):
+                    logo = ImageReader(logo_path)
+                    canvas.drawImage(
+                        logo,
+                        doc.leftMargin,
+                        page_height - 38*mm,
+                        width=45*mm,
+                        height=17*mm,
+                        preserveAspectRatio=True,
+                        mask='auto',
+                    )
 
-            def _draw_line(value: str, font_name: str = 'Helvetica', font_size: int = 9):
-                nonlocal cursor_y
-                text = (value or '').strip()
-                if not text:
-                    return
-                canvas.setFont(font_name, font_size)
-                canvas.drawRightString(draw_x, cursor_y, text)
-                cursor_y -= 4*mm
+                draw_x = page_width - doc.rightMargin
+                cursor_y = page_height - 28*mm
 
-            canvas.setFillColor(colors.HexColor('#0F172A'))
-            _draw_line(lab_name or 'Biofix Laboratory', font_name='Helvetica-Bold', font_size=11)
-            _draw_line(lab_address)
+                def _draw_line(value: str, font_name: str = 'Helvetica', font_size: int = 9):
+                    nonlocal cursor_y
+                    text = (value or '').strip()
+                    if not text:
+                        return
+                    canvas.setFont(font_name, font_size)
+                    canvas.drawRightString(draw_x, cursor_y, text)
+                    cursor_y -= 4*mm
 
-            contact_line = lab_contact
-            if not contact_line:
-                contact_parts = []
-                if lab_phone:
-                    contact_parts.append(f"Phone: {lab_phone}")
-                if lab_email:
-                    contact_parts.append(f"Email: {lab_email}")
-                contact_line = '  |  '.join(contact_parts)
-            _draw_line(contact_line)
+                canvas.setFillColor(colors.HexColor('#0F172A'))
+                _draw_line(lab_name or 'Biofix Laboratory', font_name='Helvetica-Bold', font_size=11)
+                _draw_line(lab_address)
 
-            canvas.setFont('Helvetica-Bold', 16)
-            canvas.setFillColor(colors.HexColor('#0F766E'))
-            canvas.drawCentredString(page_width / 2, page_height - 52*mm, 'WATER QUALITY ANALYSIS REPORT')
+                contact_line = lab_contact
+                if not contact_line:
+                    contact_parts = []
+                    if lab_phone:
+                        contact_parts.append(f"Phone: {lab_phone}")
+                    if lab_email:
+                        contact_parts.append(f"Email: {lab_email}")
+                    contact_line = '  |  '.join(contact_parts)
+                _draw_line(contact_line)
 
             canvas.restoreState()
 
@@ -1467,8 +1484,8 @@ def download_sample_report_view(request, pk):
             
             canvas.restoreState()
 
-    top_margin_mm = 60 if include_branding else 53  # branded header vs 5.3 cm blank space for plain layout
-    bottom_margin_mm = 22 if include_branding else 30  # branded footer vs 3 cm clearance on plain layout
+    top_margin_mm = 78 if include_branding else 53  # align content with template's white area
+    bottom_margin_mm = 36 if include_branding else 30  # reserve space for footer logos
 
     doc = ReportDocTemplate(
         buffer,
@@ -1478,15 +1495,16 @@ def download_sample_report_view(request, pk):
         topMargin=top_margin_mm * mm,
         bottomMargin=bottom_margin_mm * mm,
         include_branding=include_branding,
+        background_image=background_template,
     )
 
     palette = {
         'surface': colors.HexColor('#F8FAFC') if include_branding else colors.white,
-        'primary': colors.HexColor('#0F766E') if include_branding else colors.black,
+        'primary': colors.HexColor('#3BBCA3') if include_branding else colors.black,
         'text': colors.HexColor('#0F172A') if include_branding else colors.black,
         'muted': colors.HexColor('#6B7280') if include_branding else colors.HexColor('#1F2937'),
         'grid': colors.HexColor('#E2E8F0') if include_branding else colors.HexColor('#9CA3AF'),
-        'row_alt': colors.HexColor('#F1F5F9') if include_branding else colors.white,
+        'row_alt': colors.HexColor('#ECFFFA') if include_branding else colors.white,
     }
 
     surface = palette['surface']
@@ -1523,7 +1541,7 @@ def download_sample_report_view(request, pk):
     styles['Normal'].textColor = text_color
 
     elements = []
-    elements.append(Spacer(1, 8))
+    elements.append(Paragraph("WATER QUALITY ANALYSIS REPORT", styles['ReportTitle']))
 
     def _user_display(user_obj) -> str:
         if not user_obj:
