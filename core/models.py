@@ -55,6 +55,7 @@ class CustomUser(AbstractUser):
         ('food_analyst', 'Chief Scientific Officer'),
         ('bio_manager', 'Chief of Quality - Microbiology'),
         ('chem_manager', 'Chief of Quality - Chemistry'),
+        ('solutions_manager', 'Chief of Solutions - Water Quality'),
     ]
     
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='frontdesk')
@@ -86,6 +87,9 @@ class CustomUser(AbstractUser):
 
     def is_chem_manager(self):
         return self.role == 'chem_manager'
+
+    def is_solutions_manager(self):
+        return self.role == 'solutions_manager'
 
     @property
     def signature_url(self) -> str:

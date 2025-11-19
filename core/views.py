@@ -993,7 +993,16 @@ class SampleDetailView(DetailView): # New DetailView for Sample
         context['ordered_tests'] = tests_qs
         context['tests_by_category'] = _group_by_category(tests_qs, lambda param: param.category_label)
         context['ordered_results'] = results_qs
-        context['results_by_category'] = _group_by_category(results_qs, lambda result: result.parameter.category_label)
+
+        results_by_category = _group_by_category(results_qs, lambda result: result.parameter.category_label)
+        for grouped_entries in results_by_category.values():
+            for entry in grouped_entries:
+                result = entry['item']
+                status = result.get_limit_status()
+                entry['limit_status'] = status
+                entry['is_out_of_range'] = status in {'ABOVE_LIMIT', 'BELOW_LIMIT'}
+
+        context['results_by_category'] = results_by_category
         lab_profile = LabProfile.get_active()
         context['lab_profile'] = lab_profile
         context['resolved_signatories'] = sample.resolve_signatories(lab_profile)
@@ -1842,7 +1851,8 @@ def download_sample_report_view(request, pk):
         if reviewer:
             consultant_slot = _signatory_payload(reviewer, role_label)
             consultant_cell = _signature_cell(consultant_slot)
-            table = Table([[consultant_cell]], colWidths=[doc.width])
+            table = Table([[consultant_cell]], colWidths=[58*mm])
+            table.hAlign = 'RIGHT'
             table.setStyle(TableStyle([
                 ('ALIGN', (0,0), (-1,-1), 'CENTER'),
                 ('VALIGN', (0,0), (-1,-1), 'TOP'),

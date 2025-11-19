@@ -1427,6 +1427,23 @@ main {
   background: rgba(15, 118, 110, 0.06);
 }
 
+.table-modern tbody tr.result-out-of-range {
+  background: rgba(220, 38, 38, 0.05);
+  box-shadow: inset 0 0 0 1px rgba(220, 38, 38, 0.12);
+}
+
+.table-modern tbody tr.result-out-of-range:hover {
+  background: rgba(220, 38, 38, 0.12);
+}
+
+.table-modern tbody tr.result-out-of-range td {
+  border-top-color: rgba(220, 38, 38, 0.18);
+}
+
+.table-modern tbody tr.result-out-of-range .result-value {
+  color: var(--wl-danger);
+}
+
 .action-stack .btn,
 .action-stack form,
 .action-stack button {

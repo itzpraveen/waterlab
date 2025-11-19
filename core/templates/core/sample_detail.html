@@ -279,11 +279,11 @@
                             <th colspan="8">{{ category_name|default:"Uncategorized" }}</th>
                         </tr>
                             {% for entry in category_results %}
-                            <tr>
+                            <tr class="{% if entry.is_out_of_range %}result-out-of-range{% endif %}">
                                 <td class="text-center">{{ entry.index }}</td>
                                 <td>{{ entry.item.parameter.name }}</td>
                                 <td>{{ entry.item.parameter.method|default:"--" }}</td>
-                                <td class="text-center fw-semibold">{{ entry.item.result_value }}</td>
+                                <td class="text-center fw-semibold result-value">{{ entry.item.result_value }}</td>
                                 <td>{{ entry.item.parameter.unit }}</td>
                                 <td>
                                     {% if entry.item.parameter.max_limit_display %}
@@ -302,21 +302,19 @@
                                     {% if entry.item.parameter.max_limit_display %}
                                         <span class="badge-soft">Qualitative limit</span>
                                     {% elif entry.item.parameter.min_permissible_limit is not None and entry.item.parameter.max_permissible_limit is not None %}
-                                        {% with status=entry.item.get_limit_status %}
-                                            {% if status == 'WITHIN_LIMITS' %}
-                                                <span class="badge-soft success">Within limits</span>
-                                            {% elif status == 'BELOW_LIMIT' %}
-                                                <span class="badge-soft danger">Below minimum</span>
-                                            {% elif status == 'ABOVE_LIMIT' %}
-                                                <span class="badge-soft danger">Above maximum</span>
-                                            {% elif status == 'NON_NUMERIC' %}
-                                                <span class="badge-soft warning">Result not numeric</span>
-                                            {% elif status == 'UNKNOWN' %}
-                                                <span class="badge-soft">Status unavailable</span>
-                                            {% else %}
-                                                <span class="badge-soft danger">Out of range</span>
-                                            {% endif %}
-                                        {% endwith %}
+                                        {% if entry.limit_status == 'WITHIN_LIMITS' %}
+                                            <span class="badge-soft success">Within limits</span>
+                                        {% elif entry.limit_status == 'BELOW_LIMIT' %}
+                                            <span class="badge-soft danger">Below minimum</span>
+                                        {% elif entry.limit_status == 'ABOVE_LIMIT' %}
+                                            <span class="badge-soft danger">Above maximum</span>
+                                        {% elif entry.limit_status == 'NON_NUMERIC' %}
+                                            <span class="badge-soft warning">Result not numeric</span>
+                                        {% elif entry.limit_status == 'UNKNOWN' %}
+                                            <span class="badge-soft">Status unavailable</span>
+                                        {% else %}
+                                            <span class="badge-soft danger">Out of range</span>
+                                        {% endif %}
                                     {% else %}
                                         <span class="badge-soft">No limits set</span>
                                     {% endif %}
