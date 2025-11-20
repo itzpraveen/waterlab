@@ -1840,9 +1840,7 @@ def download_sample_report_view(request, pk):
         active_payloads = [p for p in payloads if any(p.values())]
         # Downscale signatures to ensure they fit comfortably
         def _mini_signature(slot):
-            cell = _signature_cell(slot)
-            # Wrap the cell into a KeepTogether list with an extra Spacer to avoid overflows
-            return KeepTogether([cell, Spacer(1, 2)])
+            return _signature_cell(slot)
 
         cells = [_mini_signature(slot) for slot in active_payloads]
         if not cells:
