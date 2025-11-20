@@ -1852,9 +1852,10 @@ def download_sample_report_view(request, pk):
         ]))
         return inner
 
-    def _append_signatories_section():
-        # Render on a fresh page, horizontally aligned across three columns
-        elements.append(PageBreak())
+    def _append_signatories_section(introduce_break: bool = False):
+        """Render authorised signatories, optionally forcing a new page."""
+        if introduce_break:
+            elements.append(PageBreak())
         elements.append(Paragraph("AUTHORISED SIGNATORIES", styles['SectionTitle']))
         payloads = [
             _signatory_payload(signatories.get('chem_manager'), 'Chief of Quality - Chemistry'),
@@ -1918,13 +1919,13 @@ def download_sample_report_view(request, pk):
         heading = section_headings.get(section_key, section_headings['other'])
         serial_counter = _render_section(section_key, heading, serial_counter)
         if not sign_section_inserted and section_key == 'microbiological':
-            _append_signatories_section()
+            _append_signatories_section(introduce_break=False)
             sign_section_inserted = True
 
     if not sign_section_inserted:
         if elements and not isinstance(elements[-1], PageBreak):
             elements.append(PageBreak())
-        _append_signatories_section()
+        _append_signatories_section(introduce_break=False)
 
     # Keep recommendations and remarks on a fresh page for readability
     elements.append(PageBreak())
