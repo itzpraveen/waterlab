@@ -1838,12 +1838,18 @@ def download_sample_report_view(request, pk):
             _signatory_payload(signatories.get('food_analyst'), 'Chief Scientific Officer'),
         ]
         active_payloads = [p for p in payloads if any(p.values())]
-        cells = [_signature_cell(slot) for slot in active_payloads]
+        # Downscale signatures to ensure they fit comfortably
+        def _mini_signature(slot):
+            cell = _signature_cell(slot)
+            # Wrap the cell into a KeepTogether list with an extra Spacer to avoid overflows
+            return KeepTogether([cell, Spacer(1, 2)])
+
+        cells = [_mini_signature(slot) for slot in active_payloads]
         if not cells:
             cells = ['', '', '']
         while len(cells) < 3:
             cells.append('')
-        sign_table = Table([cells[:3]], colWidths=[doc.width/3.0]*3, hAlign='CENTER')
+        sign_table = Table([cells[:3]], colWidths=[(doc.width/3.0) - 6]*3, hAlign='CENTER')
         sign_table.setStyle(TableStyle([
             ('ALIGN', (0,0), (-1,-1), 'CENTER'),
             ('VALIGN', (0,0), (-1,-1), 'TOP'),
