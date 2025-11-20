@@ -1831,19 +1831,24 @@ def download_sample_report_view(request, pk):
     def _append_signatories_section():
         elements.append(PageBreak())
         elements.append(Paragraph("AUTHORISED SIGNATORIES", styles['SectionTitle']))
-        signatory_slots = [
+        # Keep width flexible; if fewer signatories, shrink columns
+        payloads = [
             _signatory_payload(signatories.get('chem_manager'), 'Chief of Quality - Chemistry'),
             _signatory_payload(signatories.get('bio_manager'), 'Chief of Quality - Microbiology'),
             _signatory_payload(signatories.get('food_analyst'), 'Chief Scientific Officer'),
         ]
-        sign_rows = [[_signature_cell(slot) for slot in signatory_slots]]
-        col_width = doc.width / 3.0
-        sign_table = Table(sign_rows, colWidths=[col_width, col_width, col_width])
+        active_payloads = [p for p in payloads if any(p.values())]
+        cols = len(active_payloads) or 1
+        col_width = doc.width / cols
+        sign_rows = [[_signature_cell(slot) for slot in active_payloads]]
+        sign_table = Table(sign_rows, colWidths=[col_width] * cols)
         sign_table.setStyle(TableStyle([
             ('ALIGN', (0,0), (-1,-1), 'CENTER'),
             ('VALIGN', (0,0), (-1,-1), 'TOP'),
-            ('TOPPADDING', (0,0), (-1,-1), 8),
+            ('TOPPADDING', (0,0), (-1,-1), 6),
             ('BOTTOMPADDING', (0,0), (-1,-1), 6),
+            ('LEFTPADDING', (0,0), (-1,-1), 6),
+            ('RIGHTPADDING', (0,0), (-1,-1), 6),
         ]))
         elements.append(sign_table)
         elements.append(Spacer(1, 18))
