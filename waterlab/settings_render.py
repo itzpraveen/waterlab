@@ -145,9 +145,14 @@ WHITENOISE_AUTOREFRESH = DEBUG  # Disable auto-refresh when DEBUG=False
 
 # Media files
 MEDIA_URL = '/media/'
-# Persist uploads (logos, signatures) on a mounted disk when available; fallback to local folder.
-MEDIA_ROOT = os.environ.get('MEDIA_ROOT', '/data/media')
-os.makedirs(MEDIA_ROOT, exist_ok=True)
+# Prefer mounted disk; gracefully fall back if unavailable or not writable.
+preferred_media_root = os.environ.get('MEDIA_ROOT', '/data/media')
+MEDIA_ROOT = preferred_media_root
+try:
+    os.makedirs(MEDIA_ROOT, exist_ok=True)
+except PermissionError:
+    MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+    os.makedirs(MEDIA_ROOT, exist_ok=True)
 
 # Security settings for production
 SECURE_BROWSER_XSS_FILTER = True
