@@ -1831,28 +1831,17 @@ def download_sample_report_view(request, pk):
     def _append_signatories_section():
         elements.append(PageBreak())
         elements.append(Paragraph("AUTHORISED SIGNATORIES", styles['SectionTitle']))
-        # Keep width flexible; if fewer signatories, shrink columns
+        # Render each signatory stacked vertically to avoid layout overflows
         payloads = [
             _signatory_payload(signatories.get('chem_manager'), 'Chief of Quality - Chemistry'),
             _signatory_payload(signatories.get('bio_manager'), 'Chief of Quality - Microbiology'),
             _signatory_payload(signatories.get('food_analyst'), 'Chief Scientific Officer'),
         ]
         active_payloads = [p for p in payloads if any(p.values())]
-        cols = len(active_payloads) or 1
-        available_width = max(doc.width - 12, doc.width * 0.9)
-        col_width = available_width / cols
-        sign_rows = [[_signature_cell(slot) for slot in active_payloads]]
-        sign_table = Table(sign_rows, colWidths=[col_width] * cols, hAlign='LEFT')
-        sign_table.setStyle(TableStyle([
-            ('ALIGN', (0,0), (-1,-1), 'CENTER'),
-            ('VALIGN', (0,0), (-1,-1), 'TOP'),
-            ('TOPPADDING', (0,0), (-1,-1), 4),
-            ('BOTTOMPADDING', (0,0), (-1,-1), 4),
-            ('LEFTPADDING', (0,0), (-1,-1), 4),
-            ('RIGHTPADDING', (0,0), (-1,-1), 4),
-        ]))
-        elements.append(sign_table)
-        elements.append(Spacer(1, 18))
+        for slot in active_payloads:
+            elements.append(_signature_cell(slot))
+            elements.append(Spacer(1, 10))
+        elements.append(Spacer(1, 8))
 
     def _append_consultant_signature_section():
         """Render the consultant sign-off below remarks."""
