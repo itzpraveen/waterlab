@@ -1836,11 +1836,13 @@ def download_sample_report_view(request, pk):
             _signatory_payload(signatories.get('food_analyst'), 'Chief Scientific Officer'),
         ]
         sign_rows = [[_signature_cell(slot) for slot in signatory_slots]]
-        sign_table = Table(sign_rows, colWidths=[58*mm, 58*mm, 58*mm])
+        col_width = doc.width / 3.0
+        sign_table = Table(sign_rows, colWidths=[col_width, col_width, col_width])
         sign_table.setStyle(TableStyle([
             ('ALIGN', (0,0), (-1,-1), 'CENTER'),
             ('VALIGN', (0,0), (-1,-1), 'TOP'),
-            ('TOPPADDING', (0,0), (-1,-1), 12)
+            ('TOPPADDING', (0,0), (-1,-1), 8),
+            ('BOTTOMPADDING', (0,0), (-1,-1), 6),
         ]))
         elements.append(sign_table)
         elements.append(Spacer(1, 18))
