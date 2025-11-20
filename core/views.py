@@ -1524,9 +1524,8 @@ def download_sample_report_view(request, pk):
             canvas.restoreState()
 
     # Keep content clear of the branded header while reducing wasted space between header and body
-    # Give back some vertical room on the first page so the first parameters
-    # table stays with the metadata block.
-    top_margin_mm = 44 if include_branding else 48
+    # Leave enough room under the branded header so the logo/ribbon doesn't overlap content.
+    top_margin_mm = 60 if include_branding else 50
     bottom_margin_mm = 36 if include_branding else 30  # reserve space for footer logos
 
     doc = ReportDocTemplate(
