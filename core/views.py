@@ -1829,7 +1829,7 @@ def download_sample_report_view(request, pk):
         return KeepTogether(elements)
 
     def _append_signatories_section():
-        elements.append(CondPageBreak(60*mm))
+        elements.append(CondPageBreak(100*mm))
         elements.append(Paragraph("AUTHORISED SIGNATORIES", styles['SectionTitle']))
         payloads = [
             _signatory_payload(signatories.get('chem_manager'), 'Chief of Quality - Chemistry'),
@@ -1844,8 +1844,8 @@ def download_sample_report_view(request, pk):
         for row in rows:
             while len(row) < 3:
                 row.append('')
-        col_width = doc.width / 3.0
-        sign_table = Table(rows, colWidths=[col_width] * 3)
+        col_width = doc.width * 0.3  # keep total width at ~90% of frame to avoid overflow
+        sign_table = Table(rows, colWidths=[col_width] * 3, hAlign='CENTER')
         sign_table.setStyle(TableStyle([
             ('ALIGN', (0,0), (-1,-1), 'CENTER'),
             ('VALIGN', (0,0), (-1,-1), 'TOP'),
