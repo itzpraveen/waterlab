@@ -1524,7 +1524,9 @@ def download_sample_report_view(request, pk):
             canvas.restoreState()
 
     # Keep content clear of the branded header while reducing wasted space between header and body
-    top_margin_mm = 50 if include_branding else 53
+    # Give back some vertical room on the first page so the first parameters
+    # table stays with the metadata block.
+    top_margin_mm = 44 if include_branding else 48
     bottom_margin_mm = 36 if include_branding else 30  # reserve space for footer logos
 
     doc = ReportDocTemplate(
@@ -1634,7 +1636,7 @@ def download_sample_report_view(request, pk):
         ('BOTTOMPADDING', (0,0), (-1,-1), 6),
     ]))
     elements.append(meta_table)
-    elements.append(Spacer(1, 10))
+    elements.append(Spacer(1, 8))
 
     address_table = Table([
         [Paragraph('<b>Customer Address</b>', styles['Label'])],
@@ -1649,10 +1651,10 @@ def download_sample_report_view(request, pk):
         ('BACKGROUND', (0,0), (-1,-1), surface),
     ]))
     elements.append(address_table)
-    elements.append(Spacer(1, 12))
+    elements.append(Spacer(1, 8))
 
     elements.append(Paragraph("TEST REPORTS", styles['SectionTitle']))
-    elements.append(Spacer(1, 4))
+    elements.append(Spacer(1, 3))
 
     # Respect configured display order within categories
     results_queryset = sample.results.select_related('parameter').order_by('parameter__display_order', 'parameter__name')
