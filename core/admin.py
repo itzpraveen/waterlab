@@ -91,6 +91,7 @@ class LabProfileAdmin(admin.ModelAdmin):
                 'signatory_food_analyst',
                 'signatory_bio_manager',
                 'signatory_chem_manager',
+                'signatory_solutions_manager',
             )
         }),
         ('Metadata', {

@@ -1519,11 +1519,12 @@ def download_sample_report_view(request, pk):
             footer_text = f"Page {doc.page} | Report ID: {sample.display_id}"
             p = Paragraph(footer_text, styles['Normal'])
             p.wrapOn(canvas, doc.width, doc.bottomMargin)
-            p.drawOn(canvas, doc.leftMargin, 10*mm)
+            p.drawOn(canvas, doc.leftMargin, 4*mm)
             
             canvas.restoreState()
 
-    top_margin_mm = 78 if include_branding else 53  # align content with template's white area
+    # Keep content clear of the branded header while reducing wasted space between header and body
+    top_margin_mm = 50 if include_branding else 53
     bottom_margin_mm = 36 if include_branding else 30  # reserve space for footer logos
 
     doc = ReportDocTemplate(
@@ -1559,7 +1560,7 @@ def download_sample_report_view(request, pk):
     styles.add(ParagraphStyle(name='Center', alignment=TA_CENTER))
     styles.add(ParagraphStyle(name='Right', alignment=TA_RIGHT))
     styles.add(ParagraphStyle(name='Left', alignment=TA_LEFT))
-    styles.add(ParagraphStyle(name='ReportTitle', parent=styles['h1'], alignment=TA_CENTER, spaceAfter=14, fontSize=18))
+    styles.add(ParagraphStyle(name='ReportTitle', parent=styles['h1'], alignment=TA_CENTER, spaceAfter=12, fontSize=18))
     styles.add(ParagraphStyle(name='SectionTitle', parent=styles['h2'], spaceAfter=10, fontSize=12, leading=14))
     styles.add(ParagraphStyle(name='Label', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=9, textColor=muted_color))
     styles.add(ParagraphStyle(name='Value', parent=styles['Normal'], fontSize=10, textColor=text_color))
@@ -1621,7 +1622,7 @@ def download_sample_report_view(request, pk):
         ('BOTTOMPADDING', (0,0), (-1,-1), 6),
     ]))
     elements.append(meta_table)
-    elements.append(Spacer(1, 16))
+    elements.append(Spacer(1, 10))
 
     address_table = Table([
         [Paragraph('<b>Customer Address</b>', styles['Label'])],
@@ -1636,10 +1637,10 @@ def download_sample_report_view(request, pk):
         ('BACKGROUND', (0,0), (-1,-1), surface),
     ]))
     elements.append(address_table)
-    elements.append(Spacer(1, 20))
+    elements.append(Spacer(1, 12))
 
     elements.append(Paragraph("TEST REPORTS", styles['SectionTitle']))
-    elements.append(Spacer(1, 6))
+    elements.append(Spacer(1, 4))
 
     # Respect configured display order within categories
     results_queryset = sample.results.select_related('parameter').order_by('parameter__display_order', 'parameter__name')
@@ -1784,10 +1785,10 @@ def download_sample_report_view(request, pk):
                     elements.append(Paragraph(label_text, styles['CategoryHeading']))
                 table, serial_counter = _build_results_table(category_results, serial_counter)
                 elements.append(table)
-                elements.append(Spacer(1, 12))
+                elements.append(Spacer(1, 10))
         else:
             elements.append(Paragraph("No parameters recorded for this category.", styles['Normal']))
-            elements.append(Spacer(1, 12))
+            elements.append(Spacer(1, 10))
         return serial_counter
 
     review = getattr(sample, 'review', None)
@@ -1847,9 +1848,11 @@ def download_sample_report_view(request, pk):
     def _append_consultant_signature_section():
         """Render the consultant sign-off below remarks."""
         reviewer = review.reviewer if review else None
+        fallback_consultant = signatories.get('solutions_manager')
+        consultant_user = reviewer or fallback_consultant
         role_label = 'Chief of Solutions - Water Quality'
-        if reviewer:
-            consultant_slot = _signatory_payload(reviewer, role_label)
+        if consultant_user:
+            consultant_slot = _signatory_payload(consultant_user, role_label)
             consultant_cell = _signature_cell(consultant_slot)
             table = Table([[consultant_cell]], colWidths=[58*mm])
             table.hAlign = 'RIGHT'

@@ -244,6 +244,14 @@ class LabProfile(models.Model):
         related_name='default_chem_manager_profiles',
         verbose_name='Default Chief of Quality - Chemistry'
     )
+    signatory_solutions_manager = models.ForeignKey(
+        'CustomUser',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='default_solutions_manager_profiles',
+        verbose_name='Default Chief of Solutions - Water Quality'
+    )
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
@@ -543,11 +551,13 @@ class Sample(models.Model):
             'food_analyst': getattr(lab_profile, 'signatory_food_analyst', None) if lab_profile else None,
             'bio_manager': getattr(lab_profile, 'signatory_bio_manager', None) if lab_profile else None,
             'chem_manager': getattr(lab_profile, 'signatory_chem_manager', None) if lab_profile else None,
+            'solutions_manager': getattr(lab_profile, 'signatory_solutions_manager', None) if lab_profile else None,
         }
         return {
             'food_analyst': self.food_analyst or defaults['food_analyst'],
             'bio_manager': self.reviewed_by or defaults['bio_manager'],
             'chem_manager': self.lab_manager or defaults['chem_manager'],
+            'solutions_manager': defaults['solutions_manager'],
         }
     
     def can_be_reviewed(self):

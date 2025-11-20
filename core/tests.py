@@ -391,27 +391,32 @@ class SampleModelTests(TestCase):
         default_food = CustomUser.objects.create_user(username="default_food", role="lab")
         default_bio = CustomUser.objects.create_user(username="default_bio", role="lab")
         default_chem = CustomUser.objects.create_user(username="default_chem", role="lab")
+        default_solutions = CustomUser.objects.create_user(username="default_solutions", role="solutions_manager")
         profile = LabProfile.objects.create(
             name="Profile Defaults",
             signatory_food_analyst=default_food,
             signatory_bio_manager=default_bio,
             signatory_chem_manager=default_chem,
+            signatory_solutions_manager=default_solutions,
         )
         sample = Sample.objects.create(**self.sample_data)
         signatories = sample.resolve_signatories(profile)
         self.assertEqual(signatories['food_analyst'], default_food)
         self.assertEqual(signatories['bio_manager'], default_bio)
         self.assertEqual(signatories['chem_manager'], default_chem)
+        self.assertEqual(signatories['solutions_manager'], default_solutions)
 
     def test_resolve_signatories_prefers_sample_assignments(self):
         default_food = CustomUser.objects.create_user(username="fallback_food", role="lab")
         default_bio = CustomUser.objects.create_user(username="fallback_bio", role="lab")
         default_chem = CustomUser.objects.create_user(username="fallback_chem", role="lab")
+        default_solutions = CustomUser.objects.create_user(username="fallback_solutions", role="solutions_manager")
         profile = LabProfile.objects.create(
             name="Profile Defaults",
             signatory_food_analyst=default_food,
             signatory_bio_manager=default_bio,
             signatory_chem_manager=default_chem,
+            signatory_solutions_manager=default_solutions,
         )
         assigned_food = CustomUser.objects.create_user(username="assigned_food", role="lab")
         assigned_bio = CustomUser.objects.create_user(username="assigned_bio", role="lab")
@@ -430,6 +435,7 @@ class SampleModelTests(TestCase):
         self.assertEqual(signatories['food_analyst'], assigned_food)
         self.assertEqual(signatories['bio_manager'], assigned_bio)
         self.assertEqual(signatories['chem_manager'], assigned_chem)
+        self.assertEqual(signatories['solutions_manager'], default_solutions)
  
     def test_sample_has_all_test_results(self):
         """Test the has_all_test_results method."""
