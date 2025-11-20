@@ -1829,7 +1829,7 @@ def download_sample_report_view(request, pk):
         return KeepTogether(elements)
 
     def _append_signatories_section():
-        elements.append(CondPageBreak(100*mm))
+        elements.append(PageBreak())
         elements.append(Paragraph("AUTHORISED SIGNATORIES", styles['SectionTitle']))
         payloads = [
             _signatory_payload(signatories.get('chem_manager'), 'Chief of Quality - Chemistry'),
