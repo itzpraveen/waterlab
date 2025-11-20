@@ -1829,7 +1829,7 @@ def download_sample_report_view(request, pk):
         return KeepTogether(elements)
 
     def _append_signatories_section():
-        # Render on a fresh page, stacked vertically to guarantee fit
+        # Render on a fresh page, horizontally aligned across three columns
         elements.append(PageBreak())
         elements.append(Paragraph("AUTHORISED SIGNATORIES", styles['SectionTitle']))
         payloads = [
@@ -1838,9 +1838,21 @@ def download_sample_report_view(request, pk):
             _signatory_payload(signatories.get('food_analyst'), 'Chief Scientific Officer'),
         ]
         active_payloads = [p for p in payloads if any(p.values())]
-        for slot in active_payloads:
-            elements.append(_signature_cell(slot))
-            elements.append(Spacer(1, 10))
+        cells = [_signature_cell(slot) for slot in active_payloads]
+        if not cells:
+            cells = ['', '', '']
+        while len(cells) < 3:
+            cells.append('')
+        sign_table = Table([cells[:3]], colWidths=[doc.width/3.0]*3, hAlign='CENTER')
+        sign_table.setStyle(TableStyle([
+            ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+            ('VALIGN', (0,0), (-1,-1), 'TOP'),
+            ('TOPPADDING', (0,0), (-1,-1), 4),
+            ('BOTTOMPADDING', (0,0), (-1,-1), 4),
+            ('LEFTPADDING', (0,0), (-1,-1), 4),
+            ('RIGHTPADDING', (0,0), (-1,-1), 4),
+        ]))
+        elements.append(sign_table)
         elements.append(Spacer(1, 12))
 
     def _append_consultant_signature_section():
