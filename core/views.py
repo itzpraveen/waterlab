@@ -1849,7 +1849,12 @@ def download_sample_report_view(request, pk):
             cells = ['', '', '']
         while len(cells) < 3:
             cells.append('')
-        sign_table = Table([cells[:3]], colWidths=[(doc.width/3.0) - 6]*3, hAlign='CENTER')
+        sign_table = Table(
+            [cells[:3]],
+            colWidths=[(doc.width/3.0) - 6]*3,
+            rowHeights=[40*mm],
+            hAlign='CENTER',
+        )
         sign_table.setStyle(TableStyle([
             ('ALIGN', (0,0), (-1,-1), 'CENTER'),
             ('VALIGN', (0,0), (-1,-1), 'TOP'),
