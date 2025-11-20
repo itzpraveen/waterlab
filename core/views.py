@@ -1840,8 +1840,17 @@ def download_sample_report_view(request, pk):
         elements.append(Paragraph(f"<b>{safe_name}</b><br/>{safe_role}", styles['Center']))
         if len(elements) == 1:
             return elements[0]
-        # ListFlowable safely groups multiple flowables inside table cells without requiring .draw
-        return ListFlowable(elements, padding=0)
+        # Use a tiny inner table to stack the signature + caption without introducing list bullets
+        inner = Table([[el] for el in elements], colWidths=[52 * mm])
+        inner.setStyle(TableStyle([
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+            ('LEFTPADDING', (0, 0), (-1, -1), 0),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 0),
+            ('TOPPADDING', (0, 0), (-1, -1), 0),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 0),
+        ]))
+        return inner
 
     def _append_signatories_section():
         # Render on a fresh page, horizontally aligned across three columns
