@@ -26,8 +26,8 @@
             </div>
             <div class="card-action">
                 <a href="{% url 'core:sample_detail' pk=sample.pk %}">View Sample Details</a>
-                <a href="{% url 'core:download_sample_report' pk=sample.pk %}" class="btn waves-effect waves-light"><i class="material-icons left">download</i>Download Report</a>
-                <a href="{% url 'core:download_sample_report' pk=sample.pk %}?layout=plain" class="btn waves-effect"><i class="material-icons left">print</i>Plain Report</a>
+                <a href="{% url 'core:download_sample_report' pk=sample.pk %}" class="btn waves-effect waves-light" target="_blank"><i class="material-icons left">download</i>Download Report</a>
+                <a href="{% url 'core:download_sample_report' pk=sample.pk %}?layout=plain" class="btn waves-effect" target="_blank"><i class="material-icons left">print</i>Plain Report</a>
             </div>
         </div>
 
