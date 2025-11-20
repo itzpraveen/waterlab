@@ -12,7 +12,7 @@ services:
       - key: DJANGO_SETTINGS_MODULE
         value: waterlab.settings_render
       - key: MEDIA_ROOT
-        value: /data/media
+        value: /var/lib/render/data/media
       - key: WEB_CONCURRENCY
         value: 4
       - key: SECRET_KEY
@@ -29,7 +29,7 @@ services:
           property: connectionString
     disk:
       name: uploads
-      mountPath: /data
+      mountPath: /var/lib/render/data
       sizeGB: 1
 
 databases:

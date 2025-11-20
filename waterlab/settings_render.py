@@ -146,7 +146,8 @@ WHITENOISE_AUTOREFRESH = DEBUG  # Disable auto-refresh when DEBUG=False
 # Media files
 MEDIA_URL = '/media/'
 # Prefer mounted disk; gracefully fall back if unavailable or not writable.
-preferred_media_root = os.environ.get('MEDIA_ROOT', '/data/media')
+# Render disks are typically mounted under /var/lib/render/data
+preferred_media_root = os.environ.get('MEDIA_ROOT', '/var/lib/render/data/media')
 MEDIA_ROOT = preferred_media_root
 try:
     os.makedirs(MEDIA_ROOT, exist_ok=True)
