@@ -1398,7 +1398,7 @@ def download_sample_report_view(request, pk):
     from reportlab.lib import colors
     from reportlab.lib.pagesizes import A4
     from reportlab.lib.units import mm
-    from reportlab.platypus import BaseDocTemplate, Frame, PageTemplate, Table, TableStyle, Paragraph, Spacer, Image, PageBreak, KeepTogether, CondPageBreak
+    from reportlab.platypus import BaseDocTemplate, Frame, PageTemplate, Table, TableStyle, Paragraph, Spacer, Image, PageBreak, KeepTogether, CondPageBreak, ListFlowable
     from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
     from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
 
@@ -1840,7 +1840,8 @@ def download_sample_report_view(request, pk):
         elements.append(Paragraph(f"<b>{safe_name}</b><br/>{safe_role}", styles['Center']))
         if len(elements) == 1:
             return elements[0]
-        return KeepTogether(elements)
+        # ListFlowable safely groups multiple flowables inside table cells without requiring .draw
+        return ListFlowable(elements, padding=0)
 
     def _append_signatories_section():
         # Render on a fresh page, horizontally aligned across three columns
