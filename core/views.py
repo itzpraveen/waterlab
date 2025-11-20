@@ -1829,6 +1829,7 @@ def download_sample_report_view(request, pk):
         return KeepTogether(elements)
 
     def _append_signatories_section():
+        # Render on a fresh page, stacked vertically to guarantee fit
         elements.append(PageBreak())
         elements.append(Paragraph("AUTHORISED SIGNATORIES", styles['SectionTitle']))
         payloads = [
@@ -1837,24 +1838,9 @@ def download_sample_report_view(request, pk):
             _signatory_payload(signatories.get('food_analyst'), 'Chief Scientific Officer'),
         ]
         active_payloads = [p for p in payloads if any(p.values())]
-
-        # Lay them out in rows of up to 3 to preserve horizontal alignment without overflow
-        cells = [_signature_cell(slot) for slot in active_payloads]
-        rows = [cells[i:i+3] for i in range(0, len(cells), 3)] or [[]]
-        for row in rows:
-            while len(row) < 3:
-                row.append('')
-        col_width = doc.width * 0.3  # keep total width at ~90% of frame to avoid overflow
-        sign_table = Table(rows, colWidths=[col_width] * 3, hAlign='CENTER')
-        sign_table.setStyle(TableStyle([
-            ('ALIGN', (0,0), (-1,-1), 'CENTER'),
-            ('VALIGN', (0,0), (-1,-1), 'TOP'),
-            ('TOPPADDING', (0,0), (-1,-1), 6),
-            ('BOTTOMPADDING', (0,0), (-1,-1), 6),
-            ('LEFTPADDING', (0,0), (-1,-1), 4),
-            ('RIGHTPADDING', (0,0), (-1,-1), 4),
-        ]))
-        elements.append(sign_table)
+        for slot in active_payloads:
+            elements.append(_signature_cell(slot))
+            elements.append(Spacer(1, 10))
         elements.append(Spacer(1, 12))
 
     def _append_consultant_signature_section():
