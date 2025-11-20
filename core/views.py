@@ -1590,6 +1590,18 @@ def download_sample_report_view(request, pk):
         full_name = (user_obj.get_full_name() or '').strip()
         return full_name or user_obj.username
 
+    def _safe_text(value, default='N/A', preserve_breaks: bool = False) -> str:
+        """Escape user-provided text before injecting into Paragraph markup."""
+        text = ''
+        if value is not None:
+            text = str(value).strip()
+        if not text:
+            text = default
+        text = escape(text)
+        if preserve_breaks:
+            text = text.replace('\n', '<br/>')
+        return text
+
     customer = sample.customer
     location_display = (
         sample.sampling_location
@@ -1599,16 +1611,16 @@ def download_sample_report_view(request, pk):
     )
 
     meta_rows = [
-        [Paragraph('<b>Sample Code</b>', styles['Label']), Paragraph(sample.display_id or 'N/A', styles['Value']),
-         Paragraph('<b>Report Number</b>', styles['Label']), Paragraph(sample.report_number or 'N/A', styles['Value'])],
-        [Paragraph('<b>Customer</b>', styles['Label']), Paragraph(sample.customer.name or 'N/A', styles['Value']),
-         Paragraph('<b>Collected On</b>', styles['Label']), Paragraph(sample.collection_datetime.strftime('%d %b %Y %H:%M') if sample.collection_datetime else 'N/A', styles['Value'])],
-        [Paragraph('<b>Sample Source</b>', styles['Label']), Paragraph(sample.get_sample_source_display() or 'N/A', styles['Value']),
-         Paragraph('<b>Location</b>', styles['Label']), Paragraph(location_display, styles['Value'])],
-        [Paragraph('<b>Received At Lab</b>', styles['Label']), Paragraph(sample.date_received_at_lab.strftime('%d %b %Y %H:%M') if sample.date_received_at_lab else 'N/A', styles['Value']),
-         Paragraph('<b>Test Commenced</b>', styles['Label']), Paragraph(sample.test_commenced_on.strftime('%d %b %Y') if sample.test_commenced_on else 'N/A', styles['Value'])],
-        [Paragraph('<b>Test Completed</b>', styles['Label']), Paragraph(sample.test_completed_on.strftime('%d %b %Y') if sample.test_completed_on else 'N/A', styles['Value']),
-         Paragraph('<b>Chief of Quality - Microbiology</b>', styles['Label']), Paragraph(_user_display(sample.reviewed_by), styles['Value'])]
+        [Paragraph('<b>Sample Code</b>', styles['Label']), Paragraph(_safe_text(sample.display_id, 'N/A'), styles['Value']),
+         Paragraph('<b>Report Number</b>', styles['Label']), Paragraph(_safe_text(sample.report_number, 'N/A'), styles['Value'])],
+        [Paragraph('<b>Customer</b>', styles['Label']), Paragraph(_safe_text(sample.customer.name, 'N/A'), styles['Value']),
+         Paragraph('<b>Collected On</b>', styles['Label']), Paragraph(_safe_text(sample.collection_datetime.strftime('%d %b %Y %H:%M') if sample.collection_datetime else '', 'N/A'), styles['Value'])],
+        [Paragraph('<b>Sample Source</b>', styles['Label']), Paragraph(_safe_text(sample.get_sample_source_display(), 'N/A'), styles['Value']),
+         Paragraph('<b>Location</b>', styles['Label']), Paragraph(_safe_text(location_display, 'N/A'), styles['Value'])],
+        [Paragraph('<b>Received At Lab</b>', styles['Label']), Paragraph(_safe_text(sample.date_received_at_lab.strftime('%d %b %Y %H:%M') if sample.date_received_at_lab else '', 'N/A'), styles['Value']),
+         Paragraph('<b>Test Commenced</b>', styles['Label']), Paragraph(_safe_text(sample.test_commenced_on.strftime('%d %b %Y') if sample.test_commenced_on else '', 'N/A'), styles['Value'])],
+        [Paragraph('<b>Test Completed</b>', styles['Label']), Paragraph(_safe_text(sample.test_completed_on.strftime('%d %b %Y') if sample.test_completed_on else '', 'N/A'), styles['Value']),
+         Paragraph('<b>Chief of Quality - Microbiology</b>', styles['Label']), Paragraph(_safe_text(_user_display(sample.reviewed_by), 'N/A'), styles['Value'])]
     ]
     meta_table = Table(meta_rows, colWidths=[32*mm, 55*mm, 32*mm, doc.width - 119*mm])
     meta_table.setStyle(TableStyle([
@@ -1626,7 +1638,7 @@ def download_sample_report_view(request, pk):
 
     address_table = Table([
         [Paragraph('<b>Customer Address</b>', styles['Label'])],
-        [Paragraph(sample.customer.address or 'N/A', styles['Value'])]
+        [Paragraph(_safe_text(sample.customer.address, 'N/A', preserve_breaks=True), styles['Value'])]
     ], colWidths=[doc.width])
     address_table.setStyle(TableStyle([
         ('BOX', (0,0), (-1,-1), 0.75, grid_color),
@@ -1733,11 +1745,11 @@ def download_sample_report_view(request, pk):
 
             table_data.append([
                 Paragraph(str(running_index), styles['TableCell']),
-                Paragraph(param.name or '—', styles['TableCell']),
-                Paragraph(param.unit or '—', styles['TableCell']),
-                Paragraph(param.method or '—', styles['TableCell']),
+                Paragraph(_safe_text(param.name, '—'), styles['TableCell']),
+                Paragraph(_safe_text(param.unit, '—'), styles['TableCell']),
+                Paragraph(_safe_text(param.method, '—'), styles['TableCell']),
                 Paragraph(result_label, styles['TableCell']),
-                Paragraph(limits_text, styles['TableCell']),
+                Paragraph(_safe_text(limits_text, '—'), styles['TableCell']),
             ])
             running_index += 1
 
@@ -1782,7 +1794,7 @@ def download_sample_report_view(request, pk):
             for category_label, category_results in section['categories'].items():
                 label_text = (category_label or '').strip()
                 if label_text and not _labels_redundant(heading, label_text):
-                    elements.append(Paragraph(label_text, styles['CategoryHeading']))
+                    elements.append(Paragraph(_safe_text(label_text, ''), styles['CategoryHeading']))
                 table, serial_counter = _build_results_table(category_results, serial_counter)
                 elements.append(table)
                 elements.append(Spacer(1, 10))
@@ -1823,7 +1835,9 @@ def download_sample_report_view(request, pk):
             else:
                 elements.append(signature_img)
                 elements.append(Spacer(1, 4))
-        elements.append(Paragraph(f"<b>{data['name']}</b><br/>{data['role']}", styles['Center']))
+        safe_name = _safe_text(data.get('name'), 'Not assigned')
+        safe_role = _safe_text(data.get('role'), '')
+        elements.append(Paragraph(f"<b>{safe_name}</b><br/>{safe_role}", styles['Center']))
         if len(elements) == 1:
             return elements[0]
         return KeepTogether(elements)
@@ -1883,7 +1897,7 @@ def download_sample_report_view(request, pk):
             elements.append(table)
             elements.append(Spacer(1, 18))
         else:
-            elements.append(Paragraph(f"{role_label}: Not assigned", styles['Normal']))
+            elements.append(Paragraph(f"{_safe_text(role_label, role_label)}: Not assigned", styles['Normal']))
             elements.append(Spacer(1, 12))
 
     serial_counter = 1
@@ -1907,8 +1921,7 @@ def download_sample_report_view(request, pk):
 
     elements.append(Paragraph("Consultant Recommendations", styles['SectionTitle']))
     if recommendations_text:
-        safe_text = escape(recommendations_text).replace('\n', '<br/>')
-        elements.append(Paragraph(safe_text, styles['Normal']))
+        elements.append(Paragraph(_safe_text(recommendations_text, preserve_breaks=True), styles['Normal']))
     else:
         elements.append(Paragraph("No consultant recommendations recorded for this sample.", styles['Normal']))
     elements.append(Spacer(1, 18))
