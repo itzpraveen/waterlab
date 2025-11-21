@@ -1525,8 +1525,8 @@ def download_sample_report_view(request, pk):
 
     # Keep content clear of the branded header while reducing wasted space between header and body
     # Leave enough room under the branded header so the logo/ribbon doesn't overlap content.
-    top_margin_mm = 60 if include_branding else 50
-    bottom_margin_mm = 36 if include_branding else 30  # reserve space for footer logos
+    top_margin_mm = 54 if include_branding else 50   # reclaim space so large tables stay on one page
+    bottom_margin_mm = 34 if include_branding else 30  # reserve space for footer logos
 
     doc = ReportDocTemplate(
         buffer,
@@ -1755,6 +1755,9 @@ def download_sample_report_view(request, pk):
             running_index += 1
 
         table = Table(table_data, colWidths=column_widths, repeatRows=1)
+        # Tighten vertical padding under branding so long tables are less likely to spill to the next page.
+        header_padding = 5 if include_branding else 6
+        body_padding = 4 if include_branding else 6
         table_style = [
             ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
             ('ALIGN', (0,0), (-1,0), 'CENTER'),
@@ -1762,8 +1765,10 @@ def download_sample_report_view(request, pk):
             ('GRID', (0,0), (-1,-1), 0.4, grid_color),
             ('LEFTPADDING', (0,0), (-1,-1), 6),
             ('RIGHTPADDING', (0,0), (-1,-1), 6),
-            ('TOPPADDING', (0,0), (-1,-1), 6),
-            ('BOTTOMPADDING', (0,0), (-1,-1), 6),
+            ('TOPPADDING', (0,0), (-1,0), header_padding),
+            ('BOTTOMPADDING', (0,0), (-1,0), header_padding),
+            ('TOPPADDING', (0,1), (-1,-1), body_padding),
+            ('BOTTOMPADDING', (0,1), (-1,-1), body_padding),
         ]
         if include_branding:
             table_style.extend([
