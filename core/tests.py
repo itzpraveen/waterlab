@@ -1,6 +1,6 @@
 import uuid
 
-from django.test import TestCase
+from django.test import SimpleTestCase, TestCase
 from django.urls import reverse
 from .models import (
     Customer,
@@ -549,6 +549,25 @@ class SampleModelTests(TestCase):
         self.assertEqual(latest_log.object_id, str(sample.pk))
         self.assertEqual(latest_log.old_values['current_status'], 'RECEIVED_FRONT_DESK')
         self.assertEqual(latest_log.new_values['current_status'], 'SENT_TO_LAB')
+
+
+class ConsultantSignerSelectionTests(SimpleTestCase):
+    def test_prefers_signer_with_signature_and_falls_back(self):
+        from core.views import _choose_signer_with_signature
+
+        class StubUser:
+            def __init__(self, signature_path=''):
+                self.signature_path = signature_path
+
+        reviewer = StubUser('')
+        fallback = StubUser('/tmp/fallback-signature.png')
+
+        self.assertIs(_choose_signer_with_signature(reviewer, fallback), fallback)
+
+        reviewer.signature_path = '/tmp/reviewer-signature.png'
+        self.assertIs(_choose_signer_with_signature(reviewer, fallback), reviewer)
+
+        self.assertIsNone(_choose_signer_with_signature(None, None))
 
 
 class TestParameterModelTests(TestCase):

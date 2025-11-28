@@ -50,6 +50,23 @@ from reportlab.lib.utils import ImageReader
 logger = logging.getLogger(__name__)
 
 
+def _choose_signer_with_signature(preferred, fallback):
+    """Return preferred signer if they have a signature; otherwise use a fallback that does."""
+    def _has_signature(user):
+        if not user:
+            return False
+        try:
+            return bool(getattr(user, 'signature_path', '') or '')
+        except Exception:
+            return False
+
+    if _has_signature(preferred):
+        return preferred
+    if _has_signature(fallback):
+        return fallback
+    return preferred or fallback
+
+
 def _format_error_message(base_message, exc):
     """Return debug-friendly error text without leaking details in production."""
     if settings.DEBUG:
@@ -1899,7 +1916,7 @@ def download_sample_report_view(request, pk):
         """Render the consultant sign-off below remarks."""
         reviewer = review.reviewer if review else None
         fallback_consultant = signatories.get('solutions_manager')
-        consultant_user = reviewer or fallback_consultant
+        consultant_user = _choose_signer_with_signature(reviewer, fallback_consultant)
         role_label = 'Chief of Solutions - Water Quality'
         if consultant_user:
             consultant_slot = _signatory_payload(consultant_user, role_label)
