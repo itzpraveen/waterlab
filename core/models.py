@@ -165,13 +165,15 @@ class Customer(models.Model):
     
     # Detailed Kerala address fields following standard format
     house_name_door_no = models.CharField(max_length=100, blank=True, null=True, verbose_name="House Name / Door Number")
-    street_locality_landmark = models.CharField(max_length=200, verbose_name="Street / Locality") # Made required
-    village_town_city = models.CharField(max_length=100, verbose_name="Village / Town") # Made required
+    street_locality_landmark = models.CharField(max_length=200, blank=True, default='', verbose_name="Street / Locality")
+    village_town_city = models.CharField(max_length=100, blank=True, default='', verbose_name="Village / Town")
     panchayat_municipality = models.CharField(max_length=100, blank=True, default='', verbose_name="Panchayat / Municipality / Corporation")
     taluk = models.CharField(max_length=100, blank=True, default='', verbose_name="Taluk")
-    district = models.CharField(max_length=50, choices=KERALA_DISTRICTS, blank=False, null=False, default='Thiruvananthapuram', verbose_name="District") # Made required
+    district = models.CharField(max_length=50, choices=KERALA_DISTRICTS, blank=True, default='', verbose_name="District")
     pincode = models.CharField(
         max_length=6,
+        blank=True,
+        default='',
         verbose_name="PIN Code",
         validators=[
             RegexValidator(r'^\d{6}$', 'PIN code must be 6 digits.'),
@@ -192,17 +194,30 @@ class Customer(models.Model):
     def save(self, *args, **kwargs):
         # Auto-populate the address field from detailed components
         address_parts = []
-        if self.house_name_door_no:
-            address_parts.append(self.house_name_door_no)
-        address_parts.extend([
+
+        for component in (
+            self.house_name_door_no,
             self.street_locality_landmark,
             self.village_town_city,
             self.panchayat_municipality,
-            f"{self.taluk} Taluk",
-            f"{self.get_district_display()} District",
-            f"Kerala - {self.pincode}"
-        ])
-        self.address = ", ".join([part for part in address_parts if part])
+        ):
+            cleaned = (component or '').strip()
+            if cleaned:
+                address_parts.append(cleaned)
+
+        taluk_clean = (self.taluk or '').strip()
+        if taluk_clean:
+            address_parts.append(f"{taluk_clean} Taluk")
+
+        district_clean = (self.district or '').strip()
+        if district_clean:
+            address_parts.append(f"{self.get_district_display()} District")
+
+        pincode_clean = (self.pincode or '').strip()
+        if pincode_clean:
+            address_parts.append(f"Kerala - {pincode_clean}")
+
+        self.address = ", ".join(address_parts)
         super().save(*args, **kwargs)
 
     def __str__(self):

@@ -49,6 +49,7 @@
 
     <div class="info-card">
         <div class="form-section-title"><i class="material-icons">location_on</i>Address details</div>
+        <p class="text-muted small mb-2">Address fields are optional—add whatever details you have.</p>
         {% if request.user.is_staff %}
         <div class="mb-2 small text-muted">
             Admin shortcut: <a href="/admin/core/keralalocation/" target="_blank">Manage address data (districts / taluks / panchayats)</a>
@@ -61,12 +62,12 @@
                 {% if form.house_name_door_no.errors %}<div class="invalid-feedback d-block small">{{ form.house_name_door_no.errors.0 }}</div>{% endif %}
             </div>
             <div class="col-md-6">
-                <label for="{{ form.street_locality_landmark.id_for_label }}" class="form-label">Street / locality *</label>
+                <label for="{{ form.street_locality_landmark.id_for_label }}" class="form-label">Street / locality</label>
                 {{ form.street_locality_landmark }}
                 {% if form.street_locality_landmark.errors %}<div class="invalid-feedback d-block small">{{ form.street_locality_landmark.errors.0 }}</div>{% endif %}
             </div>
             <div class="col-md-6">
-                <label for="{{ form.village_town_city.id_for_label }}" class="form-label">Village / town / city *</label>
+                <label for="{{ form.village_town_city.id_for_label }}" class="form-label">Village / town / city</label>
                 {{ form.village_town_city }}
                 {% if form.village_town_city.errors %}<div class="invalid-feedback d-block small">{{ form.village_town_city.errors.0 }}</div>{% endif %}
             </div>
@@ -76,17 +77,17 @@
                     <p class="address-hierarchy__hint small mb-3">Start with the district to unlock matching taluks and panchayats.</p>
                     <div class="row g-3">
                         <div class="col-lg-4 col-md-6">
-                            <label for="{{ form.district.id_for_label }}" class="form-label">District *</label>
+                            <label for="{{ form.district.id_for_label }}" class="form-label">District</label>
                             {{ form.district }}
                             {% if form.district.errors %}<div class="invalid-feedback d-block small">{{ form.district.errors.0 }}</div>{% endif %}
                         </div>
                         <div class="col-lg-4 col-md-6">
-                            <label for="{{ form.taluk.id_for_label }}" class="form-label">Taluk *</label>
+                            <label for="{{ form.taluk.id_for_label }}" class="form-label">Taluk</label>
                             {{ form.taluk }}
                             {% if form.taluk.errors %}<div class="invalid-feedback d-block small">{{ form.taluk.errors.0 }}</div>{% endif %}
                         </div>
                         <div class="col-lg-4 col-md-6">
-                            <label for="{{ form.panchayat_municipality.id_for_label }}" class="form-label">Panchayat / municipality *</label>
+                            <label for="{{ form.panchayat_municipality.id_for_label }}" class="form-label">Panchayat / municipality</label>
                             {{ form.panchayat_municipality }}
                             {% if form.panchayat_municipality.errors %}<div class="invalid-feedback d-block small">{{ form.panchayat_municipality.errors.0 }}</div>{% endif %}
                         </div>
@@ -94,7 +95,7 @@
                 </div>
             </div>
             <div class="col-md-6">
-                <label for="{{ form.pincode.id_for_label }}" class="form-label">PIN code *</label>
+                <label for="{{ form.pincode.id_for_label }}" class="form-label">PIN code</label>
                 {{ form.pincode }}
                 {% if form.pincode.errors %}<div class="invalid-feedback d-block small">{{ form.pincode.errors.0 }}</div>{% else %}<div class="form-text">Kerala PIN codes start with 6</div>{% endif %}
             </div>

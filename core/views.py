@@ -1637,9 +1637,9 @@ def download_sample_report_view(request, pk):
          Paragraph('<b>Location</b>', styles['Label']), Paragraph(_safe_text(location_display, 'N/A'), styles['Value'])],
         [Paragraph('<b>Received At Lab</b>', styles['Label']), Paragraph(_safe_text(sample.date_received_at_lab.strftime('%d %b %Y %H:%M') if sample.date_received_at_lab else '', 'N/A'), styles['Value']),
          Paragraph('<b>Test Commenced</b>', styles['Label']), Paragraph(_safe_text(sample.test_commenced_on.strftime('%d %b %Y') if sample.test_commenced_on else '', 'N/A'), styles['Value'])],
-        [Paragraph('<b>Test Completed</b>', styles['Label']), Paragraph(_safe_text(sample.test_completed_on.strftime('%d %b %Y') if sample.test_completed_on else '', 'N/A'), styles['Value']),
-         Paragraph('<b>Chief of Quality - Microbiology</b>', styles['Label']), Paragraph(_safe_text(_user_display(sample.reviewed_by), 'N/A'), styles['Value'])]
+        [Paragraph('<b>Test Completed</b>', styles['Label']), Paragraph(_safe_text(sample.test_completed_on.strftime('%d %b %Y') if sample.test_completed_on else '', 'N/A'), styles['Value']), '', '']
     ]
+    last_meta_row_index = len(meta_rows) - 1
     meta_table = Table(meta_rows, colWidths=[32*mm, 55*mm, 32*mm, doc.width - 119*mm])
     meta_table.setStyle(TableStyle([
         ('BACKGROUND', (0,0), (-1,-1), surface),
@@ -1650,6 +1650,7 @@ def download_sample_report_view(request, pk):
         ('RIGHTPADDING', (0,0), (-1,-1), 6),
         ('TOPPADDING', (0,0), (-1,-1), 6),
         ('BOTTOMPADDING', (0,0), (-1,-1), 6),
+        ('SPAN', (1, last_meta_row_index), (3, last_meta_row_index)),
     ]))
     elements.append(meta_table)
     elements.append(Spacer(1, 8))

@@ -37,13 +37,11 @@ class CustomerForm(forms.ModelForm):
             }),
             'street_locality_landmark': forms.TextInput(attrs={
                 'class': 'form-control',
-                'placeholder': 'e.g., M.G. Road, Near Temple',
-                'required': True 
+                'placeholder': 'e.g., M.G. Road, Near Temple'
             }),
             'village_town_city': forms.TextInput(attrs={
                 'class': 'form-control',
-                'placeholder': 'e.g., Varkala, Kochi',
-                'required': True
+                'placeholder': 'e.g., Varkala, Kochi'
             }),
             'panchayat_municipality': forms.Select(attrs={ # Changed to Select
                 'class': 'form-control',
@@ -66,6 +64,21 @@ class CustomerForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+        # Make address components optional in the form and HTML
+        optional_fields = [
+            'house_name_door_no',
+            'street_locality_landmark',
+            'village_town_city',
+            'panchayat_municipality',
+            'taluk',
+            'district',
+            'pincode',
+        ]
+        for field_name in optional_fields:
+            if field_name in self.fields:
+                self.fields[field_name].required = False
+                self.fields[field_name].widget.attrs.pop('required', None)
         
         # Load address data for validation and pre-population
         try:

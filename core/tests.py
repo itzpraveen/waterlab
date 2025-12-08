@@ -57,6 +57,22 @@ class CustomerModelTests(TestCase):
         expected_address = ", ".join(filter(None, expected_address_parts))
         self.assertEqual(customer.address, expected_address)
 
+    def test_customer_can_be_created_without_address_details(self):
+        """Customers can be saved without providing address components."""
+        customer = Customer(
+            name="No Address Customer",
+            phone="9900011111",
+            email="noaddress@example.com",
+        )
+        customer.full_clean()  # Should not raise even with empty address fields
+        customer.save()
+
+        self.assertEqual(customer.address, "")
+        self.assertEqual(customer.street_locality_landmark, "")
+        self.assertEqual(customer.village_town_city, "")
+        self.assertEqual(customer.district, "")
+        self.assertEqual(customer.pincode, "")
+
     def test_customer_pincode_validation_valid(self):
         """Test valid Kerala PIN codes."""
         valid_pincodes = ["670001", "682001", "695615"]
