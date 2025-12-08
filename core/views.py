@@ -1727,7 +1727,7 @@ def download_sample_report_view(request, pk):
         'UNKNOWN': ('', '#0F172A'),
     }
 
-    def _build_results_table(category_results, start_index):
+    def _build_results_table(category_results, start_index, section_key: str):
         header = [
             Paragraph('Sl. No', styles['TableHead']),
             Paragraph('Parameter', styles['TableHead']),
@@ -1757,6 +1757,9 @@ def download_sample_report_view(request, pk):
             label_text, label_color = status_styles.get(status, ('', '#0F172A'))
             result_value = (result.result_value or '—').strip() or '—'
             colour = label_color or '#0F172A'
+            # Micro parameters: highlight "present" findings in red for clarity
+            if section_key == 'microbiological' and result_value.lower() == 'present':
+                colour = '#DC2626'
             result_label = f'<font color="{colour}">{escape(result_value)}</font>'
             # Add subtle status caption only when meaningful
             if label_text:
@@ -1819,7 +1822,7 @@ def download_sample_report_view(request, pk):
                 label_text = (category_label or '').strip()
                 if label_text and not _labels_redundant(heading, label_text):
                     elements.append(Paragraph(_safe_text(label_text, ''), styles['CategoryHeading']))
-                table, serial_counter = _build_results_table(category_results, serial_counter)
+                table, serial_counter = _build_results_table(category_results, serial_counter, section_key)
                 elements.append(table)
                 elements.append(Spacer(1, 10))
         else:
