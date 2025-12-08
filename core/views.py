@@ -1418,8 +1418,37 @@ def download_sample_report_view(request, pk):
     from reportlab.platypus import BaseDocTemplate, Frame, PageTemplate, Table, TableStyle, Paragraph, Spacer, Image, PageBreak, KeepTogether, CondPageBreak, ListFlowable
     from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
     from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
+    from reportlab.pdfbase import pdfmetrics
+    from reportlab.pdfbase.ttfonts import TTFont
 
     buffer = BytesIO()
+
+    def _register_body_fonts() -> tuple[str, str]:
+        """Register Unicode-safe fonts so non-Latin consultant notes render correctly."""
+        base_font = 'NotoSansMalayalam'
+        bold_font = f'{base_font}-Bold'
+        regular_path = finders.find('fonts/NotoSansMalayalam-Regular.ttf')
+        bold_path = finders.find('fonts/NotoSansMalayalam-Bold.ttf')
+
+        if regular_path and bold_path and os.path.exists(regular_path) and os.path.exists(bold_path):
+            try:
+                if base_font not in pdfmetrics.getRegisteredFontNames():
+                    pdfmetrics.registerFont(TTFont(base_font, regular_path))
+                if bold_font not in pdfmetrics.getRegisteredFontNames():
+                    pdfmetrics.registerFont(TTFont(bold_font, bold_path))
+                pdfmetrics.registerFontFamily(
+                    base_font,
+                    normal=base_font,
+                    bold=bold_font,
+                    italic=base_font,
+                    boldItalic=bold_font,
+                )
+                return base_font, bold_font
+            except Exception:
+                logger.warning("Unable to register Unicode fonts for reports", exc_info=settings.DEBUG)
+
+        # Fallback to base14 fonts if custom fonts are missing
+        return 'Helvetica', 'Helvetica-Bold'
 
     class ReportDocTemplate(BaseDocTemplate):
         def __init__(self, filename, include_branding=True, background_image=None, watermark_image=None, **kwargs):
@@ -1504,17 +1533,21 @@ def download_sample_report_view(request, pk):
                 draw_x = page_width - doc.rightMargin
                 cursor_y = page_height - 28*mm
 
-                def _draw_line(value: str, font_name: str = 'Helvetica', font_size: int = 9):
+                def _draw_line(value: str, font_name: str = None, font_size: int = 9):
                     nonlocal cursor_y
                     text = (value or '').strip()
                     if not text:
                         return
-                    canvas.setFont(font_name, font_size)
+                    chosen_font = font_name or body_font
+                    try:
+                        canvas.setFont(chosen_font, font_size)
+                    except Exception:
+                        canvas.setFont('Helvetica', font_size)
                     canvas.drawRightString(draw_x, cursor_y, text)
                     cursor_y -= 4*mm
 
                 canvas.setFillColor(colors.HexColor('#0F172A'))
-                _draw_line(lab_name or 'Biofix Laboratory', font_name='Helvetica-Bold', font_size=11)
+                _draw_line(lab_name or 'Biofix Laboratory', font_name=body_font_bold, font_size=11)
                 _draw_line(lab_address)
 
                 contact_line = lab_contact
@@ -1574,21 +1607,23 @@ def download_sample_report_view(request, pk):
     row_alt_color = palette['row_alt']
     header_text_color = colors.white if include_branding else text_color
 
+    body_font, body_font_bold = _register_body_fonts()
+
     styles = getSampleStyleSheet()
-    styles.add(ParagraphStyle(name='Center', alignment=TA_CENTER))
-    styles.add(ParagraphStyle(name='Right', alignment=TA_RIGHT))
-    styles.add(ParagraphStyle(name='Left', alignment=TA_LEFT))
-    styles.add(ParagraphStyle(name='ReportTitle', parent=styles['h1'], alignment=TA_CENTER, spaceAfter=12, fontSize=18))
-    styles.add(ParagraphStyle(name='SectionTitle', parent=styles['h2'], spaceAfter=10, fontSize=12, leading=14))
-    styles.add(ParagraphStyle(name='Label', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=9, textColor=muted_color))
-    styles.add(ParagraphStyle(name='Value', parent=styles['Normal'], fontSize=10, textColor=text_color))
-    styles.add(ParagraphStyle(name='TableHead', parent=styles['Normal'], fontName='Helvetica-Bold', alignment=TA_CENTER, textColor=header_text_color, fontSize=9))
-    styles.add(ParagraphStyle(name='TableCell', parent=styles['Normal'], alignment=TA_LEFT, leading=12, fontSize=9))
+    styles.add(ParagraphStyle(name='Center', alignment=TA_CENTER, fontName=body_font))
+    styles.add(ParagraphStyle(name='Right', alignment=TA_RIGHT, fontName=body_font))
+    styles.add(ParagraphStyle(name='Left', alignment=TA_LEFT, fontName=body_font))
+    styles.add(ParagraphStyle(name='ReportTitle', parent=styles['h1'], alignment=TA_CENTER, spaceAfter=12, fontSize=18, fontName=body_font_bold))
+    styles.add(ParagraphStyle(name='SectionTitle', parent=styles['h2'], spaceAfter=10, fontSize=12, leading=14, fontName=body_font_bold))
+    styles.add(ParagraphStyle(name='Label', parent=styles['Normal'], fontName=body_font_bold, fontSize=9, textColor=muted_color))
+    styles.add(ParagraphStyle(name='Value', parent=styles['Normal'], fontName=body_font, fontSize=10, textColor=text_color))
+    styles.add(ParagraphStyle(name='TableHead', parent=styles['Normal'], fontName=body_font_bold, alignment=TA_CENTER, textColor=header_text_color, fontSize=9))
+    styles.add(ParagraphStyle(name='TableCell', parent=styles['Normal'], fontName=body_font, alignment=TA_LEFT, leading=12, fontSize=9))
 
     styles.add(ParagraphStyle(
         name='CategoryHeading',
         parent=styles['Normal'],
-        fontName='Helvetica-Bold',
+        fontName=body_font_bold,
         fontSize=11,
         textColor=text_color,
         spaceBefore=10,
@@ -1598,6 +1633,7 @@ def download_sample_report_view(request, pk):
     styles['ReportTitle'].textColor = primary
     styles['SectionTitle'].textColor = primary
     styles['Normal'].textColor = text_color
+    styles['Normal'].fontName = body_font
 
     elements = []
     elements.append(Paragraph("WATER QUALITY ANALYSIS REPORT", styles['ReportTitle']))
@@ -1780,7 +1816,7 @@ def download_sample_report_view(request, pk):
         header_padding = 5 if include_branding else 6
         body_padding = 4 if include_branding else 6
         table_style = [
-            ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+            ('FONTNAME', (0,0), (-1,0), body_font_bold),
             ('ALIGN', (0,0), (-1,0), 'CENTER'),
             ('VALIGN', (0,0), (-1,-1), 'TOP'),
             ('GRID', (0,0), (-1,-1), 0.4, grid_color),
