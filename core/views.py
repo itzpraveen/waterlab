@@ -1418,36 +1418,11 @@ def download_sample_report_view(request, pk):
     from reportlab.platypus import BaseDocTemplate, Frame, PageTemplate, Table, TableStyle, Paragraph, Spacer, Image, PageBreak, KeepTogether, CondPageBreak, ListFlowable
     from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
     from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
-    from reportlab.pdfbase import pdfmetrics
-    from reportlab.pdfbase.ttfonts import TTFont
 
     buffer = BytesIO()
 
     def _register_body_fonts() -> tuple[str, str]:
-        """Register Unicode-safe fonts so non-Latin consultant notes render correctly."""
-        base_font = 'NotoSansMalayalam'
-        bold_font = f'{base_font}-Bold'
-        regular_path = finders.find('fonts/NotoSansMalayalam-Regular.ttf')
-        bold_path = finders.find('fonts/NotoSansMalayalam-Bold.ttf')
-
-        if regular_path and bold_path and os.path.exists(regular_path) and os.path.exists(bold_path):
-            try:
-                if base_font not in pdfmetrics.getRegisteredFontNames():
-                    pdfmetrics.registerFont(TTFont(base_font, regular_path))
-                if bold_font not in pdfmetrics.getRegisteredFontNames():
-                    pdfmetrics.registerFont(TTFont(bold_font, bold_path))
-                pdfmetrics.registerFontFamily(
-                    base_font,
-                    normal=base_font,
-                    bold=bold_font,
-                    italic=base_font,
-                    boldItalic=bold_font,
-                )
-                return base_font, bold_font
-            except Exception:
-                logger.warning("Unable to register Unicode fonts for reports", exc_info=settings.DEBUG)
-
-        # Fallback to base14 fonts if custom fonts are missing
+        """Use built-in Helvetica so Latin text always renders (no custom fonts)."""
         return 'Helvetica', 'Helvetica-Bold'
 
     class ReportDocTemplate(BaseDocTemplate):
