@@ -1844,8 +1844,10 @@ def download_sample_report_view(request, pk):
     review = getattr(sample, 'review', None)
     if review:
         recommendations_text = (review.recommendations or '').strip()
+        comments_text = (review.comments or '').strip()
     else:
         recommendations_text = ''
+        comments_text = ''
     signatories = sample.resolve_signatories()
 
     def _signatory_name(user):
@@ -1976,10 +1978,13 @@ def download_sample_report_view(request, pk):
     elements.append(Spacer(1, 18))
 
     elements.append(Paragraph("REMARKS", styles['SectionTitle']))
-    elements.append(Paragraph(
-        "The sample has been analysed in accordance with IS 10500:2012 guidelines. Outcomes above include automated compliance status for each parameter.",
-        styles['Normal']
-    ))
+    if comments_text:
+        elements.append(Paragraph(_safe_text(comments_text, preserve_breaks=True), styles['Normal']))
+    else:
+        elements.append(Paragraph(
+            "The sample has been analysed in accordance with IS 10500:2012 guidelines. Outcomes above include automated compliance status for each parameter.",
+            styles['Normal']
+        ))
     elements.append(Spacer(1, 12))
     _append_consultant_signature_section()
 
