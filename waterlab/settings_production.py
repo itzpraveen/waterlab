@@ -6,6 +6,7 @@ with insecure fallbacks. All critical secrets should be provided via env.
 """
 
 import os
+import sys
 from pathlib import Path
 
 from django.core.exceptions import ImproperlyConfigured
@@ -14,9 +15,16 @@ from django.core.exceptions import ImproperlyConfigured
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY WARNING: keep the secret key used in production secret!
+_BUILD_TIME_COMMANDS = {'collectstatic', 'check'}
+_is_build_time = any(cmd in sys.argv for cmd in _BUILD_TIME_COMMANDS)
+
 SECRET_KEY = os.environ.get('SECRET_KEY')
 if not SECRET_KEY:
-    raise ImproperlyConfigured("SECRET_KEY must be set via environment variable in production.")
+    if _is_build_time:
+        # Allow Docker build steps (e.g., collectstatic) to run without secrets.
+        SECRET_KEY = 'insecure-build-time-key'
+    else:
+        raise ImproperlyConfigured("SECRET_KEY must be set via environment variable in production.")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
@@ -91,7 +99,11 @@ WSGI_APPLICATION = 'waterlab.wsgi.application'
 # Database - PostgreSQL Production Configuration
 db_password = os.environ.get('DB_PASSWORD')
 if not db_password:
-    raise ImproperlyConfigured("DB_PASSWORD must be set via environment variable in production.")
+    if _is_build_time:
+        # Static collection during Docker build doesn't require DB access.
+        db_password = ''
+    else:
+        raise ImproperlyConfigured("DB_PASSWORD must be set via environment variable in production.")
 
 DATABASES = {
     'default': {
