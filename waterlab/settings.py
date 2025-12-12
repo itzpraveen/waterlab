@@ -14,6 +14,7 @@ from pathlib import Path
 import os
 from decouple import config, Csv # For environment variables
 import dj_database_url # For database configuration
+from django.core.exceptions import ImproperlyConfigured
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -23,9 +24,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-# Load SECRET_KEY from .env file. Fallback to a default (insecure) key if not found.
-# For production, ensure SECRET_KEY is set in your environment.
-SECRET_KEY = config('SECRET_KEY', default='django-insecure-fallback-key-replace-me-in-production')
+# Load SECRET_KEY from .env file. Do not allow fallback defaults in production.
+SECRET_KEY = config('SECRET_KEY', default=None)
+if not SECRET_KEY:
+    raise ImproperlyConfigured("SECRET_KEY must be set via environment variable.")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 # Load DEBUG status from .env file. Defaults to False if not set.

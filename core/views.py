@@ -49,6 +49,17 @@ from reportlab.lib.utils import ImageReader
 
 logger = logging.getLogger(__name__)
 
+_SENSITIVE_ROLES = {'admin', 'lab', 'frontdesk', 'consultant'}
+
+
+def _user_can_view_sensitive_records(user) -> bool:
+    """Gate access to customer/sample/report data until per-customer scoping exists."""
+    if not user or not user.is_authenticated:
+        return False
+    if getattr(user, 'is_superuser', False):
+        return True
+    return getattr(user, 'role', None) in _SENSITIVE_ROLES
+
 
 def _choose_signer_with_signature(preferred, fallback):
     """Return preferred signer if they have a signature; otherwise use a fallback that does."""
@@ -881,10 +892,11 @@ class TestResultDetailView(LoginRequiredMixin, DetailView):
         context['results'] = TestResult.objects.filter(sample=self.object).select_related('parameter').order_by('parameter__category', 'parameter__name')
         return context
 
-class CustomerListView(ListView):
+class CustomerListView(RoleRequiredMixin, ListView):
     model = Customer
     template_name = 'core/customer_list.html'
     context_object_name = 'customers'
+    allowed_roles = list(_SENSITIVE_ROLES)
     # LoginRequiredMixin should be added to views that require a logged-in user.
     # For CustomerListView, assuming it's a public or semi-public list, 
     # it might not need login. If it does, LoginRequiredMixin should be added.
@@ -906,10 +918,11 @@ class CustomerListView(ListView):
         
         return context
 
-class CustomerDetailView(DetailView): # New DetailView for Customer
+class CustomerDetailView(RoleRequiredMixin, DetailView): # New DetailView for Customer
     model = Customer
     template_name = 'core/customer_detail.html'
     context_object_name = 'customer'
+    allowed_roles = list(_SENSITIVE_ROLES)
 
 class CustomerCreateView(AuditMixin, FrontDeskRequiredMixin, CreateView):
     model = Customer
@@ -938,11 +951,12 @@ class CustomerUpdateView(AuditMixin, FrontDeskRequiredMixin, UpdateView):
         context['is_edit'] = True
         return context
 
-class SampleListView(LoginRequiredMixin, ListView):  # Added LoginRequiredMixin
+class SampleListView(RoleRequiredMixin, ListView):  # Restricted to staff roles
     model = Sample
     template_name = 'core/sample_list.html'
     context_object_name = 'samples'
     paginate_by = 25
+    allowed_roles = list(_SENSITIVE_ROLES)
 
     def get_queryset(self):
         qs = (
@@ -972,10 +986,11 @@ class SampleListView(LoginRequiredMixin, ListView):  # Added LoginRequiredMixin
             qs = qs.filter(collection_datetime__gte=timezone.now() - timedelta(days=7))
         return qs
 
-class SampleDetailView(DetailView): # New DetailView for Sample
+class SampleDetailView(RoleRequiredMixin, DetailView): # New DetailView for Sample
     model = Sample
     template_name = 'core/sample_detail.html'
     context_object_name = 'sample'
+    allowed_roles = list(_SENSITIVE_ROLES)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -1388,6 +1403,10 @@ def consultant_review(request, sample_id):
 @login_required
 def download_sample_report_view(request, pk):
     sample = get_object_or_404(Sample, pk=pk)
+
+    if not _user_can_view_sensitive_records(request.user):
+        messages.error(request, "You do not have permission to download this report.")
+        return redirect('core:dashboard')
 
     layout = (request.GET.get('layout') or 'branded').casefold()
     include_branding = layout != 'plain'
