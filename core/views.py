@@ -1970,13 +1970,6 @@ def download_sample_report_view(request, pk):
     # Keep recommendations and remarks on a fresh page for readability
     elements.append(PageBreak())
 
-    elements.append(Paragraph("Consultant Recommendations", styles['SectionTitle']))
-    if recommendations_text:
-        elements.append(Paragraph(_safe_text(recommendations_text, preserve_breaks=True), styles['Normal']))
-    else:
-        elements.append(Paragraph("No consultant recommendations recorded for this sample.", styles['Normal']))
-    elements.append(Spacer(1, 18))
-
     elements.append(Paragraph("REMARKS", styles['SectionTitle']))
     if comments_text:
         elements.append(Paragraph(_safe_text(comments_text, preserve_breaks=True), styles['Normal']))
@@ -1986,6 +1979,12 @@ def download_sample_report_view(request, pk):
             styles['Normal']
         ))
     elements.append(Spacer(1, 12))
+    elements.append(Paragraph("Consultant Recommendations", styles['SectionTitle']))
+    if recommendations_text:
+        elements.append(Paragraph(_safe_text(recommendations_text, preserve_breaks=True), styles['Normal']))
+    else:
+        elements.append(Paragraph("No consultant recommendations recorded for this sample.", styles['Normal']))
+    elements.append(Spacer(1, 18))
     _append_consultant_signature_section()
 
     doc.build(elements)
