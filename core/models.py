@@ -2,6 +2,7 @@ import logging
 import os
 import uuid
 
+from decimal import Decimal, InvalidOperation
 from datetime import timedelta
 
 from django.conf import settings # Recommended way to import User model
@@ -167,6 +168,14 @@ class Customer(models.Model):
     name = models.CharField(max_length=255)
     phone = models.CharField(max_length=20)
     email = models.EmailField(unique=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='customers_created',
+        help_text="Staff user who registered this customer.",
+    )
     
     # Detailed Kerala address fields following standard format
     house_name_door_no = models.CharField(max_length=100, blank=True, null=True, verbose_name="House Name / Door Number")
@@ -360,6 +369,14 @@ class Sample(models.Model):
     sample_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, help_text="Primary key UUID")
     display_id = models.CharField(max_length=20, unique=True, blank=True, null=False, editable=False, help_text="Human-readable Sample ID (e.g., WL2025-0001)") # null=False added
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name='samples')
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='samples_created',
+        help_text="Staff user who registered this sample.",
+    )
     collection_datetime = models.DateTimeField()
     sample_source = models.CharField(max_length=50, choices=SAMPLE_SOURCE_CHOICES)
     COLLECTED_BY_CHOICES = [
@@ -529,65 +546,65 @@ class Sample(models.Model):
             if not self.has_all_test_results():
                 raise ValidationError("Cannot send for review - missing test results")
         
-        # Track previous values for logging/comparison
-        old_status = self.current_status
-        old_date_received = self.date_received_at_lab
-        old_test_commenced = self.test_commenced_on
-        old_test_completed = self.test_completed_on
-        old_report_number = self.report_number
-        
-        self.current_status = new_status
-        now = timezone.now()
-        today = now.date()
-        
-        # Auto-update related timestamps
-        if new_status == 'SENT_TO_LAB' and not self.date_received_at_lab:
-            self.date_received_at_lab = now
-        
-        if new_status == 'TESTING_IN_PROGRESS':
-            if old_status == 'REVIEW_PENDING':
-                # Retesting starts afresh if consultant rejected the report
-                self.test_commenced_on = today
-                self.test_completed_on = None
-            elif not self.test_commenced_on:
-                self.test_commenced_on = today
-        
-        if new_status == 'RESULTS_ENTERED' and not self.test_completed_on:
-            self.test_completed_on = today
-        
-        if new_status == 'REVIEW_PENDING' and not self.test_completed_on:
-            self.test_completed_on = today
-        
-        if new_status in ('REPORT_APPROVED', 'REPORT_SENT') and not self.test_completed_on:
-            self.test_completed_on = today
+        with transaction.atomic():
+            # Track previous values for logging/comparison
+            old_status = self.current_status
+            old_date_received = self.date_received_at_lab
+            old_test_commenced = self.test_commenced_on
+            old_test_completed = self.test_completed_on
+            old_report_number = self.report_number
 
-        if new_status in ('RESULTS_ENTERED', 'REVIEW_PENDING', 'REPORT_APPROVED', 'REPORT_SENT'):
-            self.generate_report_number()
-        
-        self.save()
-        
-        # Log the status change
-        if user:
-            from .models import AuditTrail
-            AuditTrail.log_change(
-                user=user,
-                action='UPDATE',
-                instance=self,
-                old_values={
-                    'current_status': old_status,
-                    'date_received_at_lab': old_date_received,
-                    'test_commenced_on': old_test_commenced,
-                    'test_completed_on': old_test_completed,
-                    'report_number': old_report_number,
-                },
-                new_values={
-                    'current_status': new_status,
-                    'date_received_at_lab': self.date_received_at_lab,
-                    'test_commenced_on': self.test_commenced_on,
-                    'test_completed_on': self.test_completed_on,
-                    'report_number': self.report_number,
-                }
-            )
+            self.current_status = new_status
+            now = timezone.now()
+            today = now.date()
+
+            # Auto-update related timestamps
+            if new_status == 'SENT_TO_LAB' and not self.date_received_at_lab:
+                self.date_received_at_lab = now
+
+            if new_status == 'TESTING_IN_PROGRESS':
+                if old_status == 'REVIEW_PENDING':
+                    # Retesting starts afresh if consultant rejected the report
+                    self.test_commenced_on = today
+                    self.test_completed_on = None
+                elif not self.test_commenced_on:
+                    self.test_commenced_on = today
+
+            if new_status == 'RESULTS_ENTERED' and not self.test_completed_on:
+                self.test_completed_on = today
+
+            if new_status == 'REVIEW_PENDING' and not self.test_completed_on:
+                self.test_completed_on = today
+
+            if new_status in ('REPORT_APPROVED', 'REPORT_SENT') and not self.test_completed_on:
+                self.test_completed_on = today
+
+            if new_status in ('RESULTS_ENTERED', 'REVIEW_PENDING', 'REPORT_APPROVED', 'REPORT_SENT'):
+                self.generate_report_number()
+
+            self.save()
+
+            if user:
+                from .models import AuditTrail
+                AuditTrail.log_change(
+                    user=user,
+                    action='UPDATE',
+                    instance=self,
+                    old_values={
+                        'current_status': old_status,
+                        'date_received_at_lab': old_date_received,
+                        'test_commenced_on': old_test_commenced,
+                        'test_completed_on': old_test_completed,
+                        'report_number': old_report_number,
+                    },
+                    new_values={
+                        'current_status': new_status,
+                        'date_received_at_lab': self.date_received_at_lab,
+                        'test_commenced_on': self.test_commenced_on,
+                        'test_completed_on': self.test_completed_on,
+                        'report_number': self.report_number,
+                    },
+                )
     
     def has_all_test_results(self):
         """Check if all requested tests have results"""
@@ -801,7 +818,6 @@ class ResultStatusOverride(models.Model):
 
         return None
 
-
 class TestResult(models.Model):
     result_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     sample = models.ForeignKey(Sample, on_delete=models.CASCADE, related_name='results')
@@ -891,6 +907,17 @@ class TestResult(models.Model):
                 return override
 
         return None
+
+    def _numeric_result_value(self):
+        """Return Decimal value for numeric results, else None."""
+        raw = (self.result_value or '').strip()
+        if not raw:
+            return None
+        normalized = raw.lstrip('<>').replace(',', '').strip()
+        try:
+            return Decimal(normalized)
+        except (InvalidOperation, ValueError):
+            return None
     
     def clean(self):
         from django.core.exceptions import ValidationError
@@ -904,19 +931,14 @@ class TestResult(models.Model):
         if self.parameter:
             # Check if result should be numeric
             if self.parameter.min_permissible_limit is not None or self.parameter.max_permissible_limit is not None:
-                try:
-                    numeric_value = float(self.result_value)
-                    
-                    # Check against limits
-                    if self.parameter.min_permissible_limit is not None and numeric_value < self.parameter.min_permissible_limit:
-                        # Don't raise error, but could add warning flag
-                        pass
-                    if self.parameter.max_permissible_limit is not None and numeric_value > self.parameter.max_permissible_limit:
-                        # Don't raise error, but could add warning flag  
-                        pass
-                        
-                except ValueError:
-                    # If limits are set but value is not numeric, it might be valid (e.g., "Absent")
+                numeric_value = self._numeric_result_value()
+                if numeric_value is None:
+                    return
+
+                # Check against limits (warnings only; no hard errors).
+                if self.parameter.min_permissible_limit is not None and numeric_value < self.parameter.min_permissible_limit:
+                    pass
+                if self.parameter.max_permissible_limit is not None and numeric_value > self.parameter.max_permissible_limit:
                     pass
     
     def is_within_limits(self):
@@ -933,18 +955,19 @@ class TestResult(models.Model):
         if getattr(self.parameter, 'has_qualitative_max_limit', False):
             return True
 
-        try:
-            numeric_value = float(self.result_value)
-            
-            within_min = (self.parameter.min_permissible_limit is None or 
-                         numeric_value >= self.parameter.min_permissible_limit)
-            within_max = (self.parameter.max_permissible_limit is None or 
-                         numeric_value <= self.parameter.max_permissible_limit)
-            
-            return within_min and within_max
-        except ValueError:
-            # Non-numeric result, assume valid
+        numeric_value = self._numeric_result_value()
+        if numeric_value is None:
             return True
+
+        within_min = (
+            self.parameter.min_permissible_limit is None
+            or numeric_value >= self.parameter.min_permissible_limit
+        )
+        within_max = (
+            self.parameter.max_permissible_limit is None
+            or numeric_value <= self.parameter.max_permissible_limit
+        )
+        return within_min and within_max
     
     def get_limit_status(self):
         """Get status of result relative to limits"""
@@ -958,17 +981,21 @@ class TestResult(models.Model):
         if getattr(self.parameter, 'has_qualitative_max_limit', False):
             return "NON_NUMERIC"
 
-        try:
-            numeric_value = float(self.result_value)
-            
-            if self.parameter.min_permissible_limit is not None and numeric_value < self.parameter.min_permissible_limit:
-                return "BELOW_LIMIT"
-            elif self.parameter.max_permissible_limit is not None and numeric_value > self.parameter.max_permissible_limit:
-                return "ABOVE_LIMIT"
-            else:
-                return "WITHIN_LIMITS"
-        except ValueError:
+        numeric_value = self._numeric_result_value()
+        if numeric_value is None:
             return "NON_NUMERIC"
+
+        if (
+            self.parameter.min_permissible_limit is not None
+            and numeric_value < self.parameter.min_permissible_limit
+        ):
+            return "BELOW_LIMIT"
+        if (
+            self.parameter.max_permissible_limit is not None
+            and numeric_value > self.parameter.max_permissible_limit
+        ):
+            return "ABOVE_LIMIT"
+        return "WITHIN_LIMITS"
 
 class ConsultantReview(models.Model):
     REVIEW_STATUS_CHOICES = [

@@ -19,7 +19,7 @@ from .mixins import (
     RoleRequiredMixin,
 )
 from .models import AuditTrail, ConsultantReview, LabProfile, Sample, TestResult
-from .views_common import _SENSITIVE_ROLES, _format_error_message
+from .views_common import _SENSITIVE_ROLES, _format_error_message, apply_user_scope
 
 logger = logging.getLogger(__name__)
 
@@ -56,7 +56,7 @@ class SampleListView(RoleRequiredMixin, ListView):
             qs = qs.filter(collection_datetime__date=timezone.now().date())
         elif collected_scope == 'week':
             qs = qs.filter(collection_datetime__gte=timezone.now() - timedelta(days=7))
-        return qs
+        return apply_user_scope(qs, self.request.user)
 
 
 class SampleDetailView(RoleRequiredMixin, DetailView):
@@ -64,6 +64,9 @@ class SampleDetailView(RoleRequiredMixin, DetailView):
     template_name = 'core/sample_detail.html'
     context_object_name = 'sample'
     allowed_roles = list(_SENSITIVE_ROLES)
+
+    def get_queryset(self):
+        return apply_user_scope(super().get_queryset(), self.request.user)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -130,6 +133,8 @@ class SampleCreateView(AuditMixin, FrontDeskRequiredMixin, CreateView):
     success_url = reverse_lazy('core:sample_list')
 
     def form_valid(self, form):
+        if not form.instance.created_by and self.request.user.is_authenticated:
+            form.instance.created_by = self.request.user
         messages.success(self.request, 'Sample has been registered successfully!')
         return super().form_valid(form)
 
@@ -138,6 +143,9 @@ class SampleUpdateView(AuditMixin, FrontDeskRequiredMixin, UpdateView):
     model = Sample
     form_class = SampleForm
     template_name = 'core/sample_form.html'
+
+    def get_queryset(self):
+        return apply_user_scope(super().get_queryset(), self.request.user)
 
     def get_success_url(self):
         return reverse_lazy('core:sample_detail', kwargs={'pk': self.object.pk})
@@ -351,7 +359,8 @@ def consultant_review(request, sample_id):
 
 
 def sample_status_update(request, sample_id):
-    sample = get_object_or_404(Sample, sample_id=sample_id)
+    sample_qs = apply_user_scope(Sample.objects.all(), request.user)
+    sample = get_object_or_404(sample_qs, sample_id=sample_id)
 
     if request.method == 'POST':
         if not (
@@ -411,4 +420,3 @@ def sample_status_update(request, sample_id):
         return redirect('core:sample_detail', pk=sample.sample_id)
 
     return redirect('core:sample_detail', pk=sample.sample_id)
-

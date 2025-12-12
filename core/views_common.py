@@ -39,6 +39,23 @@ def _user_can_view_sensitive_records(user) -> bool:
     return getattr(user, 'role', None) in _SENSITIVE_ROLES
 
 
+def apply_user_scope(queryset, user):
+    """Optionally restrict a queryset to the requesting user's records.
+
+    When `ENFORCE_USER_SCOPING` is enabled in settings, front desk staff only
+    see customers/samples they created. Admins and other staff remain global.
+    """
+    if not getattr(settings, 'ENFORCE_USER_SCOPING', False):
+        return queryset
+    if not user or not user.is_authenticated:
+        return queryset.none()
+    if getattr(user, 'is_superuser', False) or getattr(user, 'role', None) == 'admin':
+        return queryset
+    if getattr(user, 'role', None) == 'frontdesk':
+        return queryset.filter(created_by=user)
+    return queryset
+
+
 def _choose_signer_with_signature(preferred, fallback):
     """Return preferred signer if they have a signature; otherwise use a fallback that does."""
     def _has_signature(user):
@@ -349,4 +366,3 @@ def simple_dashboard(request):
     """
 
     return HttpResponse(html_content)
-
