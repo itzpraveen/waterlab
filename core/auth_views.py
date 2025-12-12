@@ -41,7 +41,11 @@ class UserLoginView(LoginView):
             'admin': 'Administrator',
             'lab': 'Lab Technician',
             'frontdesk': 'Front Desk Staff',
-            'consultant': 'Consultant'
+            'consultant': 'Consultant',
+            'food_analyst': 'Chief Scientific Officer',
+            'bio_manager': 'Chief of Quality - Microbiology',
+            'chem_manager': 'Chief of Quality - Chemistry',
+            'solutions_manager': 'Chief of Solutions - Water Quality',
         }.get(user.role, 'User')
 
         messages.success(self.request, f'Welcome {user.get_full_name() or user.username}! ({role_name})')

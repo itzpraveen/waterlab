@@ -8,7 +8,8 @@ from django.conf import settings # Recommended way to import User model
 from django.contrib.auth.models import AbstractUser
 from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator
-from django.db import models
+from django.db import IntegrityError, models, transaction
+from django.db.models import Q
 from django.templatetags.static import static
 from django.utils import timezone
 
@@ -72,6 +73,10 @@ class CustomUser(AbstractUser):
     
     def is_lab_tech(self):
         return self.role == 'lab'
+
+    # Backwards-compatible alias used in templates.
+    def is_lab_technician(self):
+        return self.is_lab_tech()
     
     def is_frontdesk(self):
         return self.role == 'frontdesk'
@@ -391,31 +396,51 @@ class Sample(models.Model):
             models.Index(fields=["date_received_at_lab"], name="sample_received_lab_idx"),
             models.Index(fields=["current_status", "date_received_at_lab"], name="sample_status_received_idx"),
         ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["report_number"],
+                condition=Q(report_number__isnull=False) & ~Q(report_number=""),
+                name="unique_sample_report_number",
+            ),
+        ]
 
     def __str__(self):
         return self.display_id if self.display_id else str(self.sample_id)
 
     def save(self, *args, **kwargs):
-        if not self.display_id:
+        """Generate a year-scoped sequential display_id safely under concurrency."""
+        if self.display_id:
+            return super().save(*args, **kwargs)
+
+        max_attempts = 5
+        for attempt in range(max_attempts):
             current_year = timezone.now().year
             prefix = f"WL{current_year}-"
-            
-            # Get the last sample created this year to determine the next sequence number
-            last_sample_this_year = Sample.objects.filter(display_id__startswith=prefix).order_by('display_id').last()
-            
-            if last_sample_this_year and last_sample_this_year.display_id:
-                try:
-                    last_sequence = int(last_sample_this_year.display_id.split('-')[-1])
-                    new_sequence = last_sequence + 1
-                except (IndexError, ValueError):
-                    # Fallback if parsing fails, though unlikely with the new format
-                    new_sequence = 1 
-            else:
-                new_sequence = 1
-            
-            self.display_id = f"{prefix}{new_sequence:04d}" # Padded to 4 digits
 
-        super().save(*args, **kwargs) # Call the "real" save() method.
+            try:
+                with transaction.atomic():
+                    last_sample_this_year = (
+                        Sample.objects
+                        .filter(display_id__startswith=prefix)
+                        .select_for_update()
+                        .order_by('display_id')
+                        .last()
+                    )
+
+                    sequence = 1
+                    if last_sample_this_year and last_sample_this_year.display_id:
+                        try:
+                            sequence = int(last_sample_this_year.display_id.split('-')[-1]) + 1
+                        except (IndexError, ValueError):
+                            sequence = 1
+
+                    self.display_id = f"{prefix}{sequence:04d}"
+                    return super().save(*args, **kwargs)
+            except IntegrityError:
+                # A concurrent insert likely grabbed the same sequence.
+                self.display_id = None
+                if attempt == max_attempts - 1:
+                    raise
 
     def clean(self):
         from django.core.exceptions import ValidationError
@@ -449,28 +474,44 @@ class Sample(models.Model):
         return new_status in valid_transitions.get(self.current_status, [])
     
     def generate_report_number(self) -> str:
-        """Generate a sequential report number per calendar year when missing."""
+        """Generate a sequential report number per calendar year when missing.
+
+        Uses a short retry loop to reduce collisions during concurrent approvals.
+        """
         if self.report_number:
             return self.report_number
 
-        current_year = timezone.now().year
-        prefix = f"RPT{current_year}-"
-        last_with_number = (
-            Sample.objects.exclude(report_number__isnull=True)
-            .filter(report_number__startswith=prefix)
-            .order_by('report_number')
-            .last()
-        )
+        max_attempts = 5
+        for attempt in range(max_attempts):
+            current_year = timezone.now().year
+            prefix = f"RPT{current_year}-"
 
-        sequence = 1
-        if last_with_number and last_with_number.report_number:
-            try:
-                sequence = int(last_with_number.report_number.split('-')[-1]) + 1
-            except (ValueError, IndexError):
+            with transaction.atomic():
+                last_with_number = (
+                    Sample.objects.exclude(report_number__isnull=True)
+                    .exclude(report_number__exact='')
+                    .filter(report_number__startswith=prefix)
+                    .select_for_update()
+                    .order_by('report_number')
+                    .last()
+                )
+
                 sequence = 1
+                if last_with_number and last_with_number.report_number:
+                    try:
+                        sequence = int(last_with_number.report_number.split('-')[-1]) + 1
+                    except (ValueError, IndexError):
+                        sequence = 1
 
-        self.report_number = f"{prefix}{sequence:04d}"
-        return self.report_number
+                candidate = f"{prefix}{sequence:04d}"
+                if not Sample.objects.filter(report_number=candidate).exists():
+                    self.report_number = candidate
+                    return candidate
+
+            # If we couldn't claim a unique candidate, loop and try again.
+            if attempt == max_attempts - 1:
+                self.report_number = candidate
+                return candidate
 
     def update_status(self, new_status, user=None):
         """Safely update sample status with validation"""

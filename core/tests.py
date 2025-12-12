@@ -14,6 +14,7 @@ from .models import (
 )
 from django.utils import timezone
 from django.core.exceptions import ValidationError
+from django.db.utils import IntegrityError
 from datetime import timedelta
 
 class CustomerModelTests(TestCase):
@@ -402,6 +403,19 @@ class SampleModelTests(TestCase):
 
         self.assertNotEqual(first_report_number, second_report_number)
         self.assertTrue(int(second_report_number.split('-')[-1]) > int(first_report_number.split('-')[-1]))
+
+    def test_report_number_unique_constraint_enforced(self):
+        """Duplicate non-empty report numbers should be rejected at the DB level."""
+        sample1 = Sample.objects.create(**self.sample_data)
+        sample2 = Sample.objects.create(**self.sample_data)
+
+        report_number = f"RPT{timezone.now().year}-9999"
+        sample1.report_number = report_number
+        sample1.save()
+
+        sample2.report_number = report_number
+        with self.assertRaises(IntegrityError):
+            sample2.save()
 
     def test_resolve_signatories_uses_lab_profile_defaults(self):
         default_food = CustomUser.objects.create_user(username="default_food", role="lab")

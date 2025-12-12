@@ -1,27 +1,31 @@
 """
 Render.com specific settings for waterlab project.
+
+This module layers Render-specific overrides on top of `waterlab.settings`.
+Critical secrets must be provided by the Render environment.
 """
 
 import os
 import dj_database_url
 from pathlib import Path
+
+from django.core.exceptions import ImproperlyConfigured
+
 from .settings import *
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-local-key-for-testing-only')
+SECRET_KEY = os.environ.get('SECRET_KEY')
+if not SECRET_KEY:
+    raise ImproperlyConfigured("SECRET_KEY must be set via environment variable on Render.")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-# Render.com provides the hostname
-ALLOWED_HOSTS = [
-    'localhost',
-    '127.0.0.1',
-    '.onrender.com',  # Allows all Render subdomains
-]
+# ALLOWED_HOSTS is computed in base settings, including RENDER_EXTERNAL_HOSTNAME
+# and `.onrender.com`. Do not override here to avoid dropping hostnames.
 
 # Add Render.com specific headers
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')

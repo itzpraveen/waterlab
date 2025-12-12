@@ -49,7 +49,18 @@ from reportlab.lib.utils import ImageReader
 
 logger = logging.getLogger(__name__)
 
-_SENSITIVE_ROLES = {'admin', 'lab', 'frontdesk', 'consultant'}
+# Roles allowed to view customer/sample/report data.
+# Keep in sync with CustomUser.ROLE_CHOICES.
+_SENSITIVE_ROLES = {
+    'admin',
+    'lab',
+    'frontdesk',
+    'consultant',
+    'food_analyst',
+    'bio_manager',
+    'chem_manager',
+    'solutions_manager',
+}
 
 
 def _user_can_view_sensitive_records(user) -> bool:

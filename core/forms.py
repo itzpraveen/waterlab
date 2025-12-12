@@ -82,7 +82,8 @@ class CustomerForm(forms.ModelForm):
         
         # Load address data for validation and pre-population
         try:
-            with open('static/js/kerala_address_data.json', 'r') as f:
+            address_path = settings.BASE_DIR / 'static' / 'js' / 'kerala_address_data.json'
+            with open(address_path, 'r', encoding='utf-8') as f:
                 self.address_data = json.load(f)
         except FileNotFoundError:
             self.address_data = {}

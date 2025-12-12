@@ -1,27 +1,42 @@
 """
-Production settings for Water Lab LIMS
-This file contains production-ready configurations for professional deployment
+Production settings for Water Lab LIMS.
+
+This module is intended for real deployments and therefore must *not* ship
+with insecure fallbacks. All critical secrets should be provided via env.
 """
 
 import os
 from pathlib import Path
 
+from django.core.exceptions import ImproperlyConfigured
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY WARNING: keep the secret key used in production secret!
-# In production, use environment variable: export SECRET_KEY='your-secret-key'
-SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-5bk%$o610n*i6&1ib#foe49(&r=(lenxpr-j#bdycs#c1mo%l&')
+SECRET_KEY = os.environ.get('SECRET_KEY')
+if not SECRET_KEY:
+    raise ImproperlyConfigured("SECRET_KEY must be set via environment variable in production.")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
 
-ALLOWED_HOSTS = [
-    'localhost',
-    '127.0.0.1',
-    'your-domain.com',  # Replace with your actual domain
-    'waterlab.yourdomain.com',  # Replace with your subdomain
-]
+# Domain configuration: prefer explicit ALLOWED_HOSTS, else derive from DOMAIN_NAME/SERVER_IP.
+allowed_hosts_env = os.environ.get('ALLOWED_HOSTS')
+if allowed_hosts_env:
+    ALLOWED_HOSTS = [h.strip() for h in allowed_hosts_env.split(',') if h.strip()]
+else:
+    ALLOWED_HOSTS = []
+    for host in (
+        os.environ.get('DOMAIN_NAME'),
+        os.environ.get('SERVER_IP'),
+        'localhost',
+        '127.0.0.1',
+    ):
+        if host and host not in ALLOWED_HOSTS:
+            ALLOWED_HOSTS.append(host)
+if not ALLOWED_HOSTS:
+    raise ImproperlyConfigured("ALLOWED_HOSTS must be set for production.")
 
 # Application definition
 INSTALLED_APPS = [
@@ -74,12 +89,16 @@ TEMPLATES = [
 WSGI_APPLICATION = 'waterlab.wsgi.application'
 
 # Database - PostgreSQL Production Configuration
+db_password = os.environ.get('DB_PASSWORD')
+if not db_password:
+    raise ImproperlyConfigured("DB_PASSWORD must be set via environment variable in production.")
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': os.environ.get('DB_NAME', 'waterlab'),
         'USER': os.environ.get('DB_USER', 'waterlab'),
-        'PASSWORD': os.environ.get('DB_PASSWORD', 'Well_567!'),
+        'PASSWORD': db_password,
         'HOST': os.environ.get('DB_HOST', 'localhost'),
         'PORT': os.environ.get('DB_PORT', '5432'),
         'OPTIONS': {
