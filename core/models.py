@@ -167,7 +167,7 @@ class Customer(models.Model):
     customer_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=255)
     phone = models.CharField(max_length=20)
-    email = models.EmailField(unique=True)
+    email = models.EmailField(unique=True, blank=True, null=True)
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
@@ -206,6 +206,10 @@ class Customer(models.Model):
         ordering = ["name"]
 
     def save(self, *args, **kwargs):
+        if self.email is not None:
+            cleaned_email = self.email.strip()
+            self.email = cleaned_email or None
+
         # Auto-populate the address field from detailed components
         address_parts = []
 

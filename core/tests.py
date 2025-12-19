@@ -63,16 +63,22 @@ class CustomerModelTests(TestCase):
         customer = Customer(
             name="No Address Customer",
             phone="9900011111",
-            email="noaddress@example.com",
         )
         customer.full_clean()  # Should not raise even with empty address fields
         customer.save()
 
         self.assertEqual(customer.address, "")
+        self.assertIsNone(customer.email)
         self.assertEqual(customer.street_locality_landmark, "")
         self.assertEqual(customer.village_town_city, "")
         self.assertEqual(customer.district, "")
         self.assertEqual(customer.pincode, "")
+
+    def test_customer_can_be_created_without_email(self):
+        """Customers can be created without providing an email address."""
+        Customer.objects.create(name="No Email Customer", phone="9012345678")
+        Customer.objects.create(name="No Email Customer 2", phone="9012345679")
+        self.assertEqual(Customer.objects.filter(email__isnull=True).count(), 2)
 
     def test_customer_pincode_validation_valid(self):
         """Test valid Kerala PIN codes."""

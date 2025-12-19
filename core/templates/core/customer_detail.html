@@ -20,8 +20,10 @@
             <dl class="row mb-0 small">
                 <dt class="col-5 text-muted">Full name</dt>
                 <dd class="col-7 mb-2">{{ customer.name }}</dd>
+                {% if customer.email %}
                 <dt class="col-5 text-muted">Email</dt>
                 <dd class="col-7 mb-2"><a href="mailto:{{ customer.email }}">{{ customer.email }}</a></dd>
+                {% endif %}
                 <dt class="col-5 text-muted">Phone</dt>
                 <dd class="col-7 mb-0"><a href="tel:{{ customer.phone }}">{{ customer.phone }}</a></dd>
             </dl>

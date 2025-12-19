@@ -65,6 +65,10 @@ class CustomerForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+        if 'email' in self.fields:
+            self.fields['email'].required = False
+            self.fields['email'].widget.attrs.pop('required', None)
+
         # Make address components optional in the form and HTML
         optional_fields = [
             'house_name_door_no',
@@ -123,6 +127,9 @@ class CustomerForm(forms.ModelForm):
             self.fields['taluk'].widget.attrs['disabled'] = 'disabled'
             self.fields['panchayat_municipality'].widget.attrs['disabled'] = 'disabled'
 
+    def clean_email(self):
+        email = (self.cleaned_data.get('email') or '').strip()
+        return email or None
 
     def clean(self):
         cleaned_data = super().clean()
