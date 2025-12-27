@@ -15,6 +15,12 @@
             <i class="material-icons align-middle me-1">arrow_back</i>
             Back to sample
         </a>
+        {% if user.is_lab_technician or user.is_admin %}
+        <a href="{% url 'core:sample_report_metadata' sample.pk %}" class="btn btn-primary">
+            <i class="material-icons align-middle me-1">tune</i>
+            Update report metadata
+        </a>
+        {% endif %}
     </div>
 </div>
 {% endblock %}
