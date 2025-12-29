@@ -152,13 +152,36 @@ class SampleUpdateView(AuditMixin, FrontDeskRequiredMixin, UpdateView):
 
     def form_valid(self, form):
         sample = self.get_object()
+        allowed_edit_statuses = {'RECEIVED_FRONT_DESK', 'SENT_TO_LAB'}
 
-        if sample.current_status not in ['RECEIVED_FRONT_DESK', 'SENT_TO_LAB']:
-            messages.error(
-                self.request,
-                f'Cannot edit sample in status "{sample.get_current_status_display()}". '
-                'Only samples that are "Received at Front Desk" or "Sent to Lab" can be modified.',
-            )
+        if sample.current_status not in allowed_edit_statuses:
+            disallowed_changes = [
+                field for field in form.changed_data if field != 'date_received_at_lab'
+            ]
+            if disallowed_changes:
+                messages.error(
+                    self.request,
+                    f'Cannot edit sample in status "{sample.get_current_status_display()}". '
+                    'Only the "Received at Lab" date can be updated at this stage.',
+                )
+                return redirect('core:sample_detail', pk=sample.sample_id)
+
+            if 'date_received_at_lab' in form.changed_data:
+                old_date_received = sample.date_received_at_lab
+                sample.date_received_at_lab = form.cleaned_data.get('date_received_at_lab')
+                sample.save(update_fields=['date_received_at_lab'])
+                AuditTrail.log_change(
+                    user=self.request.user,
+                    action='UPDATE',
+                    instance=sample,
+                    old_values={'date_received_at_lab': old_date_received},
+                    new_values={'date_received_at_lab': sample.date_received_at_lab},
+                    request=self.request,
+                )
+                messages.success(self.request, 'Received at Lab date has been updated successfully!')
+            else:
+                messages.info(self.request, 'No changes were detected.')
+
             return redirect('core:sample_detail', pk=sample.sample_id)
 
         if sample.current_status == 'SENT_TO_LAB':
