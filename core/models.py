@@ -370,6 +370,14 @@ class Sample(models.Model):
         ('REPORT_SENT', 'Report Sent'),
         ('CANCELLED', 'Cancelled'),
     ]
+    RECEIVED_AT_LAB_STATUSES = (
+        'SENT_TO_LAB',
+        'TESTING_IN_PROGRESS',
+        'RESULTS_ENTERED',
+        'REVIEW_PENDING',
+        'REPORT_APPROVED',
+        'REPORT_SENT',
+    )
 
     sample_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, help_text="Primary key UUID")
     display_id = models.CharField(max_length=20, unique=True, blank=True, null=False, editable=False, help_text="Human-readable Sample ID (e.g., WL2025-0001)") # null=False added
@@ -429,8 +437,15 @@ class Sample(models.Model):
     def __str__(self):
         return self.display_id if self.display_id else str(self.sample_id)
 
+    def _ensure_date_received_at_lab(self):
+        if self.date_received_at_lab or not self.collection_datetime:
+            return
+        if self.current_status in self.RECEIVED_AT_LAB_STATUSES:
+            self.date_received_at_lab = self.collection_datetime
+
     def save(self, *args, **kwargs):
         """Generate a year-scoped sequential display_id safely under concurrency."""
+        self._ensure_date_received_at_lab()
         if self.display_id:
             return super().save(*args, **kwargs)
 
@@ -564,8 +579,7 @@ class Sample(models.Model):
             today = now.date()
 
             # Auto-update related timestamps
-            if new_status == 'SENT_TO_LAB' and not self.date_received_at_lab:
-                self.date_received_at_lab = now
+            self._ensure_date_received_at_lab()
 
             if new_status == 'TESTING_IN_PROGRESS':
                 if old_status == 'REVIEW_PENDING':

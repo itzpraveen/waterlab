@@ -86,11 +86,11 @@
                     <td class="text-center">{{ sample.tests_requested.count }}</td>
                     <td>
                         {% with status=sample.current_status %}
-                            {% if status in 'REPORT_APPROVED,REPORT_SENT' %}
+                            {% if status == 'REPORT_APPROVED' or status == 'REPORT_SENT' %}
                                 <span class="badge-soft success"><i class="material-icons">check_circle</i>{{ sample.get_current_status_display }}</span>
-                            {% elif status in 'RESULTS_ENTERED,REVIEW_PENDING' %}
+                            {% elif status == 'RESULTS_ENTERED' or status == 'REVIEW_PENDING' %}
                                 <span class="badge-soft warning"><i class="material-icons">hourglass_empty</i>{{ sample.get_current_status_display }}</span>
-                            {% elif status in 'TESTING_IN_PROGRESS' %}
+                            {% elif status == 'TESTING_IN_PROGRESS' %}
                                 <span class="badge-soft info"><i class="material-icons">science</i>{{ sample.get_current_status_display }}</span>
                             {% else %}
                                 <span class="badge-soft"><i class="material-icons">assignment</i>{{ sample.get_current_status_display }}</span>
@@ -103,14 +103,14 @@
                                 <i class="material-icons">visibility</i>
                             </a>
                             {% if user.is_lab_technician or user.is_admin %}
-                                {% if sample.current_status in 'SENT_TO_LAB,TESTING_IN_PROGRESS,RESULTS_ENTERED' %}
+                                {% if sample.current_status == 'SENT_TO_LAB' or sample.current_status == 'TESTING_IN_PROGRESS' or sample.current_status == 'RESULTS_ENTERED' %}
                                 <a href="{% url 'core:test_result_entry' sample_id=sample.sample_id %}" class="btn btn-sm btn-outline-secondary" data-bs-toggle="tooltip" title="Enter results">
                                     <i class="material-icons">edit_note</i>
                                 </a>
                                 {% endif %}
                             {% endif %}
                             {% if user.is_consultant or user.is_admin %}
-                                {% if sample.current_status in 'RESULTS_ENTERED,REVIEW_PENDING' %}
+                                {% if sample.current_status == 'RESULTS_ENTERED' or sample.current_status == 'REVIEW_PENDING' %}
                                 <a href="{% url 'core:consultant_review' sample_id=sample.sample_id %}" class="btn btn-sm btn-outline-secondary" data-bs-toggle="tooltip" title="Consultant review">
                                     <i class="material-icons">rate_review</i>
                                 </a>

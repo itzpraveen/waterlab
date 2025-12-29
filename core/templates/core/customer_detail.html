@@ -98,11 +98,11 @@
                             <td><a href="{% url 'core:sample_detail' sample_item.pk %}" class="text-decoration-none">{{ sample_item.sample_id|truncatechars:12 }}</a></td>
                             <td>{{ sample_item.collection_datetime|date:"M d, Y" }}</td>
                             <td>
-                                {% if sample_item.current_status in 'REPORT_APPROVED,REPORT_SENT' %}
+                                {% if sample_item.current_status == 'REPORT_APPROVED' or sample_item.current_status == 'REPORT_SENT' %}
                                     <span class="badge-soft success">{{ sample_item.get_current_status_display }}</span>
-                                {% elif sample_item.current_status in 'RESULTS_ENTERED,REVIEW_PENDING' %}
+                                {% elif sample_item.current_status == 'RESULTS_ENTERED' or sample_item.current_status == 'REVIEW_PENDING' %}
                                     <span class="badge-soft warning">{{ sample_item.get_current_status_display }}</span>
-                                {% elif sample_item.current_status in 'TESTING_IN_PROGRESS' %}
+                                {% elif sample_item.current_status == 'TESTING_IN_PROGRESS' %}
                                     <span class="badge-soft info">{{ sample_item.get_current_status_display }}</span>
                                 {% else %}
                                     <span class="badge-soft">{{ sample_item.get_current_status_display }}</span>

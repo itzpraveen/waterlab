@@ -278,6 +278,17 @@ class SampleModelTests(TestCase):
         self.assertEqual(sample.current_status, 'SENT_TO_LAB')
         self.assertIsNotNone(sample.date_received_at_lab) # Check timestamp auto-population
 
+    def test_sample_date_received_defaults_to_collection_date(self):
+        sample = Sample.objects.create(**self.sample_data)
+        sample.update_status('SENT_TO_LAB', user=self.lab_user)
+        self.assertEqual(sample.date_received_at_lab, sample.collection_datetime)
+
+    def test_sample_date_received_defaults_on_save_for_lab_status(self):
+        sample_data = self.sample_data.copy()
+        sample_data["current_status"] = "SENT_TO_LAB"
+        sample = Sample.objects.create(**sample_data)
+        self.assertEqual(sample.date_received_at_lab, sample.collection_datetime)
+
     def test_sample_update_status_invalid_transition(self):
         """Test an invalid status transition."""
         sample = Sample.objects.create(**self.sample_data)

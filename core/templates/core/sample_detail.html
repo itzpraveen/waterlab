@@ -348,7 +348,7 @@
                 {% endif %}
 
                 {% if user.is_lab_technician or user.is_admin %}
-                    {% if sample.current_status in 'SENT_TO_LAB,TESTING_IN_PROGRESS,RESULTS_ENTERED' or user.is_admin and sample.current_status == 'REVIEW_PENDING' %}
+                    {% if sample.current_status == 'SENT_TO_LAB' or sample.current_status == 'TESTING_IN_PROGRESS' or sample.current_status == 'RESULTS_ENTERED' or user.is_admin and sample.current_status == 'REVIEW_PENDING' %}
                     <a href="{% url 'core:test_result_entry' sample.pk %}" class="btn btn-outline-secondary"><i class="material-icons me-1">edit_note</i>Enter / edit results</a>
                     {% endif %}
                     {% if sample.current_status == 'RESULTS_ENTERED' %}
@@ -362,7 +362,7 @@
                     {% endif %}
                 {% endif %}
 
-                {% if sample.current_status in 'REPORT_APPROVED,REPORT_SENT' %}
+                {% if sample.current_status == 'REPORT_APPROVED' or sample.current_status == 'REPORT_SENT' %}
                 <a href="{% url 'core:download_sample_report' pk=sample.pk %}" class="btn btn-outline-secondary" target="_blank">
                     <i class="material-icons me-1">download</i>Download report
                 </a>
@@ -372,7 +372,7 @@
                 {% endif %}
 
                 {% if user.is_consultant or user.is_admin %}
-                    {% if sample.current_status in 'RESULTS_ENTERED,REVIEW_PENDING' %}
+                    {% if sample.current_status == 'RESULTS_ENTERED' or sample.current_status == 'REVIEW_PENDING' %}
                     <a href="{% url 'core:consultant_review' sample.pk %}" class="btn btn-outline-secondary"><i class="material-icons me-1">rate_review</i>Consultant review</a>
                     {% endif %}
                 {% endif %}

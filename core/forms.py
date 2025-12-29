@@ -1,3 +1,4 @@
+import datetime
 import json # Added for loading address data
 from collections import OrderedDict
 from dataclasses import dataclass
@@ -183,10 +184,24 @@ class SampleForm(forms.ModelForm):
             format='%d/%m/%Y %H:%M'
         )
     )
+    date_received_at_lab = forms.DateTimeField(
+        required=False,
+        input_formats=_input_formats,
+        widget=forms.DateTimeInput(
+            attrs={
+                'class': 'form-control js-datetime-picker',
+                'type': 'text',
+                'data-alt-format': 'j M Y, h:i K',
+                'data-date-format': 'd/m/Y H:i'
+            },
+            format='%d/%m/%Y %H:%M'
+        )
+    )
     class Meta:
         model = Sample
         fields = [
-            'customer', 'collection_datetime', 'sample_source', 'collected_by', 'referred_by', 'tests_requested'
+            'customer', 'collection_datetime', 'date_received_at_lab', 'sample_source', 'collected_by',
+            'referred_by', 'tests_requested'
         ]
         widgets = {
             'customer': forms.Select(attrs={
@@ -199,39 +214,41 @@ class SampleForm(forms.ModelForm):
             'tests_requested': forms.CheckboxSelectMultiple(attrs={'class': 'form-check-input'}),
         }
 
-    def clean_collection_datetime(self):
-        from django.utils import timezone
-        import datetime
-
-        collection_datetime = self.cleaned_data.get('collection_datetime')
-        if not collection_datetime:
-            return collection_datetime
+    def _normalize_datetime(self, value):
+        if not value:
+            return value
 
         # If the input is a string from the form widget, parse it
-        if isinstance(collection_datetime, str):
+        if isinstance(value, str):
             dt = None
             for fmt in self._input_formats:
                 try:
-                    dt = datetime.datetime.strptime(collection_datetime, fmt)
+                    dt = datetime.datetime.strptime(value, fmt)
                     break
                 except ValueError:
                     pass
-            
+
             if dt is None:
                 raise ValidationError("Invalid datetime format. Please use DD/MM/YYYY, DD/MM/YYYY HH:MM, or DD/MM/YYYY HH:MM:SS.")
 
             # Make the parsed datetime timezone-aware
             current_tz = timezone.get_current_timezone()
-            collection_datetime = current_tz.localize(dt)
-        
-        # If it's already a datetime object, ensure it's timezone-aware
-        elif isinstance(collection_datetime, datetime.datetime) and timezone.is_naive(collection_datetime):
-            current_tz = timezone.get_current_timezone()
-            collection_datetime = current_tz.localize(collection_datetime)
+            return current_tz.localize(dt)
 
+        # If it's already a datetime object, ensure it's timezone-aware
+        if isinstance(value, datetime.datetime) and timezone.is_naive(value):
+            current_tz = timezone.get_current_timezone()
+            return current_tz.localize(value)
+
+        return value
+
+    def clean_collection_datetime(self):
         # Returning the cleaned datetime value without future-date validation
         # to resolve the persistent error.
-        return collection_datetime
+        return self._normalize_datetime(self.cleaned_data.get('collection_datetime'))
+
+    def clean_date_received_at_lab(self):
+        return self._normalize_datetime(self.cleaned_data.get('date_received_at_lab'))
 
     def clean_tests_requested(self):
         tests_requested = self.cleaned_data.get('tests_requested')
@@ -245,6 +262,16 @@ class SampleForm(forms.ModelForm):
         if not tests_requested:
             raise ValidationError("At least one test must be requested.")
         return tests_requested
+
+    def clean(self):
+        cleaned_data = super().clean()
+        collection_datetime = cleaned_data.get('collection_datetime')
+
+        if not cleaned_data.get('date_received_at_lab') and collection_datetime:
+            if self.instance.current_status in Sample.RECEIVED_AT_LAB_STATUSES:
+                cleaned_data['date_received_at_lab'] = collection_datetime
+
+        return cleaned_data
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

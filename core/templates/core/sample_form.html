@@ -48,6 +48,17 @@
                     <div class="form-text">Format: DD/MM/YYYY HH:MM</div>
                 {% endif %}
             </div>
+            {% if form.instance.pk %}
+            <div class="col-md-6">
+                <label for="{{ form.date_received_at_lab.id_for_label }}" class="form-label">Received at lab</label>
+                {{ form.date_received_at_lab }}
+                {% if form.date_received_at_lab.errors %}
+                    <div class="invalid-feedback d-block small">{{ form.date_received_at_lab.errors.0 }}</div>
+                {% else %}
+                    <div class="form-text">Format: DD/MM/YYYY HH:MM. Leave blank to keep it unset until the sample is sent to the lab.</div>
+                {% endif %}
+            </div>
+            {% endif %}
             <div class="col-md-6">
                 <label for="{{ form.sample_source.id_for_label }}" class="form-label">Sample source *</label>
                 {{ form.sample_source }}
@@ -144,18 +155,20 @@
 <script src="https://cdn.jsdelivr.net/npm/tom-select/dist/js/tom-select.complete.min.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const dateInput = document.querySelector('.js-datetime-picker');
-    if (dateInput && window.flatpickr) {
-        flatpickr(dateInput, {
-            enableTime: true,
-            time_24hr: true,
-            allowInput: true,
-            minuteIncrement: 1,
-            altInput: true,
-            altInputClass: 'form-control',
-            altFormat: dateInput.dataset.altFormat || 'j M Y, h:i K',
-            dateFormat: dateInput.dataset.dateFormat || 'd/m/Y H:i',
-            defaultDate: dateInput.value || null
+    const dateInputs = document.querySelectorAll('.js-datetime-picker');
+    if (window.flatpickr) {
+        dateInputs.forEach(dateInput => {
+            flatpickr(dateInput, {
+                enableTime: true,
+                time_24hr: true,
+                allowInput: true,
+                minuteIncrement: 1,
+                altInput: true,
+                altInputClass: 'form-control',
+                altFormat: dateInput.dataset.altFormat || 'j M Y, h:i K',
+                dateFormat: dateInput.dataset.dateFormat || 'd/m/Y H:i',
+                defaultDate: dateInput.value || null
+            });
         });
     }
 
