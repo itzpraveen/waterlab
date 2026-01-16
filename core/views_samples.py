@@ -371,10 +371,17 @@ def consultant_review(request, sample_id):
 
         messages.error(request, 'Invalid action specified.')
 
+    test_results = sample.results.select_related('parameter', 'parameter__category_obj').order_by(
+        'parameter__category_obj__display_order',
+        'parameter__category',
+        'parameter__display_order',
+        'parameter__name',
+    )
+
     context = {
         'sample': sample,
         'review': review,
-        'test_results': sample.results.all().select_related('parameter'),
+        'test_results': test_results,
         'can_review': sample.current_status == 'REVIEW_PENDING',
     }
 

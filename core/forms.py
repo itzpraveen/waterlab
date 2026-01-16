@@ -200,7 +200,7 @@ class SampleForm(forms.ModelForm):
     class Meta:
         model = Sample
         fields = [
-            'customer', 'collection_datetime', 'date_received_at_lab', 'sample_source', 'collected_by',
+            'customer', 'collection_datetime', 'date_received_at_lab', 'sample_source', 'sampling_location', 'collected_by',
             'referred_by', 'tests_requested'
         ]
         widgets = {
@@ -209,6 +209,7 @@ class SampleForm(forms.ModelForm):
                 'data-placeholder': 'Search customers...'
             }),
             'sample_source': forms.Select(attrs={'class': 'form-control js-searchable-select'}),
+            'sampling_location': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g., Borewell #2 near gate'}),
             'collected_by': forms.Select(attrs={'class': 'form-control js-searchable-select'}),
             'referred_by': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Name of person who referred the sample'}),
             'tests_requested': forms.CheckboxSelectMultiple(attrs={'class': 'form-check-input'}),
@@ -623,14 +624,17 @@ class CustomPasswordChangeForm(PasswordChangeForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['old_password'].widget.attrs.update({
-            'class': 'validate', # Materialize class
-            'placeholder': 'Current password'
+            'class': 'form-control',
+            'placeholder': 'Current password',
+            'autocomplete': 'current-password',
         })
         self.fields['new_password1'].widget.attrs.update({
-            'class': 'validate', # Materialize class
-            'placeholder': 'New password'
+            'class': 'form-control',
+            'placeholder': 'New password',
+            'autocomplete': 'new-password',
         })
         self.fields['new_password2'].widget.attrs.update({
-            'class': 'validate', # Materialize class
-            'placeholder': 'Confirm new password'
+            'class': 'form-control',
+            'placeholder': 'Confirm new password',
+            'autocomplete': 'new-password',
         })

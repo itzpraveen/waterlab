@@ -3,74 +3,109 @@
 
 {% block title %}Test Results for {{ sample.display_id }} - Water Lab LIMS{% endblock %}
 
-{% block breadcrumbs %}
-<div class="col s12 breadcrumb-container">
-    <nav>
-        <div class="nav-wrapper">
-            <a href="{% url 'core:home' %}" class="breadcrumb">Home</a>
-            <a href="{% url 'core:test_result_list' %}" class="breadcrumb">Test Results</a>
-            <span class="breadcrumb active">Sample {{ sample.display_id }}</span>
-        </div>
-    </nav>
+{% block page_header %}
+<div class="page-header">
+    <div class="page-heading">
+        <span class="page-eyebrow">Results</span>
+        <h1 class="page-title">Test results for {{ sample.display_id|default:sample.sample_id }}</h1>
+        <p class="page-subtitle">Customer {{ sample.customer.name }} - Collected {{ sample.collection_datetime|date:"M d, Y H:i" }}</p>
+    </div>
+    <div class="page-actions">
+        <a href="{% url 'core:test_result_list' %}" class="btn btn-outline-secondary">
+            <i class="material-icons me-1">arrow_back</i>
+            Back to results
+        </a>
+    </div>
 </div>
-{% endblock breadcrumbs %}
+{% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col s12">
-        <div class="card">
-            <div class="card-content">
-                <span class="card-title">Test Results for Sample ID: {{ sample.display_id }}</span>
-                <p><strong>Customer:</strong> {{ sample.customer.name }}</p>
-                <p><strong>Collection Date:</strong> {{ sample.collection_datetime|date:"M d, Y H:i" }}</p>
+<article class="results-card">
+    <header class="results-card__header">
+        <div>
+            <div class="results-card__headline">
+                <span class="results-card__id">{{ sample.display_id|default:sample.sample_id }}</span>
+                {% with status=sample.current_status %}
+                <span class="badge-soft {% if status == 'REPORT_APPROVED' or status == 'REPORT_SENT' %}success{% elif status == 'RESULTS_ENTERED' or status == 'REVIEW_PENDING' %}warning{% elif status == 'TESTING_IN_PROGRESS' %}info{% else %}info{% endif %}">
+                    {{ sample.get_current_status_display }}
+                </span>
+                {% endwith %}
             </div>
-            <div class="card-action">
-                <a href="{% url 'core:sample_detail' pk=sample.pk %}">View Sample Details</a>
-                <a href="{% url 'core:download_sample_report' pk=sample.pk %}" class="btn waves-effect waves-light" target="_blank"><i class="material-icons left">download</i>Download Report</a>
-                <a href="{% url 'core:download_sample_report' pk=sample.pk %}?layout=plain" class="btn waves-effect" target="_blank"><i class="material-icons left">print</i>Plain Report</a>
-            </div>
+            <ul class="results-card__meta">
+                <li><i class="material-icons" aria-hidden="true">person</i>{{ sample.customer.name }}</li>
+                <li><i class="material-icons" aria-hidden="true">event</i>{{ sample.collection_datetime|date:"M d, Y H:i" }}</li>
+                {% if sample.test_completed_on %}
+                <li><i class="material-icons" aria-hidden="true">done_all</i>{{ sample.test_completed_on|date:"M d, Y" }}</li>
+                {% endif %}
+                <li><i class="material-icons" aria-hidden="true">biotech</i>{{ results|length }} result{{ results|length|pluralize }}</li>
+            </ul>
         </div>
+        <div class="results-card__actions">
+            <a href="{% url 'core:sample_detail' pk=sample.pk %}" class="btn btn-outline-primary btn-sm">View sample</a>
+            <a href="{% url 'core:download_sample_report' pk=sample.pk %}" class="btn btn-outline-secondary btn-sm" target="_blank">
+                <i class="material-icons align-middle me-1">download</i>Download report
+            </a>
+            <a href="{% url 'core:download_sample_report' pk=sample.pk %}?layout=plain" class="btn btn-outline-secondary btn-sm" target="_blank">
+                <i class="material-icons align-middle me-1">print</i>Plain report
+            </a>
+        </div>
+    </header>
 
-        {% regroup results by parameter.category as results_by_category %}
-        <div class="table-container">
-            <table class="responsive-table highlight striped">
+    {% regroup results by parameter.category_label as results_by_category %}
+    {% for category in results_by_category %}
+    <section class="results-block" aria-label="{{ category.grouper|default:'General Parameters' }}">
+        <div class="results-block__header">
+            <h3 class="results-block__title">{{ category.grouper|default:"General Parameters" }}</h3>
+            <span class="results-block__count">{{ category.list|length }} parameter{{ category.list|length|pluralize }}</span>
+        </div>
+        <div class="table-responsive results-table-wrapper">
+            <table class="table table-modern align-middle results-table">
                 <thead>
                     <tr>
-                        <th>S.No</th>
-                        <th>Test Parameters</th>
-                        <th>Test Method</th>
-                        <th>Result</th>
-                        <th>Unit</th>
-                        <th>Acceptable Limit as per IS 10500 : 2012</th>
+                        <th scope="col" class="text-center">#</th>
+                        <th scope="col">Test parameter</th>
+                        <th scope="col" class="d-none d-lg-table-cell">Method</th>
+                        <th scope="col" class="text-center">Result</th>
+                        <th scope="col">Unit</th>
+                        <th scope="col">Acceptable range</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {% for category in results_by_category %}
-                    <tr>
-                        <td colspan="6" style="background-color: #f0f0f0;"><strong>Table - {{ category.grouper }}</strong></td>
-                    </tr>
                     {% for result in category.list %}
                     <tr>
-                        <td>{{ forloop.counter }}</td>
-                        <td>{{ result.parameter.name }}</td>
-                        <td>{{ result.parameter.method }}</td>
-                        <td>{{ result.result_value }}</td>
-                        <td>{{ result.parameter.unit }}</td>
+                        <td class="text-center text-muted">{{ forloop.counter }}</td>
+                        <td>
+                            <div class="results-param">
+                                <span class="results-param__name">{{ result.parameter.name }}</span>
+                                {% if result.parameter.method %}
+                                <span class="results-param__method d-lg-none">{{ result.parameter.method }}</span>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td class="text-muted d-none d-lg-table-cell">{{ result.parameter.method|default:"--" }}</td>
+                        <td class="text-center fw-semibold">{{ result.result_value }}</td>
+                        <td>{{ result.parameter.unit|default:"--" }}</td>
                         <td>
                             {% if result.parameter.max_limit_display %}
-                                {{ result.parameter.max_limit_display }}
-                            {% elif result.parameter.max_permissible_limit and not result.parameter.min_permissible_limit %}
-                                Max {{ result.parameter.max_permissible_limit }}
+                                <span class="results-range">{{ result.parameter.max_limit_display }}</span>
+                            {% elif result.parameter.min_permissible_limit and result.parameter.max_permissible_limit %}
+                                <span class="results-range">{{ result.parameter.min_permissible_limit }} - {{ result.parameter.max_permissible_limit }}</span>
+                            {% elif result.parameter.max_permissible_limit %}
+                                <span class="results-range">Max {{ result.parameter.max_permissible_limit }}</span>
+                            {% elif result.parameter.min_permissible_limit %}
+                                <span class="results-range">Min {{ result.parameter.min_permissible_limit }}</span>
                             {% else %}
-                                {{ result.parameter.min_permissible_limit|default:"" }} - {{ result.parameter.max_permissible_limit|default:"" }}
+                                <span class="text-muted">Not specified</span>
                             {% endif %}
                         </td>
                     </tr>
                     {% endfor %}
-                    {% endfor %}
                 </tbody>
             </table>
         </div>
-    </div>
-</div>
+    </section>
+    {% empty %}
+    <p class="text-muted mb-0">No test results available for this sample.</p>
+    {% endfor %}
+</article>
 {% endblock %}

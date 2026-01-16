@@ -358,6 +358,7 @@ class Sample(models.Model):
         ('RIVER', 'River'),
         ('POND', 'Pond'),
         ('PRODUCT_WATER', 'Product Water'),
+        ('TREATED_WATER', 'Treated Water'),
         ('OTHER', 'Other'),
     ]
     SAMPLE_STATUS_CHOICES = [

@@ -2,70 +2,141 @@
 
 {% block title %}Consultant Review - Water Lab LIMS{% endblock %}
 
+{% block page_header %}
+<div class="page-header">
+    <div class="page-heading">
+        <span class="page-eyebrow">Consultant review</span>
+        <h1 class="page-title">Review sample {{ sample.display_id|default:sample.sample_id }}</h1>
+        <p class="page-subtitle">Customer {{ sample.customer.name }} - Collected {{ sample.collection_datetime|date:"M d, Y H:i" }}</p>
+    </div>
+    <div class="page-actions">
+        <a href="{% url 'core:sample_detail' pk=sample.sample_id %}" class="btn btn-outline-secondary">
+            <i class="material-icons me-1">arrow_back</i>
+            Back to sample
+        </a>
+    </div>
+</div>
+{% endblock %}
+
 {% block content %}
-<h1>Consultant Review</h1>
-<h2>Sample: {{ sample.sample_id }}</h2>
-<p><strong>Customer:</strong> {{ sample.customer.name }}</p>
-<p><strong>Source:</strong> {{ sample.get_sample_source_display }}</p>
-<p><strong>Collection Date:</strong> {{ sample.collection_datetime }}</p>
+<div class="row g-4">
+    <div class="col-12 col-xl-7">
+        <div class="info-card mb-4">
+            <div class="section-title"><i class="material-icons">info</i>Sample overview</div>
+            <dl class="data-pairs">
+                <div class="data-pair">
+                    <dt>Sample ID</dt>
+                    <dd>{{ sample.display_id|default:sample.sample_id }}</dd>
+                </div>
+                <div class="data-pair">
+                    <dt>Customer</dt>
+                    <dd><a href="{% url 'core:customer_detail' pk=sample.customer.customer_id %}">{{ sample.customer.name }}</a></dd>
+                </div>
+                <div class="data-pair">
+                    <dt>Source</dt>
+                    <dd>{{ sample.get_sample_source_display }}</dd>
+                </div>
+                <div class="data-pair">
+                    <dt>Collection date</dt>
+                    <dd>{{ sample.collection_datetime|date:"M d, Y H:i" }}</dd>
+                </div>
+                <div class="data-pair">
+                    <dt>Status</dt>
+                    <dd>{{ sample.get_current_status_display }}</dd>
+                </div>
+            </dl>
+        </div>
 
-<h3>Test Results</h3>
-<table style="width: 100%; border-collapse: collapse; margin-bottom: 2em;">
-    <thead>
-        <tr style="background-color: #f8f9fa;">
-            <th style="border: 1px solid #ddd; padding: 0.5em;">Parameter</th>
-            <th style="border: 1px solid #ddd; padding: 0.5em;">Result</th>
-            <th style="border: 1px solid #ddd; padding: 0.5em;">Unit</th>
-            <th style="border: 1px solid #ddd; padding: 0.5em;">Permissible Range</th>
-            <th style="border: 1px solid #ddd; padding: 0.5em;">Observation</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for result in sample.results.all %}
-        <tr>
-            <td style="border: 1px solid #ddd; padding: 0.5em;">{{ result.parameter.name }}</td>
-            <td style="border: 1px solid #ddd; padding: 0.5em; font-weight: bold;">{{ result.result_value }}</td>
-            <td style="border: 1px solid #ddd; padding: 0.5em;">{{ result.parameter.unit }}</td>
-            <td style="border: 1px solid #ddd; padding: 0.5em;">
-                {% if result.parameter.max_limit_display %}
-                    {{ result.parameter.max_limit_display }}
-                {% elif result.parameter.min_permissible_limit or result.parameter.max_permissible_limit %}
-                    {% if result.parameter.min_permissible_limit %}{{ result.parameter.min_permissible_limit }}{% endif %}
-                    {% if result.parameter.min_permissible_limit and result.parameter.max_permissible_limit %} - {% endif %}
-                    {% if result.parameter.max_permissible_limit %}{{ result.parameter.max_permissible_limit }}{% endif %}
-                {% else %}
-                    N/A
-                {% endif %}
-            </td>
-            <td style="border: 1px solid #ddd; padding: 0.5em;">{{ result.observation|default:"-" }}</td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
+        <div class="info-card">
+            <div class="section-title"><i class="material-icons">science</i>Test results</div>
+            {% if test_results %}
+            <div class="table-responsive">
+                <table class="table table-modern align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Parameter</th>
+                            <th class="text-center">Result</th>
+                            <th>Unit</th>
+                            <th>Limits</th>
+                            <th>Observation</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for result in test_results %}
+                        <tr>
+                            <td>
+                                <div class="results-param">
+                                    <span class="results-param__name">{{ result.parameter.name }}</span>
+                                    {% if result.parameter.method %}
+                                    <span class="results-param__method">{{ result.parameter.method }}</span>
+                                    {% endif %}
+                                    {% if result.parameter.category_label %}
+                                    <span class="results-param__method">Category: {{ result.parameter.category_label }}</span>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td class="text-center fw-semibold">{{ result.result_value }}</td>
+                            <td>{{ result.parameter.unit|default:"--" }}</td>
+                            <td>
+                                {% if result.parameter.max_limit_display %}
+                                    <span class="results-range">{{ result.parameter.max_limit_display }}</span>
+                                {% elif result.parameter.min_permissible_limit and result.parameter.max_permissible_limit %}
+                                    <span class="results-range">{{ result.parameter.min_permissible_limit }} - {{ result.parameter.max_permissible_limit }}</span>
+                                {% elif result.parameter.max_permissible_limit %}
+                                    <span class="results-range">Max {{ result.parameter.max_permissible_limit }}</span>
+                                {% elif result.parameter.min_permissible_limit %}
+                                    <span class="results-range">Min {{ result.parameter.min_permissible_limit }}</span>
+                                {% else %}
+                                    <span class="text-muted">Not specified</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ result.observation|default:"-" }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-muted mb-0">No results recorded yet.</p>
+            {% endif %}
+        </div>
+    </div>
 
-<form method="post">
-    {% csrf_token %}
-    
-    <div style="margin-bottom: 1em;">
-        <label for="comments">Comments:</label>
-        <textarea name="comments" id="comments" rows="5" style="width: 100%; padding: 0.5em;">{{ review.comments }}</textarea>
+    <div class="col-12 col-xl-5">
+        <form method="post" class="info-card">
+            {% csrf_token %}
+            <div class="section-title"><i class="material-icons">rate_review</i>Review decision</div>
+
+            <div class="form-field">
+                <label for="status">Review status</label>
+                <select name="status" id="status" class="form-select">
+                    <option value="PENDING" {% if review.status == 'PENDING' %}selected{% endif %}>Pending review</option>
+                    <option value="APPROVED" {% if review.status == 'APPROVED' %}selected{% endif %}>Approved</option>
+                    <option value="REJECTED" {% if review.status == 'REJECTED' %}selected{% endif %}>Rejected</option>
+                </select>
+                <small class="form-hint">Choose the final status for this sample.</small>
+            </div>
+
+            <div class="form-field">
+                <label for="comments">Comments</label>
+                <textarea name="comments" id="comments" rows="4" class="form-control">{{ review.comments }}</textarea>
+                <small class="form-hint">Share any summary notes for the report.</small>
+            </div>
+
+            <div class="form-field">
+                <label for="recommendations">Recommendations</label>
+                <textarea name="recommendations" id="recommendations" rows="4" class="form-control">{{ review.recommendations }}</textarea>
+                <small class="form-hint">Optional suggestions for corrective action.</small>
+            </div>
+
+            <div class="form-actions">
+                <a href="{% url 'core:sample_detail' pk=sample.sample_id %}" class="btn btn-outline-secondary">Cancel</a>
+                <button type="submit" class="btn btn-primary">
+                    <i class="material-icons me-1">save</i>
+                    Save review
+                </button>
+            </div>
+        </form>
     </div>
-    
-    <div style="margin-bottom: 1em;">
-        <label for="recommendations">Recommendations:</label>
-        <textarea name="recommendations" id="recommendations" rows="5" style="width: 100%; padding: 0.5em;">{{ review.recommendations }}</textarea>
-    </div>
-    
-    <div style="margin-bottom: 1em;">
-        <label for="status">Review Status:</label>
-        <select name="status" id="status" style="padding: 0.5em;">
-            <option value="PENDING" {% if review.status == 'PENDING' %}selected{% endif %}>Pending Review</option>
-            <option value="APPROVED" {% if review.status == 'APPROVED' %}selected{% endif %}>Approved</option>
-            <option value="REJECTED" {% if review.status == 'REJECTED' %}selected{% endif %}>Rejected</option>
-        </select>
-    </div>
-    
-    <button type="submit" style="background-color: #007bff; color: white; padding: 0.5em 1em; border: none; cursor: pointer;">Save Review</button>
-    <a href="{% url 'core:sample_detail' pk=sample.sample_id %}" style="margin-left: 1em; text-decoration: none; color: #666;">Back to Sample</a>
-</form>
+</div>
 {% endblock %}

@@ -4,7 +4,7 @@ from datetime import timedelta
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db import transaction
-from django.db.models import Max, Q
+from django.db.models import Max, Prefetch, Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.generic import DetailView, ListView
@@ -75,11 +75,17 @@ class TestResultListView(LoginRequiredMixin, ListView):
         return mapping.get((raw_value or '').lower(), raw_value)
 
     def get_queryset(self):
+        ordered_results = TestResult.objects.select_related('parameter', 'parameter__category_obj').order_by(
+            'parameter__category_obj__display_order',
+            'parameter__category',
+            'parameter__display_order',
+            'parameter__name',
+        )
         queryset = (
             Sample.objects.annotate(latest_test_date=Max('results__test_date'))
             .filter(results__isnull=False)
             .select_related('customer')
-            .prefetch_related('results__parameter', 'tests_requested')
+            .prefetch_related(Prefetch('results', queryset=ordered_results), 'tests_requested')
             .distinct()
             .order_by('-latest_test_date', '-collection_datetime')
         )
@@ -137,8 +143,13 @@ class TestResultDetailView(LoginRequiredMixin, DetailView):
         context = super().get_context_data(**kwargs)
         context['results'] = (
             TestResult.objects.filter(sample=self.object)
-            .select_related('parameter')
-            .order_by('parameter__category', 'parameter__name')
+            .select_related('parameter', 'parameter__category_obj')
+            .order_by(
+                'parameter__category_obj__display_order',
+                'parameter__category',
+                'parameter__display_order',
+                'parameter__name',
+            )
         )
         return context
 
@@ -331,4 +342,3 @@ def test_result_entry(request, sample_id):
     }
 
     return render(request, 'core/test_result_entry.html', context)
-

@@ -107,7 +107,7 @@
                 </div>
             </header>
 
-            {% regroup sample.results.all by parameter.category as results_by_category %}
+            {% regroup sample.results.all by parameter.category_label as results_by_category %}
             {% for category in results_by_category %}
             <section class="results-block" aria-label="{{ category.grouper|default:'General Parameters' }}">
                 <div class="results-block__header">

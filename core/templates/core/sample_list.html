@@ -82,7 +82,12 @@
                         </div>
                     </td>
                     <td>{{ sample.collection_datetime|date:"M d, Y" }}</td>
-                    <td>{{ sample.get_sample_source_display }}</td>
+                    <td>
+                        {{ sample.get_sample_source_display }}
+                        {% if sample.sampling_location %}
+                        <div class="text-muted small">{{ sample.sampling_location }}</div>
+                        {% endif %}
+                    </td>
                     <td class="text-center">{{ sample.tests_requested.count }}</td>
                     <td>
                         {% with status=sample.current_status %}
