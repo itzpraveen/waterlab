@@ -56,7 +56,7 @@ from .views_samples import (
     consultant_review,
     sample_status_update,
 )
-from .views_reports import download_sample_report_view
+from .views_reports import download_sample_invoice_view, download_sample_report_view
 from .views_parameters import (
     setup_test_parameters,
     reorder_test_parameters,
@@ -109,6 +109,7 @@ __all__ = [
     'consultant_review',
     'sample_status_update',
     'download_sample_report_view',
+    'download_sample_invoice_view',
     'setup_test_parameters',
     'reorder_test_parameters',
     'TestParameterUpdateView',
@@ -118,4 +119,3 @@ __all__ = [
     'delete_test_parameter',
     'kerala_locations_json',
 ]
-

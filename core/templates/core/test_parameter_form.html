@@ -40,14 +40,27 @@
 
             <div class="grid-two">
                 <div class="form-field">
+                    <label for="{{ form.price.id_for_label }}">Unit price</label>
+                    {{ form.price }}
+                    {% if form.price.errors %}<p class="form-error">{{ form.price.errors.0 }}</p>{% endif %}
+                </div>
+                <div class="form-field">
                     <label for="{{ form.method.id_for_label }}">Method</label>
                     {{ form.method }}
                     {% if form.method.errors %}<p class="form-error">{{ form.method.errors.0 }}</p>{% endif %}
                 </div>
+            </div>
+
+            <div class="grid-two">
                 <div class="form-field">
                     <label for="{{ form.group.id_for_label }}">Group</label>
                     {{ form.group }}
                     {% if form.group.errors %}<p class="form-error">{{ form.group.errors.0 }}</p>{% endif %}
+                </div>
+                <div class="form-field">
+                    <label for="{{ form.discipline.id_for_label }}">Discipline</label>
+                    {{ form.discipline }}
+                    {% if form.discipline.errors %}<p class="form-error">{{ form.discipline.errors.0 }}</p>{% endif %}
                 </div>
             </div>
 
@@ -73,17 +86,10 @@
                 {% if form.max_limit_display.errors %}<p class="form-error">{{ form.max_limit_display.errors.0 }}</p>{% endif %}
             </div>
 
-            <div class="grid-two">
-                <div class="form-field">
-                    <label for="{{ form.discipline.id_for_label }}">Discipline</label>
-                    {{ form.discipline }}
-                    {% if form.discipline.errors %}<p class="form-error">{{ form.discipline.errors.0 }}</p>{% endif %}
-                </div>
-                <div class="form-field">
-                    <label for="{{ form.fssai_limit.id_for_label }}">FSSAI limit</label>
-                    {{ form.fssai_limit }}
-                    {% if form.fssai_limit.errors %}<p class="form-error">{{ form.fssai_limit.errors.0 }}</p>{% endif %}
-                </div>
+            <div class="form-field">
+                <label for="{{ form.fssai_limit.id_for_label }}">FSSAI limit</label>
+                {{ form.fssai_limit }}
+                {% if form.fssai_limit.errors %}<p class="form-error">{{ form.fssai_limit.errors.0 }}</p>{% endif %}
             </div>
 
             <div class="grid-two">

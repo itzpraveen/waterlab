@@ -34,6 +34,7 @@ from .views import (
     TestResultListView,
     TestResultDetailView,
     download_sample_report_view,
+    download_sample_invoice_view,
     TestParameterUpdateView,
     delete_test_parameter,
     TestCategoryUpdateView,
@@ -105,6 +106,7 @@ urlpatterns = [
     path('results/', TestResultListView.as_view(), name='test_result_list'),
     path('results/<uuid:pk>/', TestResultDetailView.as_view(), name='test_result_detail'),
     path('samples/<uuid:pk>/download-report/', download_sample_report_view, name='download_sample_report'),
+    path('samples/<uuid:pk>/download-invoice/', download_sample_invoice_view, name='download_sample_invoice'),
     
     # Test Parameter Management (Admin)
     path('setup-test-parameters/<uuid:pk>/edit/', TestParameterUpdateView.as_view(), name='test_parameter_edit'),

@@ -701,6 +701,14 @@ class TestParameter(models.Model):
     group = models.CharField(max_length=100, blank=True, null=True, verbose_name="Group")
     discipline = models.CharField(max_length=100, blank=True, null=True, verbose_name="Discipline")
     fssai_limit = models.CharField(max_length=100, blank=True, null=True, verbose_name="FSSAI Limit")
+    price = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=Decimal('0.00'),
+        blank=True,
+        verbose_name="Unit Price",
+        help_text="Default price used when generating invoices.",
+    )
 
 
     def __str__(self):
@@ -757,6 +765,157 @@ class TestParameter(models.Model):
             return base
         unit = (self.unit or '').strip()
         return f"{base} {unit}".strip() if unit else base
+
+
+class Invoice(models.Model):
+    STATUS_CHOICES = [
+        ('DRAFT', 'Draft'),
+        ('ISSUED', 'Issued'),
+        ('PAID', 'Paid'),
+        ('VOID', 'Void'),
+    ]
+
+    invoice_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    sample = models.OneToOneField('Sample', on_delete=models.CASCADE, related_name='invoice')
+    invoice_number = models.CharField(max_length=50, blank=True, null=True, verbose_name="Invoice Number")
+    issued_on = models.DateField(default=timezone.now)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='ISSUED')
+    subtotal = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'))
+    tax_rate = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal('0.00'), help_text="Tax rate (%)")
+    tax_amount = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'))
+    total = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'))
+    notes = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["invoice_number"],
+                condition=Q(invoice_number__isnull=False) & ~Q(invoice_number=""),
+                name="unique_invoice_number",
+            ),
+        ]
+
+    def __str__(self):
+        return self.invoice_number or f"Invoice for {self.sample}"
+
+    def generate_invoice_number(self) -> str:
+        if self.invoice_number:
+            return self.invoice_number
+
+        max_attempts = 5
+        for attempt in range(max_attempts):
+            current_year = timezone.now().year
+            prefix = f"INV{current_year}-"
+
+            with transaction.atomic():
+                last_with_number = (
+                    Invoice.objects.exclude(invoice_number__isnull=True)
+                    .exclude(invoice_number__exact='')
+                    .filter(invoice_number__startswith=prefix)
+                    .select_for_update()
+                    .order_by('invoice_number')
+                    .last()
+                )
+
+                sequence = 1
+                if last_with_number and last_with_number.invoice_number:
+                    try:
+                        sequence = int(last_with_number.invoice_number.split('-')[-1]) + 1
+                    except (ValueError, IndexError):
+                        sequence = 1
+
+                candidate = f"{prefix}{sequence:04d}"
+                if not Invoice.objects.filter(invoice_number=candidate).exists():
+                    self.invoice_number = candidate
+                    return candidate
+
+            if attempt == max_attempts - 1:
+                self.invoice_number = candidate
+                return candidate
+
+    def ensure_line_items(self):
+        if self.line_items.exists():
+            return
+
+        sample = self.sample
+        parameters = sample.tests_requested.all().order_by('display_order', 'name')
+        items = []
+        for index, param in enumerate(parameters, start=1):
+            unit_price = (param.price or Decimal('0.00'))
+            quantity = Decimal('1.00')
+            amount = (unit_price * quantity).quantize(Decimal('0.01'))
+            items.append(
+                InvoiceLineItem(
+                    invoice=self,
+                    parameter=param,
+                    description=param.name,
+                    quantity=quantity,
+                    unit_price=unit_price,
+                    amount=amount,
+                    position=index,
+                )
+            )
+
+        if items:
+            InvoiceLineItem.objects.bulk_create(items)
+
+        self.recalculate_totals(save=True)
+
+    def recalculate_totals(self, save: bool = True):
+        subtotal = sum((item.amount for item in self.line_items.all()), Decimal('0.00'))
+        tax_rate = self.tax_rate or Decimal('0.00')
+        tax_amount = (subtotal * tax_rate / Decimal('100.00')).quantize(Decimal('0.01'))
+        total = (subtotal + tax_amount).quantize(Decimal('0.01'))
+
+        self.subtotal = subtotal
+        self.tax_amount = tax_amount
+        self.total = total
+
+        if save:
+            self.save(update_fields=['subtotal', 'tax_amount', 'total', 'updated_at'])
+
+    @classmethod
+    def create_for_sample(cls, sample, issued_on=None):
+        invoice, created = cls.objects.get_or_create(
+            sample=sample,
+            defaults={'issued_on': issued_on or timezone.now().date()},
+        )
+
+        if not invoice.invoice_number:
+            invoice.generate_invoice_number()
+            invoice.save(update_fields=['invoice_number'])
+
+        if created or not invoice.line_items.exists():
+            invoice.ensure_line_items()
+
+        return invoice
+
+
+class InvoiceLineItem(models.Model):
+    line_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, related_name='line_items')
+    parameter = models.ForeignKey('TestParameter', on_delete=models.SET_NULL, null=True, blank=True)
+    description = models.CharField(max_length=255)
+    quantity = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('1.00'))
+    unit_price = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'))
+    amount = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'))
+    position = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ['position', 'description']
+
+    def __str__(self):
+        return f"{self.description} ({self.amount})"
+
+    def save(self, *args, **kwargs):
+        self.quantity = self.quantity or Decimal('0.00')
+        self.unit_price = self.unit_price or Decimal('0.00')
+        self.amount = (self.quantity * self.unit_price).quantize(Decimal('0.01'))
+        super().save(*args, **kwargs)
+        if self.invoice_id:
+            self.invoice.recalculate_totals(save=True)
 
 
 class ResultStatusOverride(models.Model):

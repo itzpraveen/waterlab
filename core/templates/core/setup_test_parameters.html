@@ -134,6 +134,11 @@
                 {% if form.unit.errors %}<div class="form-error">{{ form.unit.errors.0 }}</div>{% endif %}
             </div>
             <div class="form-field">
+                <label for="{{ form.price.id_for_label }}">Unit price</label>
+                {{ form.price }}
+                {% if form.price.errors %}<div class="form-error">{{ form.price.errors.0 }}</div>{% endif %}
+            </div>
+            <div class="form-field">
                 <label for="{{ form.method.id_for_label }}">Method</label>
                 {{ form.method }}
                 {% if form.method.errors %}<div class="form-error">{{ form.method.errors.0 }}</div>{% endif %}
@@ -231,6 +236,7 @@
                     <th>Parameter</th>
                     {# Order column removed; list order matches final PDF order #}
                     <th>Unit</th>
+                    <th>Price</th>
                     <th>Min limit</th>
                     <th>Max limit</th>
                     <th>Method</th>
@@ -249,6 +255,7 @@
                     <td class="fw-semibold">{{ param.name }}</td>
                     {# Removed explicit order; visual order + drag handle indicates position #}
                     <td>{{ param.unit }}</td>
+                    <td>{{ param.price|floatformat:2|default:"0.00" }}</td>
                     <td>{{ param.min_permissible_limit|default:"-" }}</td>
                     <td>
                         {% if param.max_limit_display %}

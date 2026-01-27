@@ -12,6 +12,8 @@ from .models import (
     TestCategory,
     LabProfile,
     ResultStatusOverride,
+    Invoice,
+    InvoiceLineItem,
 )
 
 @admin.register(Customer)
@@ -135,3 +137,18 @@ admin.site.register(TestParameter)
 admin.site.register(TestResult)
 admin.site.register(ConsultantReview)
 admin.site.register(TestCategory)
+
+
+class InvoiceLineItemInline(admin.TabularInline):
+    model = InvoiceLineItem
+    extra = 0
+    readonly_fields = ('amount',)
+
+
+@admin.register(Invoice)
+class InvoiceAdmin(admin.ModelAdmin):
+    list_display = ('invoice_number', 'sample', 'status', 'issued_on', 'total')
+    list_filter = ('status', 'issued_on')
+    search_fields = ('invoice_number', 'sample__display_id', 'sample__customer__name')
+    readonly_fields = ('subtotal', 'tax_amount', 'total', 'created_at', 'updated_at')
+    inlines = [InvoiceLineItemInline]

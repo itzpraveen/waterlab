@@ -42,6 +42,11 @@
         </div>
         <div class="results-card__actions">
             <a href="{% url 'core:sample_detail' pk=sample.pk %}" class="btn btn-outline-primary btn-sm">View sample</a>
+            {% if sample.current_status == 'REPORT_APPROVED' or sample.current_status == 'REPORT_SENT' %}
+            <a href="{% url 'core:download_sample_invoice' pk=sample.pk %}" class="btn btn-outline-secondary btn-sm" target="_blank">
+                <i class="material-icons align-middle me-1">receipt_long</i>Invoice
+            </a>
+            {% endif %}
             <a href="{% url 'core:download_sample_report' pk=sample.pk %}" class="btn btn-outline-secondary btn-sm" target="_blank">
                 <i class="material-icons align-middle me-1">download</i>Download report
             </a>

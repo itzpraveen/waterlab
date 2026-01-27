@@ -419,12 +419,13 @@ class TestParameterForm(forms.ModelForm):
     class Meta:
         model = TestParameter
         fields = [
-            'name', 'unit', 'method', 'min_permissible_limit', 'max_permissible_limit', 'max_limit_display',
+            'name', 'unit', 'price', 'method', 'min_permissible_limit', 'max_permissible_limit', 'max_limit_display',
             'group', 'discipline', 'fssai_limit', 'category_obj', 'display_order', 'parent'
         ]
         widgets = {
             'name': forms.TextInput(attrs={'class': 'form-control'}),
             'unit': forms.TextInput(attrs={'class': 'form-control'}),
+            'price': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0'}),
             'method': forms.TextInput(attrs={'class': 'form-control'}),
             'min_permissible_limit': forms.NumberInput(attrs={'class': 'form-control', 'step': 'any'}),
             'max_permissible_limit': forms.NumberInput(attrs={'class': 'form-control', 'step': 'any'}),
@@ -444,11 +445,13 @@ class TestParameterForm(forms.ModelForm):
             'min_permissible_limit': 'Min. Permissible Limit',
             'max_permissible_limit': 'Max. Permissible Limit',
             'max_limit_display': 'Max. Limit Display Override',
+            'price': 'Unit Price',
         }
         help_texts = {
             'min_permissible_limit': 'Leave blank if no minimum limit.',
             'max_permissible_limit': 'Leave blank if no maximum limit.',
             'max_limit_display': 'Optional text (e.g., "Absent/ml") to show instead of a numeric maximum.',
+            'price': 'Default price used when generating invoices.',
         }
 
     def __init__(self, *args, **kwargs):

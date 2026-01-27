@@ -135,6 +135,16 @@
                     <dd>{{ sample.report_number|default:"Not assigned" }}</dd>
                 </div>
                 <div class="data-pair">
+                    <dt>Invoice Number</dt>
+                    <dd>
+                        {% if invoice %}
+                            {{ invoice.invoice_number|default:"Not assigned" }}
+                        {% else %}
+                            Not generated
+                        {% endif %}
+                    </dd>
+                </div>
+                <div class="data-pair">
                     <dt>Location</dt>
                     {% with sample.sampling_location|default:sample.customer.village_town_city as location %}
                     <dd>{{ location|default:"Not recorded" }}</dd>
@@ -363,6 +373,9 @@
                 {% endif %}
 
                 {% if sample.current_status == 'REPORT_APPROVED' or sample.current_status == 'REPORT_SENT' %}
+                <a href="{% url 'core:download_sample_invoice' pk=sample.pk %}" class="btn btn-outline-secondary" target="_blank">
+                    <i class="material-icons me-1">receipt_long</i>Download invoice
+                </a>
                 <a href="{% url 'core:download_sample_report' pk=sample.pk %}" class="btn btn-outline-secondary" target="_blank">
                     <i class="material-icons me-1">download</i>Download report
                 </a>

@@ -2,6 +2,7 @@ import logging
 import os
 import re
 from collections import OrderedDict
+from decimal import Decimal
 from html import escape
 from io import BytesIO
 
@@ -13,7 +14,7 @@ from django.utils import timezone
 
 from reportlab.lib.utils import ImageReader
 
-from .models import LabProfile, Sample
+from .models import Invoice, LabProfile, Sample
 from .views_common import (
     _choose_signer_with_signature,
     _format_error_message,
@@ -687,3 +688,262 @@ def download_sample_report_view(request, pk):
 
     return response
 
+
+def download_sample_invoice_view(request, pk):
+    sample = get_object_or_404(Sample, pk=pk)
+
+    if not _user_can_view_sensitive_records(request.user):
+        messages.error(request, "You do not have permission to download this invoice.")
+        return redirect('core:dashboard')
+
+    if sample.current_status not in ['REPORT_APPROVED', 'REPORT_SENT']:
+        messages.error(request, "Invoice can only be generated after the report is approved.")
+        return redirect('core:sample_detail', pk=sample.pk)
+
+    try:
+        invoice = Invoice.create_for_sample(sample)
+        invoice.ensure_line_items()
+        invoice.recalculate_totals(save=True)
+        if invoice.status == 'DRAFT':
+            invoice.status = 'ISSUED'
+            invoice.save(update_fields=['status'])
+    except Exception as exc:
+        logger.exception("Failed to prepare invoice for sample %s", sample.sample_id)
+        messages.error(
+            request,
+            _format_error_message("Unable to generate invoice right now.", exc),
+        )
+        return redirect('core:sample_detail', pk=sample.pk)
+
+    from django.conf import settings
+    from reportlab.lib import colors
+    from reportlab.lib.enums import TA_CENTER, TA_RIGHT
+    from reportlab.lib.pagesizes import A4
+    from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
+    from reportlab.lib.units import mm
+    from reportlab.platypus import Image, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
+
+    def _get_currency_symbol() -> str:
+        settings_data = getattr(settings, 'WATERLAB_SETTINGS', {})
+        symbol = settings_data.get('CURRENCY_SYMBOL')
+        return symbol or '₹'
+
+    currency_symbol = _get_currency_symbol()
+
+    def _format_money(value) -> str:
+        try:
+            amount = Decimal(value or 0).quantize(Decimal('0.01'))
+        except Exception:
+            amount = Decimal('0.00')
+        return f"{currency_symbol}{amount:,.2f}"
+
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(
+        buffer,
+        pagesize=A4,
+        rightMargin=18 * mm,
+        leftMargin=18 * mm,
+        topMargin=20 * mm,
+        bottomMargin=20 * mm,
+    )
+
+    styles = getSampleStyleSheet()
+    title_style = ParagraphStyle(
+        name='InvoiceTitle',
+        parent=styles['Heading1'],
+        alignment=TA_CENTER,
+        textColor=colors.HexColor('#0F172A'),
+        spaceAfter=6,
+    )
+    label_style = ParagraphStyle(
+        name='InvoiceLabel',
+        parent=styles['Normal'],
+        textColor=colors.HexColor('#64748B'),
+        fontSize=9,
+    )
+    value_style = ParagraphStyle(
+        name='InvoiceValue',
+        parent=styles['Normal'],
+        fontSize=10,
+    )
+    right_style = ParagraphStyle(
+        name='InvoiceRight',
+        parent=value_style,
+        alignment=TA_RIGHT,
+    )
+
+    lab_settings = getattr(settings, 'WATERLAB_SETTINGS', {})
+    profile = LabProfile.get_active()
+    lab_name = (profile.name or lab_settings.get('LAB_NAME') or 'WaterLab Laboratory').strip()
+    lab_address = (profile.formatted_address or profile.address_line1 or lab_settings.get('LAB_ADDRESS') or '').strip()
+    lab_phone = (profile.phone or lab_settings.get('LAB_PHONE') or '').strip()
+    lab_email = (profile.email or lab_settings.get('LAB_EMAIL') or '').strip()
+    lab_contact = profile.contact_line
+    if not lab_contact:
+        contact_parts = []
+        if lab_phone:
+            contact_parts.append(f"Phone: {lab_phone}")
+        if lab_email:
+            contact_parts.append(f"Email: {lab_email}")
+        lab_contact = '  |  '.join(contact_parts)
+
+    header_left_parts = []
+    logo_path = profile.logo_path
+    if logo_path and os.path.exists(logo_path):
+        header_left_parts.append(Image(logo_path, width=36 * mm, height=14 * mm))
+        header_left_parts.append(Spacer(1, 4))
+
+    header_left_parts.append(Paragraph(f"<b>{escape(lab_name)}</b>", value_style))
+    if lab_address:
+        header_left_parts.append(Paragraph(escape(lab_address), styles['Normal']))
+    if lab_contact:
+        header_left_parts.append(Paragraph(escape(lab_contact), styles['Normal']))
+
+    header_right_table = Table(
+        [
+            [Paragraph("Invoice #", label_style), Paragraph(invoice.invoice_number or "—", right_style)],
+            [Paragraph("Invoice date", label_style), Paragraph(invoice.issued_on.strftime('%b %d, %Y'), right_style)],
+            [Paragraph("Status", label_style), Paragraph(invoice.get_status_display(), right_style)],
+            [
+                Paragraph("Report #", label_style),
+                Paragraph(escape(sample.report_number) if sample.report_number else "—", right_style),
+            ],
+            [
+                Paragraph("Sample ID", label_style),
+                Paragraph(escape(sample.display_id) if sample.display_id else str(sample.sample_id), right_style),
+            ],
+        ],
+        colWidths=[doc.width * 0.18, doc.width * 0.22],
+        hAlign='RIGHT',
+    )
+    header_right_table.setStyle(
+        TableStyle([
+            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+            ('LEFTPADDING', (0, 0), (-1, -1), 0),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 0),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 2),
+        ])
+    )
+
+    header_table = Table(
+        [[header_left_parts, header_right_table]],
+        colWidths=[doc.width * 0.58, doc.width * 0.42],
+    )
+    header_table.setStyle(
+        TableStyle([
+            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+            ('LEFTPADDING', (0, 0), (-1, -1), 0),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 0),
+        ])
+    )
+
+    elements = [
+        Paragraph("INVOICE", title_style),
+        header_table,
+        Spacer(1, 10),
+    ]
+
+    billing_lines = [
+        Paragraph("<b>Bill To</b>", value_style),
+        Paragraph(escape(sample.customer.name), value_style),
+    ]
+    if sample.customer.address:
+        billing_lines.append(Paragraph(escape(sample.customer.address), styles['Normal']))
+    if sample.customer.phone:
+        billing_lines.append(Paragraph(escape(sample.customer.phone), styles['Normal']))
+    if sample.customer.email:
+        billing_lines.append(Paragraph(escape(sample.customer.email), styles['Normal']))
+
+    billing_table = Table(
+        [[billing_lines, '']],
+        colWidths=[doc.width * 0.6, doc.width * 0.4],
+    )
+    billing_table.setStyle(
+        TableStyle([
+            ('LEFTPADDING', (0, 0), (-1, -1), 0),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 0),
+        ])
+    )
+    elements.extend([billing_table, Spacer(1, 12)])
+
+    line_items = list(invoice.line_items.all().order_by('position', 'description'))
+    items_table_rows = [
+        [
+            Paragraph("Sl No", label_style),
+            Paragraph("Test", label_style),
+            Paragraph("Qty", label_style),
+            Paragraph("Unit Price", label_style),
+            Paragraph("Amount", label_style),
+        ]
+    ]
+    if line_items:
+        for idx, item in enumerate(line_items, start=1):
+            items_table_rows.append([
+                Paragraph(str(idx), value_style),
+                Paragraph(escape(item.description), value_style),
+                Paragraph(str(item.quantity), right_style),
+                Paragraph(_format_money(item.unit_price), right_style),
+                Paragraph(_format_money(item.amount), right_style),
+            ])
+    else:
+        items_table_rows.append([
+            Paragraph("—", value_style),
+            Paragraph("No billable tests found.", value_style),
+            Paragraph("—", value_style),
+            Paragraph(_format_money(Decimal('0.00')), right_style),
+            Paragraph(_format_money(Decimal('0.00')), right_style),
+        ])
+
+    items_table = Table(
+        items_table_rows,
+        colWidths=[doc.width * 0.08, doc.width * 0.44, doc.width * 0.12, doc.width * 0.18, doc.width * 0.18],
+    )
+    items_table.setStyle(
+        TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#E2E8F0')),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.HexColor('#0F172A')),
+            ('LINEBELOW', (0, 0), (-1, 0), 1, colors.HexColor('#CBD5F5')),
+            ('GRID', (0, 1), (-1, -1), 0.5, colors.HexColor('#E2E8F0')),
+            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+            ('ALIGN', (2, 1), (-1, -1), 'RIGHT'),
+            ('LEFTPADDING', (0, 0), (-1, -1), 6),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 6),
+            ('TOPPADDING', (0, 0), (-1, -1), 6),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+        ])
+    )
+    elements.extend([items_table, Spacer(1, 12)])
+
+    totals_rows = [
+        [Paragraph("Subtotal", label_style), Paragraph(_format_money(invoice.subtotal), right_style)],
+        [Paragraph(f"Tax ({invoice.tax_rate:.2f}%)", label_style), Paragraph(_format_money(invoice.tax_amount), right_style)],
+        [Paragraph("<b>Total</b>", value_style), Paragraph(f"<b>{_format_money(invoice.total)}</b>", right_style)],
+    ]
+    totals_table = Table(
+        totals_rows,
+        colWidths=[doc.width * 0.22, doc.width * 0.18],
+        hAlign='RIGHT',
+    )
+    totals_table.setStyle(
+        TableStyle([
+            ('LEFTPADDING', (0, 0), (-1, -1), 0),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 0),
+            ('TOPPADDING', (0, 0), (-1, -1), 4),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
+        ])
+    )
+    elements.extend([totals_table, Spacer(1, 10)])
+
+    if invoice.notes:
+        elements.append(Paragraph("<b>Notes</b>", value_style))
+        elements.append(Paragraph(escape(invoice.notes), styles['Normal']))
+
+    doc.build(elements)
+    buffer.seek(0)
+
+    response = FileResponse(
+        buffer,
+        as_attachment=True,
+        filename=f"Invoice_{invoice.invoice_number or sample.display_id}.pdf",
+    )
+    return response

@@ -18,7 +18,7 @@ from .mixins import (
     LabRequiredMixin,
     RoleRequiredMixin,
 )
-from .models import AuditTrail, ConsultantReview, LabProfile, Sample, TestResult
+from .models import AuditTrail, ConsultantReview, Invoice, LabProfile, Sample, TestResult
 from .views_common import _SENSITIVE_ROLES, _format_error_message, apply_user_scope
 
 logger = logging.getLogger(__name__)
@@ -123,6 +123,10 @@ class SampleDetailView(RoleRequiredMixin, DetailView):
         lab_profile = LabProfile.get_active()
         context['lab_profile'] = lab_profile
         context['resolved_signatories'] = sample.resolve_signatories(lab_profile)
+        try:
+            context['invoice'] = sample.invoice
+        except Invoice.DoesNotExist:
+            context['invoice'] = None
         return context
 
 
