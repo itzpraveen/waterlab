@@ -835,31 +835,81 @@ class Invoice(models.Model):
                 self.invoice_number = candidate
                 return candidate
 
-    def ensure_line_items(self):
-        if self.line_items.exists():
+    def _pricing_config(self) -> dict[str, Decimal]:
+        settings_data = getattr(settings, 'WATERLAB_SETTINGS', {})
+        pricing = settings_data.get('INVOICE_PRICING') or {}
+
+        def _to_decimal(value, fallback):
+            try:
+                return Decimal(str(value))
+            except Exception:
+                return Decimal(str(fallback))
+
+        return {
+            'CHEMICAL': _to_decimal(pricing.get('CHEMICAL', 400), 400),
+            'MICROBIOLOGICAL': _to_decimal(pricing.get('MICROBIOLOGICAL', 500), 500),
+            'FULL': _to_decimal(pricing.get('FULL', 900), 900),
+        }
+
+    def _description_config(self) -> dict[str, str]:
+        settings_data = getattr(settings, 'WATERLAB_SETTINGS', {})
+        descriptions = settings_data.get('INVOICE_DESCRIPTIONS') or {}
+        return {
+            'CHEMICAL': descriptions.get('CHEMICAL', 'Chemical Test'),
+            'MICROBIOLOGICAL': descriptions.get('MICROBIOLOGICAL', 'Microbiological Test'),
+            'FULL': descriptions.get('FULL', 'Water Quality Test Report'),
+            'FALLBACK': descriptions.get('FALLBACK', 'Water Quality Test Report'),
+        }
+
+    def _infer_test_types(self) -> tuple[bool, bool]:
+        has_chemical = False
+        has_micro = False
+        for param in self.sample.tests_requested.all():
+            label = (param.category_label or '').strip().casefold()
+            if any(token in label for token in ('micro', 'bacter')):
+                has_micro = True
+            else:
+                # Default non-micro categories to chemical bucket.
+                has_chemical = True
+        return has_chemical, has_micro
+
+    def ensure_line_items(self, force: bool = False):
+        existing_items = list(self.line_items.all())
+        if existing_items and not force:
             return
+        if existing_items:
+            self.line_items.all().delete()
 
-        sample = self.sample
-        parameters = sample.tests_requested.all().order_by('display_order', 'name')
-        items = []
-        for index, param in enumerate(parameters, start=1):
-            unit_price = (param.price or Decimal('0.00'))
-            quantity = Decimal('1.00')
-            amount = (unit_price * quantity).quantize(Decimal('0.01'))
-            items.append(
-                InvoiceLineItem(
-                    invoice=self,
-                    parameter=param,
-                    description=param.name,
-                    quantity=quantity,
-                    unit_price=unit_price,
-                    amount=amount,
-                    position=index,
-                )
-            )
+        has_chemical, has_micro = self._infer_test_types()
+        pricing = self._pricing_config()
+        descriptions = self._description_config()
 
-        if items:
-            InvoiceLineItem.objects.bulk_create(items)
+        if has_chemical and has_micro:
+            description = descriptions['FULL']
+            unit_price = pricing['FULL']
+            if unit_price <= 0:
+                unit_price = pricing['CHEMICAL'] + pricing['MICROBIOLOGICAL']
+        elif has_micro:
+            description = descriptions['MICROBIOLOGICAL']
+            unit_price = pricing['MICROBIOLOGICAL']
+        elif has_chemical:
+            description = descriptions['CHEMICAL']
+            unit_price = pricing['CHEMICAL']
+        else:
+            description = descriptions['FALLBACK']
+            unit_price = pricing['FULL']
+
+        quantity = Decimal('1.00')
+        amount = (unit_price * quantity).quantize(Decimal('0.01'))
+        InvoiceLineItem.objects.create(
+            invoice=self,
+            parameter=None,
+            description=description,
+            quantity=quantity,
+            unit_price=unit_price,
+            amount=amount,
+            position=1,
+        )
 
         self.recalculate_totals(save=True)
 

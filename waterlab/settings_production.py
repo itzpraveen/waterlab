@@ -267,4 +267,22 @@ WATERLAB_SETTINGS = {
             'BDL': 'WITHIN_LIMITS',
         },
     },
+    'INVOICE_PRICING': {
+        'CHEMICAL': 400,
+        'MICROBIOLOGICAL': 500,
+        'FULL': 900,
+    },
+    'INVOICE_DESCRIPTIONS': {
+        'CHEMICAL': 'Chemical Test',
+        'MICROBIOLOGICAL': 'Microbiological Test',
+        'FULL': 'Water Quality Test Report',
+        'FALLBACK': 'Water Quality Test Report',
+    },
+    'PAYMENT_OPTIONS': {
+        'ACCOUNT_NAME': 'BIOFIX TECHNOLOGY LLP',
+        'ACCOUNT_NUMBER': '25150200002107',
+        'BANK_NAME': 'FEDERAL BANK',
+        'IFSC': 'FDRL0002515',
+        'PHONE': '7510510946',
+    },
 }

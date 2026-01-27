@@ -702,7 +702,8 @@ def download_sample_invoice_view(request, pk):
 
     try:
         invoice = Invoice.create_for_sample(sample)
-        invoice.ensure_line_items()
+        force_rebuild = invoice.line_items.filter(parameter__isnull=False).exists()
+        invoice.ensure_line_items(force=force_rebuild)
         invoice.recalculate_totals(save=True)
         if invoice.status == 'DRAFT':
             invoice.status = 'ISSUED'
@@ -802,7 +803,7 @@ def download_sample_invoice_view(request, pk):
     header_right_table = Table(
         [
             [Paragraph("Invoice #", label_style), Paragraph(invoice.invoice_number or "—", right_style)],
-            [Paragraph("Invoice date", label_style), Paragraph(invoice.issued_on.strftime('%b %d, %Y'), right_style)],
+            [Paragraph("Date", label_style), Paragraph(invoice.issued_on.strftime('%b %d, %Y'), right_style)],
             [Paragraph("Status", label_style), Paragraph(invoice.get_status_display(), right_style)],
             [
                 Paragraph("Report #", label_style),
@@ -860,8 +861,12 @@ def download_sample_invoice_view(request, pk):
     )
     billing_table.setStyle(
         TableStyle([
-            ('LEFTPADDING', (0, 0), (-1, -1), 0),
-            ('RIGHTPADDING', (0, 0), (-1, -1), 0),
+            ('LEFTPADDING', (0, 0), (-1, -1), 8),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 8),
+            ('TOPPADDING', (0, 0), (-1, -1), 6),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+            ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#F8FAFC')),
+            ('BOX', (0, 0), (-1, -1), 0.5, colors.HexColor('#E2E8F0')),
         ])
     )
     elements.extend([billing_table, Spacer(1, 12)])
@@ -869,10 +874,10 @@ def download_sample_invoice_view(request, pk):
     line_items = list(invoice.line_items.all().order_by('position', 'description'))
     items_table_rows = [
         [
-            Paragraph("Sl No", label_style),
-            Paragraph("Test", label_style),
-            Paragraph("Qty", label_style),
-            Paragraph("Unit Price", label_style),
+            Paragraph("ID", label_style),
+            Paragraph("Description", label_style),
+            Paragraph("Quantity", label_style),
+            Paragraph("Rate", label_style),
             Paragraph("Amount", label_style),
         ]
     ]
@@ -916,7 +921,8 @@ def download_sample_invoice_view(request, pk):
 
     totals_rows = [
         [Paragraph("Subtotal", label_style), Paragraph(_format_money(invoice.subtotal), right_style)],
-        [Paragraph(f"Tax ({invoice.tax_rate:.2f}%)", label_style), Paragraph(_format_money(invoice.tax_amount), right_style)],
+        [Paragraph("Tax Rate", label_style), Paragraph(f"{invoice.tax_rate:.2f}%", right_style)],
+        [Paragraph("Tax", label_style), Paragraph(_format_money(invoice.tax_amount), right_style)],
         [Paragraph("<b>Total</b>", value_style), Paragraph(f"<b>{_format_money(invoice.total)}</b>", right_style)],
     ]
     totals_table = Table(
@@ -932,7 +938,40 @@ def download_sample_invoice_view(request, pk):
             ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
         ])
     )
-    elements.extend([totals_table, Spacer(1, 10)])
+
+    thank_you = Paragraph("<b>Thank you for your business!</b>", value_style)
+    thanks_table = Table(
+        [[thank_you, totals_table]],
+        colWidths=[doc.width * 0.6, doc.width * 0.4],
+    )
+    thanks_table.setStyle(
+        TableStyle([
+            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+            ('LEFTPADDING', (0, 0), (-1, -1), 0),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 0),
+        ])
+    )
+    elements.extend([thanks_table, Spacer(1, 10)])
+
+    settings_data = getattr(settings, 'WATERLAB_SETTINGS', {})
+    payment = settings_data.get('PAYMENT_OPTIONS') or {}
+    payment_lines = []
+    if payment:
+        payment_lines.append(Paragraph("<b>Payment Options</b>", value_style))
+        if payment.get('ACCOUNT_NAME'):
+            payment_lines.append(Paragraph(f"Bank account name : {escape(str(payment.get('ACCOUNT_NAME')))}", styles['Normal']))
+        if payment.get('ACCOUNT_NUMBER'):
+            payment_lines.append(Paragraph(f"Account number : {escape(str(payment.get('ACCOUNT_NUMBER')))}", styles['Normal']))
+        if payment.get('BANK_NAME'):
+            payment_lines.append(Paragraph(f"Bank name : {escape(str(payment.get('BANK_NAME')))}", styles['Normal']))
+        if payment.get('IFSC'):
+            payment_lines.append(Paragraph(f"IFSC Code : {escape(str(payment.get('IFSC')))}", styles['Normal']))
+        if payment.get('PHONE'):
+            payment_lines.append(Paragraph(f"Ph no : {escape(str(payment.get('PHONE')))}", styles['Normal']))
+
+    if payment_lines:
+        elements.append(Spacer(1, 6))
+        elements.extend(payment_lines)
 
     if invoice.notes:
         elements.append(Paragraph("<b>Notes</b>", value_style))
