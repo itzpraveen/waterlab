@@ -200,8 +200,15 @@ class SampleForm(forms.ModelForm):
     class Meta:
         model = Sample
         fields = [
-            'customer', 'collection_datetime', 'date_received_at_lab', 'sample_source', 'sampling_location', 'collected_by',
-            'referred_by', 'tests_requested'
+            'customer',
+            'collection_datetime',
+            'date_received_at_lab',
+            'sample_source',
+            'sampling_location',
+            'quantity_received',
+            'collected_by',
+            'referred_by',
+            'tests_requested',
         ]
         widgets = {
             'customer': forms.Select(attrs={
@@ -210,6 +217,7 @@ class SampleForm(forms.ModelForm):
             }),
             'sample_source': forms.Select(attrs={'class': 'form-control js-searchable-select'}),
             'sampling_location': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g., Borewell #2 near gate'}),
+            'quantity_received': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g., 1.0 L'}),
             'collected_by': forms.Select(attrs={'class': 'form-control js-searchable-select'}),
             'referred_by': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Name of person who referred the sample'}),
             'tests_requested': forms.CheckboxSelectMultiple(attrs={'class': 'form-check-input'}),

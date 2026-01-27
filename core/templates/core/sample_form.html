@@ -71,6 +71,12 @@
                 <div class="form-text">Use this to distinguish multiple sources (e.g., Borewell #2 near gate).</div>
             </div>
             <div class="col-md-6">
+                <label for="{{ form.quantity_received.id_for_label }}" class="form-label">Quantity received (L)</label>
+                {{ form.quantity_received }}
+                {% if form.quantity_received.errors %}<div class="invalid-feedback d-block small">{{ form.quantity_received.errors.0 }}</div>{% endif %}
+                <div class="form-text">Record the volume received in litres.</div>
+            </div>
+            <div class="col-md-6">
                 <label for="{{ form.collected_by.id_for_label }}" class="form-label">Collected by *</label>
                 {{ form.collected_by }}
                 {% if form.collected_by.errors %}<div class="invalid-feedback d-block small">{{ form.collected_by.errors.0 }}</div>{% endif %}
