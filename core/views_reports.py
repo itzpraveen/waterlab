@@ -718,7 +718,7 @@ def download_sample_invoice_view(request, pk):
 
     from django.conf import settings
     from reportlab.lib import colors
-    from reportlab.lib.enums import TA_CENTER, TA_RIGHT
+    from reportlab.lib.enums import TA_RIGHT
     from reportlab.lib.pagesizes import A4
     from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
     from reportlab.lib.units import mm
@@ -788,19 +788,29 @@ def download_sample_invoice_view(request, pk):
     )
 
     styles = getSampleStyleSheet()
+    palette = {
+        'primary': colors.HexColor('#0F766E'),
+        'primary_soft': colors.HexColor('#E6F4F1'),
+        'text': colors.HexColor('#0F172A'),
+        'muted': colors.HexColor('#64748B'),
+        'border': colors.HexColor('#E2E8F0'),
+        'surface': colors.HexColor('#F8FAFC'),
+    }
     title_style = ParagraphStyle(
         name='InvoiceTitle',
         parent=styles['Heading1'],
-        alignment=TA_CENTER,
-        textColor=colors.HexColor('#0F172A'),
+        alignment=TA_RIGHT,
+        textColor=palette['text'],
         fontName=body_font_bold,
-        spaceAfter=6,
+        fontSize=16,
+        leading=18,
+        spaceAfter=10,
     )
     label_style = ParagraphStyle(
         name='InvoiceLabel',
         parent=styles['Normal'],
-        textColor=colors.HexColor('#64748B'),
-        fontSize=9,
+        textColor=palette['muted'],
+        fontSize=8.5,
         fontName=body_font,
     )
     value_style = ParagraphStyle(
@@ -808,6 +818,29 @@ def download_sample_invoice_view(request, pk):
         parent=styles['Normal'],
         fontSize=10,
         fontName=body_font,
+    )
+    header_name_style = ParagraphStyle(
+        name='InvoiceHeaderName',
+        parent=value_style,
+        fontName=body_font_bold,
+        fontSize=11,
+        textColor=palette['text'],
+        spaceAfter=2,
+    )
+    section_style = ParagraphStyle(
+        name='InvoiceSection',
+        parent=styles['Normal'],
+        fontName=body_font_bold,
+        fontSize=9,
+        textColor=palette['primary'],
+        spaceAfter=4,
+    )
+    small_style = ParagraphStyle(
+        name='InvoiceSmall',
+        parent=styles['Normal'],
+        fontName=body_font,
+        fontSize=8.5,
+        textColor=palette['muted'],
     )
     right_style = ParagraphStyle(
         name='InvoiceRight',
@@ -850,11 +883,11 @@ def download_sample_invoice_view(request, pk):
             header_left_parts.append(Image(logo_path, width=36 * mm, height=14 * mm))
             header_left_parts.append(Spacer(1, 4))
 
-    header_left_parts.append(Paragraph(f"<b>{escape(lab_name)}</b>", value_style))
+    header_left_parts.append(Paragraph(f"{escape(lab_name)}", header_name_style))
     if lab_address:
-        header_left_parts.append(Paragraph(escape(lab_address), styles['Normal']))
+        header_left_parts.append(Paragraph(escape(lab_address), small_style))
     if lab_contact:
-        header_left_parts.append(Paragraph(escape(lab_contact), styles['Normal']))
+        header_left_parts.append(Paragraph(escape(lab_contact), small_style))
 
     header_right_table = Table(
         [
@@ -894,22 +927,35 @@ def download_sample_invoice_view(request, pk):
         ])
     )
 
+    accent = Table([['']], colWidths=[doc.width], rowHeights=[2])
+    accent.setStyle(
+        TableStyle([
+            ('BACKGROUND', (0, 0), (-1, -1), palette['primary']),
+            ('LEFTPADDING', (0, 0), (-1, -1), 0),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 0),
+            ('TOPPADDING', (0, 0), (-1, -1), 0),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 0),
+        ])
+    )
+
     elements = [
+        accent,
+        Spacer(1, 6),
         Paragraph("INVOICE", title_style),
         header_table,
-        Spacer(1, 10),
+        Spacer(1, 12),
     ]
 
+    elements.append(Paragraph("Bill To", section_style))
     billing_lines = [
-        Paragraph("<b>Bill To</b>", value_style),
         Paragraph(escape(sample.customer.name), value_style),
     ]
     if sample.customer.address:
-        billing_lines.append(Paragraph(escape(sample.customer.address), styles['Normal']))
+        billing_lines.append(Paragraph(escape(sample.customer.address), small_style))
     if sample.customer.phone:
-        billing_lines.append(Paragraph(escape(sample.customer.phone), styles['Normal']))
+        billing_lines.append(Paragraph(escape(sample.customer.phone), small_style))
     if sample.customer.email:
-        billing_lines.append(Paragraph(escape(sample.customer.email), styles['Normal']))
+        billing_lines.append(Paragraph(escape(sample.customer.email), small_style))
 
     billing_table = Table(
         [[billing_lines, '']],
@@ -921,11 +967,11 @@ def download_sample_invoice_view(request, pk):
             ('RIGHTPADDING', (0, 0), (-1, -1), 8),
             ('TOPPADDING', (0, 0), (-1, -1), 6),
             ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
-            ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#F8FAFC')),
-            ('BOX', (0, 0), (-1, -1), 0.5, colors.HexColor('#E2E8F0')),
+            ('BACKGROUND', (0, 0), (-1, -1), palette['surface']),
+            ('BOX', (0, 0), (-1, -1), 0.5, palette['border']),
         ])
     )
-    elements.extend([billing_table, Spacer(1, 12)])
+    elements.extend([billing_table, Spacer(1, 14)])
 
     line_items = list(invoice.line_items.all().order_by('position', 'description'))
     items_table_rows = [
@@ -961,16 +1007,17 @@ def download_sample_invoice_view(request, pk):
     )
     items_table.setStyle(
         TableStyle([
-            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#E2E8F0')),
-            ('TEXTCOLOR', (0, 0), (-1, 0), colors.HexColor('#0F172A')),
-            ('LINEBELOW', (0, 0), (-1, 0), 1, colors.HexColor('#CBD5F5')),
-            ('GRID', (0, 1), (-1, -1), 0.5, colors.HexColor('#E2E8F0')),
+            ('BACKGROUND', (0, 0), (-1, 0), palette['primary_soft']),
+            ('TEXTCOLOR', (0, 0), (-1, 0), palette['text']),
+            ('LINEBELOW', (0, 0), (-1, 0), 1, palette['border']),
+            ('GRID', (0, 1), (-1, -1), 0.5, palette['border']),
             ('VALIGN', (0, 0), (-1, -1), 'TOP'),
             ('ALIGN', (2, 1), (-1, -1), 'RIGHT'),
             ('LEFTPADDING', (0, 0), (-1, -1), 6),
             ('RIGHTPADDING', (0, 0), (-1, -1), 6),
             ('TOPPADDING', (0, 0), (-1, -1), 6),
             ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, palette['surface']]),
         ])
     )
     elements.extend([items_table, Spacer(1, 12)])
@@ -992,6 +1039,10 @@ def download_sample_invoice_view(request, pk):
             ('RIGHTPADDING', (0, 0), (-1, -1), 0),
             ('TOPPADDING', (0, 0), (-1, -1), 4),
             ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
+            ('LINEABOVE', (0, -1), (-1, -1), 0.5, palette['border']),
+            ('BACKGROUND', (0, -1), (-1, -1), palette['primary_soft']),
+            ('TEXTCOLOR', (0, -1), (-1, -1), palette['text']),
+            ('FONTNAME', (0, -1), (-1, -1), body_font_bold),
         ])
     )
 
@@ -1013,21 +1064,32 @@ def download_sample_invoice_view(request, pk):
     payment = settings_data.get('PAYMENT_OPTIONS') or {}
     payment_lines = []
     if payment:
-        payment_lines.append(Paragraph("<b>Payment Options</b>", value_style))
+        payment_lines.append(Paragraph("Payment Options", section_style))
         if payment.get('ACCOUNT_NAME'):
-            payment_lines.append(Paragraph(f"Bank account name : {escape(str(payment.get('ACCOUNT_NAME')))}", styles['Normal']))
+            payment_lines.append(Paragraph(f"Bank account name : {escape(str(payment.get('ACCOUNT_NAME')))}", small_style))
         if payment.get('ACCOUNT_NUMBER'):
-            payment_lines.append(Paragraph(f"Account number : {escape(str(payment.get('ACCOUNT_NUMBER')))}", styles['Normal']))
+            payment_lines.append(Paragraph(f"Account number : {escape(str(payment.get('ACCOUNT_NUMBER')))}", small_style))
         if payment.get('BANK_NAME'):
-            payment_lines.append(Paragraph(f"Bank name : {escape(str(payment.get('BANK_NAME')))}", styles['Normal']))
+            payment_lines.append(Paragraph(f"Bank name : {escape(str(payment.get('BANK_NAME')))}", small_style))
         if payment.get('IFSC'):
-            payment_lines.append(Paragraph(f"IFSC Code : {escape(str(payment.get('IFSC')))}", styles['Normal']))
+            payment_lines.append(Paragraph(f"IFSC Code : {escape(str(payment.get('IFSC')))}", small_style))
         if payment.get('PHONE'):
-            payment_lines.append(Paragraph(f"Ph no : {escape(str(payment.get('PHONE')))}", styles['Normal']))
+            payment_lines.append(Paragraph(f"Ph no : {escape(str(payment.get('PHONE')))}", small_style))
 
     if payment_lines:
         elements.append(Spacer(1, 6))
-        elements.extend(payment_lines)
+        payment_table = Table([[payment_lines]], colWidths=[doc.width * 0.55])
+        payment_table.setStyle(
+            TableStyle([
+                ('LEFTPADDING', (0, 0), (-1, -1), 8),
+                ('RIGHTPADDING', (0, 0), (-1, -1), 8),
+                ('TOPPADDING', (0, 0), (-1, -1), 6),
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+                ('BACKGROUND', (0, 0), (-1, -1), palette['surface']),
+                ('BOX', (0, 0), (-1, -1), 0.5, palette['border']),
+            ])
+        )
+        elements.append(payment_table)
 
     if invoice.notes:
         elements.append(Paragraph("<b>Notes</b>", value_style))
