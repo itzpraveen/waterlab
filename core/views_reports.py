@@ -722,14 +722,53 @@ def download_sample_invoice_view(request, pk):
     from reportlab.lib.pagesizes import A4
     from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
     from reportlab.lib.units import mm
+    from reportlab.pdfbase import pdfmetrics
+    from reportlab.pdfbase.ttfonts import TTFont
     from reportlab.platypus import Image, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
     def _get_currency_symbol() -> str:
         settings_data = getattr(settings, 'WATERLAB_SETTINGS', {})
         symbol = settings_data.get('CURRENCY_SYMBOL')
-        return symbol or 'Rs '
+        return symbol or '₹'
 
     currency_symbol = _get_currency_symbol()
+
+    def _register_invoice_fonts() -> tuple[str, str]:
+        candidates = [
+            os.path.join(settings.BASE_DIR, 'static', 'fonts', 'DejaVuSans.ttf'),
+            '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',
+        ]
+        bold_candidates = [
+            os.path.join(settings.BASE_DIR, 'static', 'fonts', 'DejaVuSans-Bold.ttf'),
+            '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf',
+        ]
+
+        def _try_register(name: str, path: str) -> bool:
+            if not path or not os.path.exists(path):
+                return False
+            try:
+                if name not in pdfmetrics.getRegisteredFontNames():
+                    pdfmetrics.registerFont(TTFont(name, path))
+                return True
+            except Exception:
+                return False
+
+        body_font = 'Helvetica'
+        bold_font = 'Helvetica-Bold'
+
+        for path in candidates:
+            if _try_register('DejaVuSans', path):
+                body_font = 'DejaVuSans'
+                break
+
+        for path in bold_candidates:
+            if _try_register('DejaVuSans-Bold', path):
+                bold_font = 'DejaVuSans-Bold'
+                break
+
+        return body_font, bold_font
+
+    body_font, body_font_bold = _register_invoice_fonts()
 
     def _format_money(value) -> str:
         try:
@@ -754,6 +793,7 @@ def download_sample_invoice_view(request, pk):
         parent=styles['Heading1'],
         alignment=TA_CENTER,
         textColor=colors.HexColor('#0F172A'),
+        fontName=body_font_bold,
         spaceAfter=6,
     )
     label_style = ParagraphStyle(
@@ -761,16 +801,19 @@ def download_sample_invoice_view(request, pk):
         parent=styles['Normal'],
         textColor=colors.HexColor('#64748B'),
         fontSize=9,
+        fontName=body_font,
     )
     value_style = ParagraphStyle(
         name='InvoiceValue',
         parent=styles['Normal'],
         fontSize=10,
+        fontName=body_font,
     )
     right_style = ParagraphStyle(
         name='InvoiceRight',
         parent=value_style,
         alignment=TA_RIGHT,
+        fontName=body_font,
     )
 
     lab_settings = getattr(settings, 'WATERLAB_SETTINGS', {})
