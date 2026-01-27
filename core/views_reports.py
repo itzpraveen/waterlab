@@ -834,8 +834,21 @@ def download_sample_invoice_view(request, pk):
     header_left_parts = []
     logo_path = profile.logo_path
     if logo_path and os.path.exists(logo_path):
-        header_left_parts.append(Image(logo_path, width=36 * mm, height=14 * mm))
-        header_left_parts.append(Spacer(1, 4))
+        try:
+            logo_reader = ImageReader(logo_path)
+            logo_width, logo_height = logo_reader.getSize()
+            max_width = 40 * mm
+            max_height = 16 * mm
+            scale = min(max_width / logo_width, max_height / logo_height)
+            if scale <= 0:
+                scale = 1
+            header_left_parts.append(
+                Image(logo_path, width=logo_width * scale, height=logo_height * scale)
+            )
+            header_left_parts.append(Spacer(1, 4))
+        except Exception:
+            header_left_parts.append(Image(logo_path, width=36 * mm, height=14 * mm))
+            header_left_parts.append(Spacer(1, 4))
 
     header_left_parts.append(Paragraph(f"<b>{escape(lab_name)}</b>", value_style))
     if lab_address:
