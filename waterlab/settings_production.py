@@ -285,4 +285,5 @@ WATERLAB_SETTINGS = {
         'IFSC': 'FDRL0002515',
         'PHONE': '7510510946',
     },
+    'CURRENCY_SYMBOL': 'Rs ',
 }

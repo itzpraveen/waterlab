@@ -727,7 +727,7 @@ def download_sample_invoice_view(request, pk):
     def _get_currency_symbol() -> str:
         settings_data = getattr(settings, 'WATERLAB_SETTINGS', {})
         symbol = settings_data.get('CURRENCY_SYMBOL')
-        return symbol or '₹'
+        return symbol or 'Rs '
 
     currency_symbol = _get_currency_symbol()
 
