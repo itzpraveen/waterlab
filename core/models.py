@@ -1370,23 +1370,22 @@ class ConsultantReview(models.Model):
         
         super().save(*args, **kwargs)
         
-        # Update sample status if review status changed OR if this is a new review with non-pending status
-        status_should_update = (
-            (not is_new and old_status != self.status) or  # Existing review status changed
-            (is_new and self.status != 'PENDING')  # New review with non-pending status
-        )
-        
-        if status_should_update:
-            if self.status == 'APPROVED':
-                try:
-                    self.sample.update_status('REPORT_APPROVED', self.reviewer)
-                except Exception:
-                    logger.exception("Failed to update sample %s status to REPORT_APPROVED during consultant review", self.sample_id)
-            elif self.status == 'REJECTED':
-                try:
-                    self.sample.update_status('TESTING_IN_PROGRESS', self.reviewer)
-                except Exception:
-                    logger.exception("Failed to update sample %s status to TESTING_IN_PROGRESS after rejection", self.sample_id)
+        # Keep sample workflow in sync with consultant decision whenever a transition is valid.
+        target_sample_status = None
+        if self.status == 'APPROVED':
+            target_sample_status = 'REPORT_APPROVED'
+        elif self.status == 'REJECTED':
+            target_sample_status = 'TESTING_IN_PROGRESS'
+
+        if target_sample_status and self.sample.can_transition_to(target_sample_status):
+            try:
+                self.sample.update_status(target_sample_status, self.reviewer)
+            except Exception:
+                logger.exception(
+                    "Failed to update sample %s status to %s during consultant review",
+                    self.sample_id,
+                    target_sample_status,
+                )
 
 class AuditTrail(models.Model):
     ACTION_CHOICES = [

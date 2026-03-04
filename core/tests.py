@@ -1153,6 +1153,37 @@ class ConsultantReviewModelTests(TestCase):
         self.assertEqual(review.reviewer, self.admin_user)
         self.assertEqual(self.sample_for_review.current_status, 'REPORT_APPROVED')
 
+    def test_reapproval_after_reopen_moves_sample_back_to_report_approved(self):
+        """Re-approving an existing APPROVED review should still transition from REVIEW_PENDING."""
+        review = ConsultantReview.objects.create(
+            sample=self.sample_for_review,
+            reviewer=self.consultant_user,
+            comments="Initial approval.",
+            status='APPROVED'
+        )
+        self.sample_for_review.refresh_from_db()
+        self.assertEqual(self.sample_for_review.current_status, 'REPORT_APPROVED')
+        self.assertEqual(review.status, 'APPROVED')
+
+        self.sample_for_review.reopen_for_correction(
+            user=self.consultant_user,
+            reason="Need to correct final wording in comments.",
+        )
+        self.sample_for_review.refresh_from_db()
+        self.assertEqual(self.sample_for_review.current_status, 'TESTING_IN_PROGRESS')
+
+        self.sample_for_review.update_status('RESULTS_ENTERED', self.lab_user)
+        self.sample_for_review.update_status('REVIEW_PENDING', self.lab_user)
+        self.sample_for_review.refresh_from_db()
+        self.assertEqual(self.sample_for_review.current_status, 'REVIEW_PENDING')
+
+        review.refresh_from_db()
+        review.comments = "Re-approved after correction."
+        review.save()
+
+        self.sample_for_review.refresh_from_db()
+        self.assertEqual(self.sample_for_review.current_status, 'REPORT_APPROVED')
+
 
 class SampleReopenForCorrectionViewTests(TestCase):
     def setUp(self):
