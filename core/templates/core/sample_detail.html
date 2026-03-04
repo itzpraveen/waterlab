@@ -135,6 +135,21 @@
                     <dd>{{ sample.report_number|default:"Not assigned" }}</dd>
                 </div>
                 <div class="data-pair">
+                    <dt>Report Revision</dt>
+                    <dd>{{ sample.report_revision_label }}</dd>
+                </div>
+                {% if sample.last_reopened_at %}
+                <div class="data-pair">
+                    <dt>Last Reopened</dt>
+                    <dd>
+                        {{ sample.last_reopened_at|date:"M d, Y H:i" }}
+                        {% if sample.last_reopened_by %}
+                            by {{ sample.last_reopened_by.get_full_name|default:sample.last_reopened_by.username }}
+                        {% endif %}
+                    </dd>
+                </div>
+                {% endif %}
+                <div class="data-pair">
                     <dt>Invoice Number</dt>
                     <dd>
                         {% if invoice %}
@@ -385,6 +400,30 @@
                 {% endif %}
 
                 {% if user.is_consultant or user.is_admin %}
+                    {% if sample.current_status == 'REPORT_APPROVED' or sample.current_status == 'REPORT_SENT' %}
+                    <form method="post" action="{% url 'core:sample_reopen_for_correction' sample.pk %}" class="note-card">
+                        {% csrf_token %}
+                        <label for="reopen_reason" class="small fw-semibold d-block mb-2">Reason for reopening</label>
+                        <textarea
+                            id="reopen_reason"
+                            name="reopen_reason"
+                            rows="3"
+                            class="form-control mb-2"
+                            placeholder="Explain what must be corrected before re-review."
+                            required
+                        ></textarea>
+                        <button
+                            type="submit"
+                            class="btn btn-outline-warning w-100"
+                            onclick="return confirm('Reopen this approved report for correction? This will move it back to testing.')"
+                        >
+                            <i class="material-icons me-1">restart_alt</i>Reopen for correction
+                        </button>
+                    </form>
+                    {% endif %}
+                {% endif %}
+
+                {% if user.is_consultant or user.is_admin %}
                     {% if sample.current_status == 'RESULTS_ENTERED' or sample.current_status == 'REVIEW_PENDING' %}
                     <a href="{% url 'core:consultant_review' sample.pk %}" class="btn btn-outline-secondary"><i class="material-icons me-1">rate_review</i>Consultant review</a>
                     {% endif %}
@@ -404,6 +443,19 @@
                 {% endif %}
             </div>
         </div>
+
+        {% if sample.last_reopened_reason %}
+        <div class="info-card mt-4">
+            <div class="section-title"><i class="material-icons">history</i>Latest correction cycle</div>
+            <p class="mb-1 small text-muted">
+                Reopened {{ sample.last_reopened_at|date:"M d, Y H:i"|default:"N/A" }}
+                {% if sample.last_reopened_by %}
+                    by {{ sample.last_reopened_by.get_full_name|default:sample.last_reopened_by.username }}
+                {% endif %}
+            </p>
+            <p class="mb-0">{{ sample.last_reopened_reason|linebreaksbr }}</p>
+        </div>
+        {% endif %}
 
         {% if sample.review %}
         <div class="info-card">

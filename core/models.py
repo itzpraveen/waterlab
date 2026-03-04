@@ -407,6 +407,17 @@ class Sample(models.Model):
     # New fields for professional PDF report
     ulr_number = models.CharField(max_length=50, blank=True, null=True, verbose_name="ULR Number")
     report_number = models.CharField(max_length=50, blank=True, null=True, verbose_name="Test Report Number")
+    report_revision = models.PositiveIntegerField(default=1, verbose_name="Report Revision")
+    last_reopened_reason = models.TextField(blank=True, null=True, verbose_name="Last Reopen Reason")
+    last_reopened_at = models.DateTimeField(blank=True, null=True, verbose_name="Last Reopened At")
+    last_reopened_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='samples_reopened',
+        verbose_name="Last Reopened By",
+    )
     sample_type = models.CharField(max_length=50, default="WATER", verbose_name="Sample Type")
     quantity_received = models.CharField(max_length=50, blank=True, null=True, verbose_name="Quantity Received")
     sampling_procedure = models.CharField(max_length=100, blank=True, null=True, verbose_name="Sampling Procedure")
@@ -657,6 +668,89 @@ class Sample(models.Model):
         """Check if sample is ready for consultant review"""
         return ((self.current_status == 'RESULTS_ENTERED' or self.current_status == 'REVIEW_PENDING') and 
                 self.has_all_test_results())
+
+    def can_reopen_for_correction(self):
+        """Return whether this sample can be reopened after final review."""
+        return self.current_status in {'REPORT_APPROVED', 'REPORT_SENT'}
+
+    @property
+    def report_revision_label(self) -> str:
+        revision = self.report_revision if self.report_revision and self.report_revision > 0 else 1
+        return f"Rev-{revision}"
+
+    @property
+    def report_number_with_revision(self) -> str:
+        number = (self.report_number or '').strip()
+        if number:
+            return f"{number} ({self.report_revision_label})"
+        return self.report_revision_label
+
+    def reopen_for_correction(self, user, reason):
+        """Move an approved/sent sample back to testing with explicit justification."""
+        from django.core.exceptions import ValidationError
+
+        reason_text = (reason or '').strip()
+        if not reason_text:
+            raise ValidationError("Reopen reason is required.")
+        if not user or not (user.is_admin() or user.is_consultant()):
+            raise ValidationError("Only consultants and admins can reopen reports for correction.")
+        if not self.can_reopen_for_correction():
+            raise ValidationError(
+                f"Sample cannot be reopened from status {self.current_status}."
+            )
+
+        with transaction.atomic():
+            old_status = self.current_status
+            old_test_commenced = self.test_commenced_on
+            old_test_completed = self.test_completed_on
+            old_revision = self.report_revision if self.report_revision and self.report_revision > 0 else 1
+            old_last_reopened_reason = self.last_reopened_reason
+            old_last_reopened_at = self.last_reopened_at
+            old_last_reopened_by_id = self.last_reopened_by_id
+
+            now = timezone.now()
+            self.current_status = 'TESTING_IN_PROGRESS'
+            self.test_commenced_on = now.date()
+            self.test_completed_on = None
+            self.report_revision = old_revision + 1
+            self.last_reopened_reason = reason_text
+            self.last_reopened_at = now
+            self.last_reopened_by = user
+            self.save(
+                update_fields=[
+                    'current_status',
+                    'test_commenced_on',
+                    'test_completed_on',
+                    'report_revision',
+                    'last_reopened_reason',
+                    'last_reopened_at',
+                    'last_reopened_by',
+                ]
+            )
+
+            AuditTrail.log_change(
+                user=user,
+                action='UPDATE',
+                instance=self,
+                old_values={
+                    'current_status': old_status,
+                    'test_commenced_on': old_test_commenced,
+                    'test_completed_on': old_test_completed,
+                    'report_revision': old_revision,
+                    'last_reopened_reason': old_last_reopened_reason,
+                    'last_reopened_at': old_last_reopened_at,
+                    'last_reopened_by': old_last_reopened_by_id,
+                },
+                new_values={
+                    'current_status': self.current_status,
+                    'test_commenced_on': self.test_commenced_on,
+                    'test_completed_on': self.test_completed_on,
+                    'report_revision': self.report_revision,
+                    'last_reopened_reason': self.last_reopened_reason,
+                    'last_reopened_at': self.last_reopened_at,
+                    'last_reopened_by': self.last_reopened_by_id,
+                },
+            )
     
     @property
     def is_completed(self):

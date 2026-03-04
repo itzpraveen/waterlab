@@ -27,6 +27,7 @@ from .views import (
     debug_view,
     form_test,
     fix_admin_role_web,
+    sample_reopen_for_correction,
     sample_status_update,
     setup_test_parameters,
     reorder_test_parameters,
@@ -92,6 +93,7 @@ urlpatterns = [
     path('samples/<uuid:sample_id>/test-results/', test_result_entry, name='test_result_entry'),
     path('samples/<uuid:sample_id>/review/', consultant_review, name='consultant_review'),
     path('samples/<uuid:sample_id>/status-update/', sample_status_update, name='sample_status_update'),
+    path('samples/<uuid:sample_id>/reopen/', sample_reopen_for_correction, name='sample_reopen_for_correction'),
     
     # Test Parameters Setup
     path('setup-test-parameters/', setup_test_parameters, name='setup_test_parameters'),

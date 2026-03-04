@@ -597,6 +597,69 @@ class SampleModelTests(TestCase):
         self.assertEqual(latest_log.old_values['current_status'], 'RECEIVED_FRONT_DESK')
         self.assertEqual(latest_log.new_values['current_status'], 'SENT_TO_LAB')
 
+    def test_reopen_for_correction_updates_status_revision_and_audit(self):
+        from .models import AuditTrail
+
+        consultant_user = CustomUser.objects.create_user(
+            username=f"consultant_{uuid.uuid4().hex[:6]}",
+            password="password",
+            role="consultant",
+        )
+        sample = Sample.objects.create(**self.sample_data)
+        sample.current_status = 'REPORT_APPROVED'
+        sample.test_completed_on = timezone.now().date()
+        sample.report_revision = 1
+        sample.save()
+
+        initial_audit_count = AuditTrail.objects.count()
+
+        sample.reopen_for_correction(
+            user=consultant_user,
+            reason='Detected formatting issue in final recommendation notes.',
+        )
+        sample.refresh_from_db()
+
+        self.assertEqual(sample.current_status, 'TESTING_IN_PROGRESS')
+        self.assertEqual(sample.report_revision, 2)
+        self.assertIsNone(sample.test_completed_on)
+        self.assertEqual(sample.last_reopened_by, consultant_user)
+        self.assertEqual(
+            sample.last_reopened_reason,
+            'Detected formatting issue in final recommendation notes.',
+        )
+        self.assertEqual(AuditTrail.objects.count(), initial_audit_count + 1)
+
+    def test_reopen_for_correction_requires_reason(self):
+        consultant_user = CustomUser.objects.create_user(
+            username=f"consultant_{uuid.uuid4().hex[:6]}",
+            password="password",
+            role="consultant",
+        )
+        sample = Sample.objects.create(**self.sample_data)
+        sample.current_status = 'REPORT_APPROVED'
+        sample.save(update_fields=['current_status'])
+
+        with self.assertRaises(ValidationError) as context:
+            sample.reopen_for_correction(user=consultant_user, reason=' ')
+        self.assertIn("Reopen reason is required.", str(context.exception))
+
+    def test_reopen_for_correction_rejects_non_final_status(self):
+        consultant_user = CustomUser.objects.create_user(
+            username=f"consultant_{uuid.uuid4().hex[:6]}",
+            password="password",
+            role="consultant",
+        )
+        sample = Sample.objects.create(**self.sample_data)
+        sample.current_status = 'REVIEW_PENDING'
+        sample.save(update_fields=['current_status'])
+
+        with self.assertRaises(ValidationError) as context:
+            sample.reopen_for_correction(
+                user=consultant_user,
+                reason='Need to correct out-of-range interpretation.',
+            )
+        self.assertIn("Sample cannot be reopened from status REVIEW_PENDING.", str(context.exception))
+
 
 class ConsultantSignerSelectionTests(SimpleTestCase):
     def test_prefers_signer_with_signature_and_falls_back(self):
@@ -1089,6 +1152,97 @@ class ConsultantReviewModelTests(TestCase):
         self.sample_for_review.refresh_from_db()
         self.assertEqual(review.reviewer, self.admin_user)
         self.assertEqual(self.sample_for_review.current_status, 'REPORT_APPROVED')
+
+
+class SampleReopenForCorrectionViewTests(TestCase):
+    def setUp(self):
+        self.customer = Customer.objects.create(
+            name="Reopen Workflow Customer",
+            phone="9998887776",
+            email=f"reopen_{uuid.uuid4().hex[:6]}@example.com",
+            street_locality_landmark="Reopen Street",
+            village_town_city="Reopenville",
+            district="Ernakulam",
+            pincode="682001",
+        )
+        self.sample = Sample.objects.create(
+            customer=self.customer,
+            collection_datetime=timezone.now() - timedelta(days=1),
+            sample_source='WELL',
+            collected_by='CUSTOMER',
+            current_status='REPORT_APPROVED',
+            report_revision=1,
+        )
+        self.consultant_user = CustomUser.objects.create_user(
+            username=f"reopen_consultant_{uuid.uuid4().hex[:6]}",
+            password="password",
+            role="consultant",
+        )
+        self.frontdesk_user = CustomUser.objects.create_user(
+            username=f"reopen_frontdesk_{uuid.uuid4().hex[:6]}",
+            password="password",
+            role="frontdesk",
+        )
+
+    def test_consultant_can_reopen_approved_sample(self):
+        self.client.force_login(self.consultant_user)
+        response = self.client.post(
+            reverse('core:sample_reopen_for_correction', args=[self.sample.sample_id]),
+            {'reopen_reason': 'Need to correct one reported value before final issue.'},
+        )
+        self.assertEqual(response.status_code, 302)
+
+        self.sample.refresh_from_db()
+        self.assertEqual(self.sample.current_status, 'TESTING_IN_PROGRESS')
+        self.assertEqual(self.sample.report_revision, 2)
+        self.assertEqual(
+            self.sample.last_reopened_reason,
+            'Need to correct one reported value before final issue.',
+        )
+
+    def test_reopen_requires_reason(self):
+        self.client.force_login(self.consultant_user)
+        response = self.client.post(
+            reverse('core:sample_reopen_for_correction', args=[self.sample.sample_id]),
+            {'reopen_reason': ' '},
+        )
+        self.assertEqual(response.status_code, 302)
+
+        self.sample.refresh_from_db()
+        self.assertEqual(self.sample.current_status, 'REPORT_APPROVED')
+        self.assertEqual(self.sample.report_revision, 1)
+
+    def test_frontdesk_cannot_reopen(self):
+        self.client.force_login(self.frontdesk_user)
+        response = self.client.post(
+            reverse('core:sample_reopen_for_correction', args=[self.sample.sample_id]),
+            {'reopen_reason': 'Trying to reopen without permission.'},
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertRedirects(
+            response,
+            reverse('core:dashboard'),
+            fetch_redirect_response=False,
+        )
+
+        self.sample.refresh_from_db()
+        self.assertEqual(self.sample.current_status, 'REPORT_APPROVED')
+        self.assertEqual(self.sample.report_revision, 1)
+
+    def test_get_request_does_not_reopen(self):
+        self.client.force_login(self.consultant_user)
+        response = self.client.get(
+            reverse('core:sample_reopen_for_correction', args=[self.sample.sample_id]),
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertRedirects(
+            response,
+            reverse('core:sample_detail', args=[self.sample.sample_id]),
+        )
+
+        self.sample.refresh_from_db()
+        self.assertEqual(self.sample.current_status, 'REPORT_APPROVED')
+        self.assertEqual(self.sample.report_revision, 1)
 
 
 class TestResultEntryViewTests(TestCase):

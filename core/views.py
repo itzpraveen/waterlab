@@ -54,6 +54,7 @@ from .views_samples import (
     SampleUpdateView,
     SampleReportMetadataUpdateView,
     consultant_review,
+    sample_reopen_for_correction,
     sample_status_update,
 )
 from .views_reports import download_sample_invoice_view, download_sample_report_view
@@ -107,6 +108,7 @@ __all__ = [
     'SampleUpdateView',
     'SampleReportMetadataUpdateView',
     'consultant_review',
+    'sample_reopen_for_correction',
     'sample_status_update',
     'download_sample_report_view',
     'download_sample_invoice_view',

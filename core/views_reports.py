@@ -11,6 +11,7 @@ from django.contrib.staticfiles import finders
 from django.http import FileResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.utils import timezone
+from django.utils.text import slugify
 
 from reportlab.lib.utils import ImageReader
 
@@ -22,6 +23,14 @@ from .views_common import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+def _customer_filename_fragment(sample: Sample) -> str:
+    customer_name = getattr(sample.customer, 'name', '') if sample.customer_id else ''
+    slug = slugify(customer_name or '')
+    if not slug:
+        return 'customer'
+    return slug.replace('-', '_')[:60]
 
 
 def download_sample_report_view(request, pk):
@@ -308,7 +317,7 @@ def download_sample_report_view(request, pk):
 
     meta_rows = [
         [Paragraph('<b>Sample Code</b>', styles['Label']), Paragraph(_safe_text(sample.display_id, 'N/A'), styles['Value']),
-         Paragraph('<b>Report Number</b>', styles['Label']), Paragraph(_safe_text(sample.report_number, 'N/A'), styles['Value'])],
+         Paragraph('<b>Report Number</b>', styles['Label']), Paragraph(_safe_text(sample.report_number_with_revision, 'N/A'), styles['Value'])],
         [Paragraph('<b>Customer</b>', styles['Label']), Paragraph(_safe_text(sample.customer.name, 'N/A'), styles['Value']),
          Paragraph('<b>Collected On</b>', styles['Label']), Paragraph(_safe_text(sample.collection_datetime.strftime('%d %b %Y %H:%M') if sample.collection_datetime else '', 'N/A'), styles['Value'])],
         [Paragraph('<b>Sample Source</b>', styles['Label']), Paragraph(_safe_text(sample.get_sample_source_display(), 'N/A'), styles['Value']),
@@ -660,10 +669,11 @@ def download_sample_report_view(request, pk):
 
     buffer.seek(0)
     filename_suffix = '_plain' if not include_branding else ''
+    customer_fragment = _customer_filename_fragment(sample)
     response = FileResponse(
         buffer,
         as_attachment=True,
-        filename=f'WaterQualityReport_{sample.display_id}{filename_suffix}.pdf',
+        filename=f'WaterQualityReport_{customer_fragment}_{sample.display_id}{filename_suffix}.pdf',
     )
 
     if sample.current_status == 'REPORT_APPROVED':
@@ -896,7 +906,7 @@ def download_sample_invoice_view(request, pk):
             [Paragraph("Status", label_style), Paragraph(invoice.get_status_display(), right_style)],
             [
                 Paragraph("Report #", label_style),
-                Paragraph(escape(sample.report_number) if sample.report_number else "—", right_style),
+                Paragraph(escape(sample.report_number_with_revision), right_style),
             ],
             [
                 Paragraph("Sample ID", label_style),
@@ -1098,9 +1108,10 @@ def download_sample_invoice_view(request, pk):
     doc.build(elements)
     buffer.seek(0)
 
+    customer_fragment = _customer_filename_fragment(sample)
     response = FileResponse(
         buffer,
         as_attachment=True,
-        filename=f"Invoice_{invoice.invoice_number or sample.display_id}.pdf",
+        filename=f"Invoice_{customer_fragment}_{invoice.invoice_number or sample.display_id}.pdf",
     )
     return response

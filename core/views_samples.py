@@ -454,3 +454,44 @@ def sample_status_update(request, sample_id):
         return redirect('core:sample_detail', pk=sample.sample_id)
 
     return redirect('core:sample_detail', pk=sample.sample_id)
+
+
+@consultant_required
+def sample_reopen_for_correction(request, sample_id):
+    sample_qs = apply_user_scope(Sample.objects.all(), request.user)
+    sample = get_object_or_404(sample_qs, sample_id=sample_id)
+
+    if request.method != 'POST':
+        return redirect('core:sample_detail', pk=sample.sample_id)
+
+    reason = request.POST.get('reopen_reason', '')
+    try:
+        sample.reopen_for_correction(user=request.user, reason=reason)
+        messages.success(
+            request,
+            (
+                f"Sample {sample.sample_id} reopened for correction. "
+                f"Report revision updated to {sample.report_revision_label}."
+            ),
+        )
+    except ValidationError as exc:
+        error_message = (
+            str(exc.message_dict)
+            if hasattr(exc, 'message_dict')
+            else str(exc)
+        )
+        messages.error(request, f"Could not reopen sample: {error_message}")
+    except Exception as exc:
+        logger.exception(
+            "Unexpected error while reopening sample %s for correction",
+            sample.sample_id,
+        )
+        messages.error(
+            request,
+            _format_error_message(
+                "An unexpected error occurred while reopening sample.",
+                exc,
+            ),
+        )
+
+    return redirect('core:sample_detail', pk=sample.sample_id)
