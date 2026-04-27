@@ -80,8 +80,14 @@
         </div>
 
         <div class="info-card">
-            <div class="section-title"><i class="material-icons">history_edu</i>Sample history</div>
-            {% if customer.samples.all %}
+            <div class="section-title">
+                <i class="material-icons">history_edu</i>
+                Sample history
+                {% if sample_history_count %}
+                <span class="badge-soft info">{{ sample_history_count }}</span>
+                {% endif %}
+            </div>
+            {% if sample_history %}
             <div class="table-responsive">
                 <table class="table table-sm align-middle mb-0">
                     <thead>
@@ -93,9 +99,9 @@
                         </tr>
                     </thead>
                     <tbody>
-                        {% for sample_item in customer.samples.all %}
+                        {% for sample_item in sample_history %}
                         <tr>
-                            <td><a href="{% url 'core:sample_detail' sample_item.pk %}" class="text-decoration-none">{{ sample_item.sample_id|truncatechars:12 }}</a></td>
+                            <td><a href="{% url 'core:sample_detail' sample_item.pk %}" class="text-decoration-none">{{ sample_item.display_id|default:sample_item.sample_id }}</a></td>
                             <td>{{ sample_item.collection_datetime|date:"M d, Y" }}</td>
                             <td>
                                 {% if sample_item.current_status == 'REPORT_APPROVED' or sample_item.current_status == 'REPORT_SENT' %}
@@ -116,6 +122,9 @@
                     </tbody>
                 </table>
             </div>
+            {% if sample_history_count > 25 %}
+            <p class="text-muted small mt-3 mb-0">Showing the latest 25 samples.</p>
+            {% endif %}
             {% else %}
             <p class="text-muted small mb-3">No samples registered for this customer yet.</p>
             <a href="{% url 'core:sample_add' %}?customer={{ customer.pk }}" class="btn btn-outline-primary btn-sm"><i class="material-icons me-1">note_add</i>Register sample</a>

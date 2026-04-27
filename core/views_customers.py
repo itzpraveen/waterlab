@@ -89,6 +89,22 @@ class CustomerDetailView(RoleRequiredMixin, DetailView):
     def get_queryset(self):
         return apply_user_scope(super().get_queryset(), self.request.user)
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        sample_history_qs = apply_user_scope(
+            Sample.objects.filter(customer=self.object).only(
+                'sample_id',
+                'display_id',
+                'customer_id',
+                'collection_datetime',
+                'current_status',
+            ).order_by('-collection_datetime'),
+            self.request.user,
+        )
+        context['sample_history_count'] = sample_history_qs.count()
+        context['sample_history'] = sample_history_qs[:25]
+        return context
+
 
 class CustomerCreateView(AuditMixin, FrontDeskRequiredMixin, CreateView):
     model = Customer
