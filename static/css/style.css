@@ -221,34 +221,6 @@ main {
   width: auto;
 }
 
-.app-brand__text {
-  display: flex;
-  flex-direction: column;
-  line-height: 1.1;
-}
-
-.app-brand__title {
-  color: #0f172a;
-  font-size: 0.98rem;
-  font-weight: 700;
-}
-
-.app-brand__subtitle {
-  color: rgba(15, 23, 42, 0.54);
-  font-size: 0.74rem;
-  font-weight: 500;
-  max-width: 180px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-@media (max-width: 576px) {
-  .app-brand__text {
-    display: none;
-  }
-}
-
 .app-brand:hover,
 .app-brand:focus {
   text-decoration: none;

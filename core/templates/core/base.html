@@ -37,10 +37,6 @@
         <div class="container-fluid px-4 page-shell app-header__inner">
             <a class="navbar-brand app-brand" href="{% if user.is_authenticated %}{% url 'core:dashboard' %}{% else %}{% url 'core:home' %}{% endif %}">
                 <img src="{{ lab_profile.logo_url }}" alt="{{ lab_profile.name|default:'Laboratory' }} · WaterLab LIMS" class="app-brand__logo" height="40">
-                <span class="app-brand__text">
-                    <span class="app-brand__title">WaterLab LIMS</span>
-                    <span class="app-brand__subtitle">{{ lab_profile.name|default:'Laboratory operations' }}</span>
-                </span>
             </a>
             {% if user.is_authenticated %}
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav" aria-controls="mainNav" aria-expanded="false" aria-label="Toggle navigation">
