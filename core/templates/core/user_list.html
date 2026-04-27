@@ -87,7 +87,7 @@
             <tbody>
                 {% for user_obj in users %}
                 <tr>
-                    <td>
+                    <td data-label="User">
                         <div class="user-table__identity">
                             <span class="avatar-circle avatar-circle--sm">{{ user_obj.get_short_name|default:user_obj.username|first|upper }}</span>
                             <div>
@@ -96,34 +96,37 @@
                             </div>
                         </div>
                     </td>
-                    <td>{{ user_obj.get_role_display }}</td>
-                    <td><a href="mailto:{{ user_obj.email }}" class="text-decoration-none">{{ user_obj.email|default:"—" }}</a></td>
-                    <td>{{ user_obj.phone|default:"—" }}</td>
-                    <td>{{ user_obj.department|default:"—" }}</td>
-                    <td>{% if user_obj.last_login %}{{ user_obj.last_login|date:"d M Y, H:i" }}{% else %}<span class="text-muted">Never</span>{% endif %}</td>
-                    <td class="text-center">
+                    <td data-label="Role">{{ user_obj.get_role_display }}</td>
+                    <td data-label="Email"><a href="mailto:{{ user_obj.email }}" class="text-decoration-none">{{ user_obj.email|default:"—" }}</a></td>
+                    <td data-label="Phone">{{ user_obj.phone|default:"—" }}</td>
+                    <td data-label="Department">{{ user_obj.department|default:"—" }}</td>
+                    <td data-label="Last login">{% if user_obj.last_login %}{{ user_obj.last_login|date:"d M Y, H:i" }}{% else %}<span class="text-muted">Never</span>{% endif %}</td>
+                    <td data-label="Status" class="text-center">
                         {% if user_obj.is_active %}
                         <span class="badge-soft success">Active</span>
                         {% else %}
                         <span class="badge-soft danger">Inactive</span>
                         {% endif %}
                     </td>
-                    <td class="text-end">
+                    <td data-label="Actions" class="text-end td-actions">
                         <div class="user-actions">
-                            <a href="{% url 'core:user_edit' pk=user_obj.pk %}" class="btn btn-sm btn-outline-primary" title="Edit {{ user_obj.username }}">
-                                <i class="material-icons align-middle">edit</i>
+                            <a href="{% url 'core:user_edit' pk=user_obj.pk %}" class="btn btn-sm btn-outline-primary action-icon" title="Edit {{ user_obj.username }}" aria-label="Edit {{ user_obj.username }}">
+                                <i class="material-icons align-middle" aria-hidden="true">edit</i>
+                                <span class="action-label">Edit</span>
                             </a>
                             {% if user_obj.pk != user.pk %}
                             <form method="post" action="{% url 'core:user_toggle_active' pk=user_obj.pk %}">
                                 {% csrf_token %}
                                 <input type="hidden" name="next" value="{{ request.get_full_path }}">
                                 {% if user_obj.is_active %}
-                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Deactivate {{ user_obj.username }}">
-                                    <i class="material-icons align-middle">person_off</i>
+                                <button type="submit" class="btn btn-sm btn-outline-danger action-icon" title="Deactivate {{ user_obj.username }}" aria-label="Deactivate {{ user_obj.username }}">
+                                    <i class="material-icons align-middle" aria-hidden="true">person_off</i>
+                                    <span class="action-label">Deactivate</span>
                                 </button>
                                 {% else %}
-                                <button type="submit" class="btn btn-sm btn-outline-success" title="Activate {{ user_obj.username }}">
-                                    <i class="material-icons align-middle">person_add_alt</i>
+                                <button type="submit" class="btn btn-sm btn-outline-success action-icon" title="Activate {{ user_obj.username }}" aria-label="Activate {{ user_obj.username }}">
+                                    <i class="material-icons align-middle" aria-hidden="true">person_add_alt</i>
+                                    <span class="action-label">Activate</span>
                                 </button>
                                 {% endif %}
                             </form>

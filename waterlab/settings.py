@@ -99,6 +99,18 @@ LOGIN_URL = 'core:login'
 LOGIN_REDIRECT_URL = 'core:dashboard' # Changed to use named URL for consistency
 LOGOUT_REDIRECT_URL = 'core:login'
 
+# Bootstrap-friendly tags for django.contrib.messages — maps the 'error'
+# level to the 'danger' Bootstrap alert class.
+from django.contrib.messages import constants as _messages
+
+MESSAGE_TAGS = {
+    _messages.DEBUG: 'secondary',
+    _messages.INFO: 'info',
+    _messages.SUCCESS: 'success',
+    _messages.WARNING: 'warning',
+    _messages.ERROR: 'danger',
+}
+
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware', # Added for static files in production

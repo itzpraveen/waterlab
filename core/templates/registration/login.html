@@ -30,7 +30,15 @@
 
             <div class="auth-support" role="note">
                 <span class="auth-support-label">Need access?</span>
-                Email <a href="mailto:support@biofix.in">support@biofix.in</a> or call +91-97472-12345 for help resetting credentials.
+                {% if lab_profile.email and lab_profile.phone %}
+                Email <a href="mailto:{{ lab_profile.email }}">{{ lab_profile.email }}</a> or call {{ lab_profile.phone }} for help resetting credentials.
+                {% elif lab_profile.email %}
+                Email <a href="mailto:{{ lab_profile.email }}">{{ lab_profile.email }}</a> for help resetting credentials.
+                {% elif lab_profile.phone %}
+                Call {{ lab_profile.phone }} for help resetting credentials.
+                {% else %}
+                Contact your administrator for help resetting credentials.
+                {% endif %}
             </div>
         </div>
     </section>
@@ -75,7 +83,9 @@
 
             <div class="d-flex align-items-center justify-content-between mb-4">
                 <span class="text-muted small">Locked out? Contact your administrator.</span>
-                <a class="small text-decoration-none" href="mailto:support@biofix.in">Email support</a>
+                {% if lab_profile.email %}
+                <a class="small text-decoration-none" href="mailto:{{ lab_profile.email }}">Email support</a>
+                {% endif %}
             </div>
 
             <button type="submit" class="btn btn-primary w-100 btn-lg">

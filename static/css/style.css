@@ -1339,8 +1339,39 @@ main {
   justify-content: flex-end;
   gap: 0.75rem;
   margin-top: 2rem;
-  padding-top: 1rem;
+  padding: 1rem;
   border-top: 1px solid var(--wl-border);
+  position: sticky;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(12px);
+  border-radius: 0 0 var(--wl-radius) var(--wl-radius);
+  z-index: 5;
+}
+
+/* Inputs whose row contains an active error get a red ring automatically */
+[class*="col-"]:has(> .invalid-feedback.d-block) > input.form-control,
+[class*="col-"]:has(> .invalid-feedback.d-block) > select.form-select,
+[class*="col-"]:has(> .invalid-feedback.d-block) > textarea.form-control,
+[class*="col-"]:has(> .invalid-feedback.d-block) > .input-group > .form-control {
+  border-color: var(--wl-danger);
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.14);
+}
+
+.invalid-feedback.d-block {
+  display: flex !important;
+  align-items: flex-start;
+  gap: 0.35rem;
+  color: var(--wl-danger);
+  margin-top: 0.35rem;
+}
+
+.invalid-feedback.d-block::before {
+  content: "error";
+  font-family: "Material Icons";
+  font-size: 0.95rem;
+  line-height: 1.2;
+  flex: none;
 }
 
 @media (max-width: 576px) {
@@ -2708,6 +2739,26 @@ main {
   }
 }
 
+/* Action buttons: icon-only on desktop, icon+label on mobile (card-mode) */
+.action-icon .action-label {
+  display: none;
+}
+
+@media (max-width: 640px) {
+  .action-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+  }
+
+  .action-icon .action-label {
+    display: inline;
+    font-size: 0.85rem;
+    font-weight: 500;
+  }
+}
+
 /* Sticky table header inside card-table for long lists */
 .card-table .table-responsive {
   max-height: calc(100vh - 18rem);
@@ -2726,22 +2777,22 @@ main {
   }
 }
 
-/* Mobile card-mode: stack table rows as cards on small screens */
+/* Mobile card-mode: any table with data-label cells stacks as cards */
 @media (max-width: 640px) {
-  .card-table .table-responsive {
+  .table-responsive:has(td[data-label]) {
     overflow: visible;
   }
 
-  .card-table table,
-  .card-table thead,
-  .card-table tbody,
-  .card-table tr,
-  .card-table td {
+  .table-responsive:has(td[data-label]) > table,
+  .table-responsive:has(td[data-label]) > table > thead,
+  .table-responsive:has(td[data-label]) > table > tbody,
+  .table-responsive:has(td[data-label]) > table > tbody > tr,
+  .table-responsive:has(td[data-label]) > table > tbody > tr > td {
     display: block;
     width: 100%;
   }
 
-  .card-table thead {
+  .table-responsive:has(td[data-label]) > table > thead {
     position: absolute;
     width: 1px;
     height: 1px;
@@ -2753,22 +2804,22 @@ main {
     border: 0;
   }
 
-  .card-table tbody tr {
+  .table-responsive:has(td[data-label]) > table > tbody > tr {
     border-bottom: 1px solid var(--wl-border);
     padding: 0.85rem 1rem 0.6rem;
   }
 
-  .card-table tbody tr:last-child {
+  .table-responsive:has(td[data-label]) > table > tbody > tr:last-child {
     border-bottom: 0;
   }
 
-  .card-table tbody td {
+  .table-responsive:has(td[data-label]) > table > tbody > tr > td {
     padding: 0.35rem 0;
     border: 0;
     text-align: left !important;
   }
 
-  .card-table tbody td::before {
+  .table-responsive:has(td[data-label]) td[data-label]::before {
     content: attr(data-label);
     display: block;
     font-size: 0.7rem;
@@ -2779,21 +2830,22 @@ main {
     margin-bottom: 0.15rem;
   }
 
-  .card-table tbody td.td-actions {
+  .table-responsive:has(td[data-label]) td.td-actions {
     padding-top: 0.6rem;
   }
 
-  .card-table tbody td.td-actions .btn-group {
+  .table-responsive:has(td[data-label]) td.td-actions .btn-group,
+  .table-responsive:has(td[data-label]) td.td-actions .user-actions {
     width: 100%;
     display: flex;
     gap: 0.35rem;
   }
 
-  .card-table tbody td.td-actions .btn {
+  .table-responsive:has(td[data-label]) td.td-actions .btn {
     flex: 1;
   }
 
-  .card-table tbody td .table-avatar {
+  .table-responsive:has(td[data-label]) td .table-avatar {
     flex: none;
   }
 }
