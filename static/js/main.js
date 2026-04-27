@@ -29,7 +29,52 @@ const WaterLab = {
         this.initBootstrapHelpers();
         this.initTableFilters();
         this.initAddressDropdowns();
+        this.initFlashMessages();
+        this.initSubmitLoading();
         this.initServiceWorker();
+    },
+
+    initFlashMessages() {
+        const container = document.querySelector('.messages-container');
+        if (!container) return;
+        const alerts = container.querySelectorAll('.alert');
+        alerts.forEach((alert) => {
+            const isError = alert.classList.contains('alert-danger') || alert.classList.contains('alert-error');
+            if (isError) return;
+            setTimeout(() => {
+                alert.classList.add('is-leaving');
+                alert.addEventListener('animationend', () => {
+                    if (typeof bootstrap !== 'undefined' && bootstrap.Alert) {
+                        bootstrap.Alert.getOrCreateInstance(alert).close();
+                    } else {
+                        alert.remove();
+                    }
+                }, { once: true });
+            }, 4500);
+        });
+    },
+
+    initSubmitLoading() {
+        document.querySelectorAll('form').forEach((form) => {
+            form.addEventListener('submit', (event) => {
+                if (event.defaultPrevented) return;
+                if (form.dataset.noLoading === 'true') return;
+                if (typeof form.checkValidity === 'function' && !form.checkValidity()) return;
+                const submitter = event.submitter
+                    || form.querySelector('button[type="submit"], input[type="submit"]');
+                if (!submitter || submitter.classList.contains('is-loading')) return;
+                if (submitter.dataset.noLoading === 'true') return;
+                submitter.classList.add('is-loading');
+                submitter.setAttribute('aria-busy', 'true');
+                submitter.disabled = true;
+                // Restore the button if the user navigates back via bfcache.
+                window.addEventListener('pageshow', () => {
+                    submitter.classList.remove('is-loading');
+                    submitter.removeAttribute('aria-busy');
+                    submitter.disabled = false;
+                }, { once: true });
+            });
+        });
     },
 
     initBootstrapHelpers() {

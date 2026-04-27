@@ -67,37 +67,37 @@
             <tbody>
                 {% for customer in customers %}
                 <tr>
-                    <td>
+                    <td data-label="Name">
                         <div class="d-flex align-items-center gap-2">
                             <span class="table-avatar">{{ customer.name|first|upper }}</span>
                             <a href="{% url 'core:customer_detail' pk=customer.customer_id %}" class="fw-semibold text-decoration-none">{{ customer.name }}</a>
                         </div>
                     </td>
-                    <td>
+                    <td data-label="Email">
                         {% if customer.email %}
                         <a href="mailto:{{ customer.email }}" class="text-decoration-none">{{ customer.email }}</a>
                         {% else %}
                         <span class="text-muted">Not provided</span>
                         {% endif %}
                     </td>
-                    <td>
+                    <td data-label="Phone">
                         {% if customer.phone %}
                         <a href="tel:{{ customer.phone }}" class="text-decoration-none">{{ customer.phone }}</a>
                         {% else %}
                         <span class="text-muted">Not provided</span>
                         {% endif %}
                     </td>
-                    <td>
+                    <td data-label="District">
                         {% if customer.district %}
                         <span class="chip-soft">{{ customer.get_district_display }}</span>
                         {% else %}
                         <span class="text-muted">Not provided</span>
                         {% endif %}
                     </td>
-                    <td class="text-center">
+                    <td data-label="Samples" class="text-center">
                         <span class="badge-soft{% if customer.sample_count %} info{% endif %}">{{ customer.sample_count }}</span>
                     </td>
-                    <td class="text-end">
+                    <td data-label="Actions" class="text-end td-actions">
                         <div class="btn-group" role="group">
                             <a href="{% url 'core:customer_detail' pk=customer.customer_id %}" class="btn btn-sm btn-outline-secondary" data-bs-toggle="tooltip" title="View">
                                 <i class="material-icons">visibility</i>

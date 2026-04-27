@@ -92,12 +92,12 @@
             <tbody>
                 {% for sample in samples %}
                 <tr data-status="{{ sample.current_status }}">
-                    <td>
+                    <td data-label="Sample ID">
                         <a href="{% url 'core:sample_detail' pk=sample.sample_id %}" class="fw-semibold text-decoration-none">
                             {% if sample.display_id %}{{ sample.display_id }}{% else %}{{ sample.sample_id|truncatechars:12 }}{% endif %}
                         </a>
                     </td>
-                    <td>
+                    <td data-label="Customer">
                         <div class="d-flex align-items-center gap-2">
                             <span class="table-avatar">{{ sample.customer.name|first|upper }}</span>
                             <div>
@@ -106,15 +106,15 @@
                             </div>
                         </div>
                     </td>
-                    <td>{{ sample.collection_datetime|date:"M d, Y" }}</td>
-                    <td>
+                    <td data-label="Collection date">{{ sample.collection_datetime|date:"M d, Y" }}</td>
+                    <td data-label="Source">
                         {{ sample.get_sample_source_display }}
                         {% if sample.sampling_location %}
                         <div class="text-muted small">{{ sample.sampling_location }}</div>
                         {% endif %}
                     </td>
-                    <td class="text-center">{{ sample.tests_requested.count }}</td>
-                    <td>
+                    <td data-label="Tests" class="text-center">{{ sample.tests_requested.count }}</td>
+                    <td data-label="Status">
                         {% with status=sample.current_status %}
                             {% if status == 'REPORT_APPROVED' or status == 'REPORT_SENT' %}
                                 <span class="badge-soft success"><i class="material-icons">check_circle</i>{{ sample.get_current_status_display }}</span>
@@ -127,7 +127,7 @@
                             {% endif %}
                         {% endwith %}
                     </td>
-                    <td class="text-end">
+                    <td data-label="Actions" class="text-end td-actions">
                         <div class="btn-group" role="group">
                             <a href="{% url 'core:sample_detail' pk=sample.sample_id %}" class="btn btn-sm btn-outline-secondary" data-bs-toggle="tooltip" title="View sample">
                                 <i class="material-icons">visibility</i>
