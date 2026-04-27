@@ -23,8 +23,6 @@
     <!-- Site meta -->
     <meta name="theme-color" content="#0f766e">
     <link rel="manifest" href="{% static 'manifest.json' %}">
-    <link rel="apple-touch-icon" href="{% static 'images/icons/apple-touch-icon.png' %}">
-    <link rel="icon" href="{% static 'images/favicon/favicon.ico' %}" sizes="any">
     <link rel="icon" href="{% static 'images/favicon/favicon.svg' %}" type="image/svg+xml">
 
     {% block extra_css %}{% endblock %}
@@ -90,6 +88,20 @@
                     </li>
                     {% endif %}
                 </ul>
+
+                <form class="app-global-search" method="get" action="{% url 'core:global_search' %}" role="search">
+                    <label class="visually-hidden" for="app-global-search-input">Search samples and customers</label>
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text" aria-hidden="true"><i class="material-icons">search</i></span>
+                        <input id="app-global-search-input"
+                               class="form-control"
+                               type="search"
+                               name="q"
+                               value="{{ request.GET.q|default:'' }}"
+                               placeholder="Search ID, customer, phone"
+                               autocomplete="off">
+                    </div>
+                </form>
 
                 <div class="d-flex align-items-center gap-3 ms-auto app-user">
                     <div class="app-user__meta d-none d-sm-block">

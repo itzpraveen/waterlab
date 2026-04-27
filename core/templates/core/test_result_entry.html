@@ -82,7 +82,7 @@
     </div>
     {% endif %}
 
-    {% if sample.tests_requested.count == 0 %}
+    {% if requested_tests_count == 0 %}
     <section class="info-card alert-card warning">
         <div class="alert-icon"><i class="material-icons" aria-hidden="true">warning</i></div>
         <div>
@@ -165,7 +165,7 @@
     {% endwith %}
     {% endfor %}
 
-    {% if sample.tests_requested.count > 0 %}
+    {% if requested_tests_count > 0 %}
     <div class="form-actions">
         <a href="{% url 'core:sample_detail' pk=sample.sample_id %}" class="btn btn-light">Cancel</a>
         {% if can_send_for_review %}

@@ -34,7 +34,15 @@ def _customer_filename_fragment(sample: Sample) -> str:
 
 
 def download_sample_report_view(request, pk):
-    sample = get_object_or_404(Sample, pk=pk)
+    sample = get_object_or_404(
+        Sample.objects.select_related(
+            'customer',
+            'reviewed_by',
+            'lab_manager',
+            'food_analyst',
+        ).prefetch_related('tests_requested'),
+        pk=pk,
+    )
 
     if not _user_can_view_sensitive_records(request.user):
         messages.error(request, "You do not have permission to download this report.")
@@ -360,7 +368,10 @@ def download_sample_report_view(request, pk):
     elements.append(Paragraph("TEST REPORTS", styles['SectionTitle']))
     elements.append(Spacer(1, 3))
 
-    results_queryset = sample.results.select_related('parameter').order_by('parameter__display_order', 'parameter__name')
+    results_queryset = sample.results.select_related('parameter', 'parameter__category_obj').order_by(
+        'parameter__display_order',
+        'parameter__name',
+    )
     results = list(results_queryset)
 
     section_headings = {
@@ -700,7 +711,10 @@ def download_sample_report_view(request, pk):
 
 
 def download_sample_invoice_view(request, pk):
-    sample = get_object_or_404(Sample, pk=pk)
+    sample = get_object_or_404(
+        Sample.objects.select_related('customer').prefetch_related('tests_requested'),
+        pk=pk,
+    )
 
     if not _user_can_view_sensitive_records(request.user):
         messages.error(request, "You do not have permission to download this invoice.")

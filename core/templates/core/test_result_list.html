@@ -88,7 +88,7 @@
                         {% if sample.test_completed_on %}
                         <li><i class="material-icons" aria-hidden="true">done_all</i>{{ sample.test_completed_on|date:"M d, Y" }}</li>
                         {% endif %}
-                        <li><i class="material-icons" aria-hidden="true">biotech</i>{{ sample.results.count }} result{{ sample.results.count|pluralize }}</li>
+                        <li><i class="material-icons" aria-hidden="true">biotech</i>{{ sample.result_count }} result{{ sample.result_count|pluralize }}</li>
                     </ul>
                 </div>
                 <div class="results-card__actions">
@@ -170,7 +170,7 @@
         <nav aria-label="Results pagination" class="results-pagination">
             <ul class="pagination pagination-modern justify-content-center">
                 <li class="page-item {% if not page_obj.has_previous %}disabled{% endif %}">
-                    <a class="page-link" href="{% if page_obj.has_previous %}?page={{ page_obj.previous_page_number }}{% else %}#!{% endif %}" aria-label="Previous">
+                    <a class="page-link" href="{% if page_obj.has_previous %}?page={{ page_obj.previous_page_number }}{{ query_string }}{% else %}#!{% endif %}" aria-label="Previous">
                         <span aria-hidden="true">&laquo;</span>
                     </a>
                 </li>
@@ -178,13 +178,13 @@
                     {% if page_obj.number == num %}
                         <li class="page-item active" aria-current="page"><span class="page-link">{{ num }}</span></li>
                     {% elif num == 1 or num == page_obj.paginator.num_pages or num >= page_obj.number|add:'-2' and num <= page_obj.number|add:'2' %}
-                        <li class="page-item"><a class="page-link" href="?page={{ num }}">{{ num }}</a></li>
+                        <li class="page-item"><a class="page-link" href="?page={{ num }}{{ query_string }}">{{ num }}</a></li>
                     {% elif num == page_obj.number|add:'-3' or num == page_obj.number|add:'3' %}
-                        <li class="page-item disabled"><span class="page-link">…</span></li>
+                        <li class="page-item disabled"><span class="page-link">&hellip;</span></li>
                     {% endif %}
                 {% endfor %}
                 <li class="page-item {% if not page_obj.has_next %}disabled{% endif %}">
-                    <a class="page-link" href="{% if page_obj.has_next %}?page={{ page_obj.next_page_number }}{% else %}#!{% endif %}" aria-label="Next">
+                    <a class="page-link" href="{% if page_obj.has_next %}?page={{ page_obj.next_page_number }}{{ query_string }}{% else %}#!{% endif %}" aria-label="Next">
                         <span aria-hidden="true">&raquo;</span>
                     </a>
                 </li>

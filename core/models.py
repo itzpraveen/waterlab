@@ -202,6 +202,9 @@ class Customer(models.Model):
         indexes = [
             models.Index(fields=["name"], name="customer_name_idx"),
             models.Index(fields=["phone"], name="customer_phone_idx"),
+            models.Index(fields=["district"], name="customer_district_idx"),
+            models.Index(fields=["pincode"], name="customer_pincode_idx"),
+            models.Index(fields=["created_by", "name"], name="customer_created_name_idx"),
         ]
         ordering = ["name"]
 
@@ -437,6 +440,9 @@ class Sample(models.Model):
             models.Index(fields=["collection_datetime"], name="sample_collected_at_idx"),
             models.Index(fields=["date_received_at_lab"], name="sample_received_lab_idx"),
             models.Index(fields=["current_status", "date_received_at_lab"], name="sample_status_received_idx"),
+            models.Index(fields=["current_status", "collection_datetime"], name="sample_status_collected_idx"),
+            models.Index(fields=["customer", "collection_datetime"], name="sample_customer_collected_idx"),
+            models.Index(fields=["created_by", "collection_datetime"], name="sample_created_collected_idx"),
         ]
         constraints = [
             models.UniqueConstraint(
@@ -1159,6 +1165,7 @@ class TestResult(models.Model):
             models.Index(fields=["test_date"], name="testresult_date_idx"),
             models.Index(fields=["technician"], name="testresult_tech_idx"),
             models.Index(fields=["test_date", "technician"], name="testresult_date_tech_idx"),
+            models.Index(fields=["sample", "test_date"], name="testresult_sample_date_idx"),
         ]
 
     def __str__(self):

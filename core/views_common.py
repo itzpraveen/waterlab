@@ -7,7 +7,9 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.views import LoginView, PasswordChangeView
-from django.http import HttpResponse, HttpResponseNotFound
+from django.contrib.staticfiles import finders
+from django.db.models import Count, Q
+from django.http import FileResponse, HttpResponse, HttpResponseNotFound
 from django.shortcuts import redirect, render
 from django.urls import reverse_lazy
 
@@ -83,6 +85,71 @@ def _format_error_message(base_message, exc):
 def health_check(request):
     """Health check endpoint for load balancers and monitoring systems."""
     return HttpResponse("healthy", content_type="text/plain")
+
+
+def service_worker(request):
+    """Serve the legacy root service-worker URL without redirecting."""
+    service_worker_path = finders.find('sw.js')
+    if not service_worker_path:
+        return HttpResponseNotFound()
+    response = FileResponse(open(service_worker_path, 'rb'), content_type='application/javascript')
+    response['Cache-Control'] = 'no-cache'
+    response['Service-Worker-Allowed'] = '/'
+    return response
+
+
+@login_required
+def global_search(request):
+    """Search high-volume operational records from the header."""
+    if not _user_can_view_sensitive_records(request.user):
+        messages.error(request, "You do not have permission to search laboratory records.")
+        return redirect('core:dashboard')
+
+    query = (request.GET.get('q') or '').strip()
+    customers = Customer.objects.none()
+    samples = Sample.objects.none()
+
+    if query:
+        customers = apply_user_scope(
+            Customer.objects.annotate(sample_count=Count('samples')).filter(
+                Q(name__icontains=query)
+                | Q(email__icontains=query)
+                | Q(phone__icontains=query)
+                | Q(house_name_door_no__icontains=query)
+                | Q(street_locality_landmark__icontains=query)
+                | Q(village_town_city__icontains=query)
+                | Q(panchayat_municipality__icontains=query)
+                | Q(taluk__icontains=query)
+                | Q(district__icontains=query)
+                | Q(pincode__icontains=query)
+            ).order_by('name'),
+            request.user,
+        )[:8]
+        samples = apply_user_scope(
+            Sample.objects.select_related('customer').filter(
+                Q(display_id__icontains=query)
+                | Q(report_number__icontains=query)
+                | Q(customer__name__icontains=query)
+                | Q(customer__phone__icontains=query)
+                | Q(customer__email__icontains=query)
+                | Q(sample_source__icontains=query)
+                | Q(sampling_location__icontains=query)
+                | Q(referred_by__icontains=query)
+            ).order_by('-collection_datetime', '-display_id'),
+            request.user,
+        )[:10]
+
+    return render(
+        request,
+        'core/global_search.html',
+        {
+            'page_title': 'Search',
+            'query': query,
+            'customers': customers,
+            'samples': samples,
+            'has_query': bool(query),
+        },
+    )
 
 
 def debug_admin(request):

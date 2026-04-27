@@ -1,0 +1,90 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Search - WaterLab LIMS{% endblock %}
+
+{% block page_header %}
+<div class="page-header">
+    <div class="page-heading">
+        <span class="page-eyebrow"><i class="material-icons">search</i>Global search</span>
+        <h1 class="page-title">Find records</h1>
+        <p class="page-subtitle">Search samples, reports, customers, phone numbers, and locations.</p>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<section class="info-card search-page">
+    <form method="get" class="search-page__form" role="search">
+        <label for="search-query" class="form-label">Search records</label>
+        <div class="input-group">
+            <span class="input-group-text"><i class="material-icons" aria-hidden="true">search</i></span>
+            <input id="search-query"
+                   name="q"
+                   type="search"
+                   class="form-control"
+                   value="{{ query }}"
+                   placeholder="Sample ID, report number, customer, phone, source, or location"
+                   autofocus>
+            <button class="btn btn-primary" type="submit">Search</button>
+        </div>
+    </form>
+
+    {% if has_query %}
+    <div class="search-results-grid">
+        <section class="search-results-section" aria-labelledby="search-samples-title">
+            <div id="search-samples-title" class="section-title search-results-title">
+                <span><i class="material-icons">opacity</i>Samples</span>
+                <span class="badge-soft info">{{ samples|length }}</span>
+            </div>
+            {% if samples %}
+            <div class="search-result-list">
+                {% for sample in samples %}
+                <a class="search-result-row" href="{% url 'core:sample_detail' pk=sample.sample_id %}">
+                    <span class="search-result-row__icon"><i class="material-icons" aria-hidden="true">science</i></span>
+                    <span class="search-result-row__body">
+                        <strong>{{ sample.display_id|default:sample.sample_id }}</strong>
+                        <span>{{ sample.customer.name }} · {{ sample.get_sample_source_display }}{% if sample.sampling_location %} · {{ sample.sampling_location }}{% endif %}</span>
+                    </span>
+                    <span class="search-result-row__meta">{{ sample.get_current_status_display }}</span>
+                </a>
+                {% endfor %}
+            </div>
+            <a href="{% url 'core:sample_list' %}?q={{ query|urlencode }}" class="search-section-link">View all matching samples</a>
+            {% else %}
+            <p class="text-muted mb-0">No matching samples found.</p>
+            {% endif %}
+        </section>
+
+        <section class="search-results-section" aria-labelledby="search-customers-title">
+            <div id="search-customers-title" class="section-title search-results-title">
+                <span><i class="material-icons">people</i>Customers</span>
+                <span class="badge-soft info">{{ customers|length }}</span>
+            </div>
+            {% if customers %}
+            <div class="search-result-list">
+                {% for customer in customers %}
+                <a class="search-result-row" href="{% url 'core:customer_detail' pk=customer.customer_id %}">
+                    <span class="search-result-row__icon"><i class="material-icons" aria-hidden="true">person</i></span>
+                    <span class="search-result-row__body">
+                        <strong>{{ customer.name }}</strong>
+                        <span>{{ customer.phone }}{% if customer.district %} · {{ customer.get_district_display }}{% endif %}</span>
+                    </span>
+                    <span class="search-result-row__meta">{{ customer.sample_count }} sample{{ customer.sample_count|pluralize }}</span>
+                </a>
+                {% endfor %}
+            </div>
+            <a href="{% url 'core:customer_list' %}?q={{ query|urlencode }}" class="search-section-link">View all matching customers</a>
+            {% else %}
+            <p class="text-muted mb-0">No matching customers found.</p>
+            {% endif %}
+        </section>
+    </div>
+    {% else %}
+    <div class="empty-state mb-0">
+        <i class="material-icons">manage_search</i>
+        <h5 class="fw-semibold">Search operational records</h5>
+        <p class="text-muted">Enter a sample ID, customer name, report number, phone, source, or place.</p>
+    </div>
+    {% endif %}
+</section>
+{% endblock %}

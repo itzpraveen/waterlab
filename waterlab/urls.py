@@ -17,14 +17,13 @@ Including another URLconf
 from django.contrib import admin
 from django.conf import settings
 from django.urls import path, include, re_path  # Added include
-from django.views.generic import RedirectView
 from django.views.static import serve as media_serve
+from core.views import service_worker
 # from django.contrib.auth.views import LogoutView # Not used directly here
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    # Serve service worker from root by redirecting to static asset
-    path('sw.js', RedirectView.as_view(url='/static/sw.js', permanent=True)),
+    path('sw.js', service_worker, name='service_worker'),
     path('', include('core.urls', namespace='core')),
 ]
 

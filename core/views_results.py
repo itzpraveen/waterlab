@@ -4,7 +4,7 @@ from datetime import timedelta
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db import transaction
-from django.db.models import Max, Prefetch, Q
+from django.db.models import Count, Max, Prefetch, Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.generic import DetailView, ListView
@@ -12,7 +12,7 @@ from django.core.exceptions import ValidationError
 
 from .decorators import lab_required
 from .forms import TestResultEntryForm
-from .models import AuditTrail, Sample, TestResult
+from .models import AuditTrail, Sample, TestParameter, TestResult
 from .views_common import _format_error_message
 
 logger = logging.getLogger(__name__)
@@ -59,11 +59,11 @@ class TestResultListView(LoginRequiredMixin, ListView):
     def get_filter_dates(self):
         collected = (self.request.GET.get('collected') or '').lower()
         if collected == 'today':
-            return timezone.now().date(), None
+            return timezone.localdate(), None
         if collected == 'week':
-            return timezone.now().date() - timedelta(days=7), None
+            return timezone.localdate() - timedelta(days=7), None
         if collected == 'month':
-            return timezone.now().date() - timedelta(days=30), None
+            return timezone.localdate() - timedelta(days=30), None
         return None, None
 
     def get_collected_label(self, raw_value):
@@ -82,7 +82,10 @@ class TestResultListView(LoginRequiredMixin, ListView):
             'parameter__name',
         )
         queryset = (
-            Sample.objects.annotate(latest_test_date=Max('results__test_date'))
+            Sample.objects.annotate(
+                latest_test_date=Max('results__test_date'),
+                result_count=Count('results', distinct=True),
+            )
             .filter(results__isnull=False)
             .select_related('customer')
             .prefetch_related(Prefetch('results', queryset=ordered_results), 'tests_requested')
@@ -127,6 +130,10 @@ class TestResultListView(LoginRequiredMixin, ListView):
             'collected': context['collected_filter'],
         }
         context['sample_status_choices'] = Sample.SAMPLE_STATUS_CHOICES
+        query_params = self.request.GET.copy()
+        query_params.pop('page', None)
+        encoded = query_params.urlencode()
+        context['query_string'] = f'&{encoded}' if encoded else ''
 
         if context['search_query'] or context['status_filter'] or context['collected_filter']:
             context['show_reset_filters'] = True
@@ -156,10 +163,17 @@ class TestResultDetailView(LoginRequiredMixin, DetailView):
 
 @lab_required
 def test_result_entry(request, sample_id):
-    sample = get_object_or_404(Sample, sample_id=sample_id)
+    ordered_tests = TestParameter.objects.order_by('display_order', 'name')
+    sample = get_object_or_404(
+        Sample.objects.select_related('customer').prefetch_related(
+            Prefetch('tests_requested', queryset=ordered_tests)
+        ),
+        sample_id=sample_id,
+    )
+    requested_tests = list(sample.tests_requested.all())
 
     allowed_statuses_for_entry = ['SENT_TO_LAB', 'TESTING_IN_PROGRESS', 'RESULTS_ENTERED']
-    if request.user.is_admin and sample.current_status == 'REVIEW_PENDING':
+    if request.user.is_admin() and sample.current_status == 'REVIEW_PENDING':
         allowed_statuses_for_entry.append('REVIEW_PENDING')
 
     if sample.current_status not in allowed_statuses_for_entry:
@@ -183,8 +197,15 @@ def test_result_entry(request, sample_id):
                 results_updated_count = 0
                 all_forms_valid = True
                 form_errors = {}
+                existing_results = {
+                    result.parameter_id: result
+                    for result in TestResult.objects.select_for_update().filter(
+                        sample=sample,
+                        parameter__in=requested_tests,
+                    )
+                }
 
-                for test_param_model in sample.tests_requested.all().order_by('display_order', 'name'):
+                for test_param_model in requested_tests:
                     form_prefix = f'param_{test_param_model.parameter_id}'
                     form = TestResultEntryForm(request.POST, prefix=form_prefix)
 
@@ -194,24 +215,25 @@ def test_result_entry(request, sample_id):
                         remarks = form.cleaned_data.get('remarks')
 
                         if result_value and result_value.strip():
-                            test_result, created = TestResult.objects.get_or_create(
-                                sample=sample,
-                                parameter=test_param_model,
-                                defaults={
-                                    'result_value': result_value.strip(),
-                                    'observation': observation,
-                                    'remarks': remarks,
-                                    'technician': request.user,
-                                },
-                            )
-                            if created:
+                            test_result = existing_results.get(test_param_model.parameter_id)
+                            if test_result is None:
+                                test_result = TestResult(
+                                    sample=sample,
+                                    parameter=test_param_model,
+                                    result_value=result_value.strip(),
+                                    observation=observation,
+                                    remarks=remarks,
+                                    technician=request.user,
+                                )
+                                test_result.full_clean()
+                                test_result.save()
+                                existing_results[test_param_model.parameter_id] = test_result
                                 AuditTrail.log_change(
                                     user=request.user,
                                     action='CREATE',
                                     instance=test_result,
                                     request=request,
                                 )
-                                test_result.full_clean()
                                 results_entered_count += 1
                             else:
                                 old_values = {
@@ -249,8 +271,8 @@ def test_result_entry(request, sample_id):
                         f"Results for sample (ID: {sample.sample_id}) updated by admin. The sample remains in 'Review Pending' status.",
                     )
                 else:
-                    total_tests = sample.tests_requested.count()
-                    completed_tests = sample.results.count()
+                    total_tests = len(requested_tests)
+                    completed_tests = TestResult.objects.filter(sample=sample).count()
 
                     if completed_tests >= total_tests and total_tests > 0:
                         status_now = sample.current_status
@@ -304,20 +326,23 @@ def test_result_entry(request, sample_id):
             messages.error(request, _format_error_message('Error saving test results.', exc))
             return redirect('core:sample_detail', pk=sample.sample_id)
 
-    form_data = {}
-    for test_param_model in sample.tests_requested.all().order_by('display_order', 'name'):
-        form_prefix = f'param_{test_param_model.parameter_id}'
+    existing_results = {
+        result.parameter_id: result
+        for result in TestResult.objects.filter(sample=sample, parameter__in=requested_tests)
+    }
 
-        try:
-            existing_result = TestResult.objects.get(sample=sample, parameter=test_param_model)
+    form_data = {}
+    for test_param_model in requested_tests:
+        form_prefix = f'param_{test_param_model.parameter_id}'
+        existing_result = existing_results.get(test_param_model.parameter_id)
+        if existing_result:
             initial_data = {
                 'result_value': existing_result.result_value,
                 'observation': existing_result.observation,
                 'remarks': existing_result.remarks,
             }
-        except TestResult.DoesNotExist:
+        else:
             initial_data = {}
-            existing_result = None
 
         form_data[test_param_model.parameter_id] = {
             'form': TestResultEntryForm(
@@ -329,16 +354,14 @@ def test_result_entry(request, sample_id):
             'existing_result': existing_result,
         }
 
-        if 'existing_result' in locals():
-            del existing_result
-
     context = {
         'sample': sample,
         'form_data': form_data,
+        'requested_tests_count': len(requested_tests),
         'can_edit': sample.current_status in ['SENT_TO_LAB', 'TESTING_IN_PROGRESS', 'RESULTS_ENTERED']
         or (request.user.is_admin() and sample.current_status == 'REVIEW_PENDING'),
         'can_send_for_review': sample.current_status in ['SENT_TO_LAB', 'TESTING_IN_PROGRESS', 'RESULTS_ENTERED']
-        and sample.tests_requested.exists(),
+        and bool(requested_tests),
     }
 
     return render(request, 'core/test_result_entry.html', context)

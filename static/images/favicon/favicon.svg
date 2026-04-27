@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="WaterLab">
+  <rect width="64" height="64" rx="14" fill="#e6f4f1"/>
+  <path d="M32 10c8 10.2 16 20.4 16 31 0 8.8-7.2 15-16 15s-16-6.2-16-15c0-10.6 8-20.8 16-31z" fill="#0f766e"/>
+  <path d="M24 41c1.4 4.3 4.4 6.6 8.8 6.9" fill="none" stroke="#ffffff" stroke-width="4" stroke-linecap="round"/>
+</svg>

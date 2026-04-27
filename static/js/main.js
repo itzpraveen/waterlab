@@ -31,7 +31,6 @@ const WaterLab = {
         this.initAddressDropdowns();
         this.initFlashMessages();
         this.initSubmitLoading();
-        this.initServiceWorker();
     },
 
     initFlashMessages() {
@@ -263,13 +262,6 @@ const WaterLab = {
         };
     },
 
-    initServiceWorker() {
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/sw.js').catch((error) => {
-                this.log('Service worker registration failed', error);
-            });
-        }
-    },
 };
 
 document.addEventListener('DOMContentLoaded', () => {

@@ -27,6 +27,7 @@ from .views import (
     debug_view,
     form_test,
     fix_admin_role_web,
+    global_search,
     sample_reopen_for_correction,
     sample_status_update,
     setup_test_parameters,
@@ -77,6 +78,7 @@ urlpatterns = [
     # Password Management
     path('password-change/', CustomPasswordChangeView.as_view(), name='password_change'),
     path('password-change/done/', password_change_done, name='password_change_done'),
+    path('search/', global_search, name='global_search'),
     
     # Customer URLs
     path('customers/', CustomerListView.as_view(), name='customer_list'),

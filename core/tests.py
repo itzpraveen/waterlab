@@ -1444,6 +1444,63 @@ class SampleListViewTests(TestCase):
         self.assertContains(response, "?page=2&amp;status=RECEIVED_FRONT_DESK")
 
 
+class GlobalSearchViewTests(TestCase):
+    def setUp(self):
+        self.admin_user = CustomUser.objects.create_user(
+            username="global_search_admin",
+            password="password",
+            role="admin",
+        )
+        self.customer = Customer.objects.create(
+            name="Global Search Customer",
+            phone="8899001122",
+            email="globalsearch@example.com",
+            street_locality_landmark="Search Lane",
+            village_town_city="Findtown",
+            district="Ernakulam",
+            pincode="682001",
+        )
+        self.sample = Sample.objects.create(
+            customer=self.customer,
+            collection_datetime=timezone.now() - timedelta(days=1),
+            sample_source='WELL',
+            collected_by='CUSTOMER',
+            sampling_location="Search Lane Well",
+            current_status='RECEIVED_FRONT_DESK',
+        )
+
+    def test_global_search_requires_login(self):
+        response = self.client.get(reverse('core:global_search'), {'q': 'Global'})
+        self.assertEqual(response.status_code, 302)
+
+    def test_global_search_returns_samples_and_customers(self):
+        self.client.force_login(self.admin_user)
+        response = self.client.get(reverse('core:global_search'), {'q': 'Search Lane'})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.sample.display_id)
+        self.assertContains(response, self.customer.name)
+        self.assertContains(response, "View all matching samples")
+        self.assertContains(response, "View all matching customers")
+
+    def test_empty_global_search_does_not_dump_records(self):
+        self.client.force_login(self.admin_user)
+        response = self.client.get(reverse('core:global_search'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(response.context['has_query'])
+        self.assertEqual(len(response.context['samples']), 0)
+        self.assertEqual(len(response.context['customers']), 0)
+
+
+class StaticCompatibilityTests(SimpleTestCase):
+    def test_legacy_service_worker_path_does_not_redirect(self):
+        response = self.client.get('/sw.js')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Service-Worker-Allowed'], '/')
+
+
 class TestResultListViewTests(TestCase):
     def setUp(self):
         self.customer = Customer.objects.create(
@@ -1512,6 +1569,28 @@ class TestResultListViewTests(TestCase):
         self.client.force_login(self.lab_user)
         response = self.client.get(reverse('core:test_result_list'))
         self.assertContains(response, 'Send for review')
+
+    def test_pagination_preserves_filters(self):
+        for index in range(16):
+            sample = Sample.objects.create(
+                customer=self.customer,
+                collection_datetime=timezone.now() - timedelta(days=index + 20),
+                sample_source='WELL',
+                collected_by='CUSTOMER',
+                current_status='REPORT_SENT'
+            )
+            sample.tests_requested.add(self.parameter)
+            TestResult.objects.create(
+                sample=sample,
+                parameter=self.parameter,
+                result_value=str(index),
+                technician=self.lab_user,
+            )
+
+        self.client.force_login(self.lab_user)
+        response = self.client.get(reverse('core:test_result_list'), {'status': 'COMPLETED'})
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "?page=2&amp;status=COMPLETED")
 
 
 class AuditTrailModelTests(TestCase):
