@@ -19,7 +19,7 @@
 {% endblock %}
 
 {% block content %}
-<div class="info-card mb-4">
+<div class="info-card mb-4 sample-list-filter">
     <form method="get" class="row g-3 align-items-end">
         <div class="col-md-6 col-lg-4">
             <label for="sample-search" class="form-label">Search samples</label>
@@ -98,9 +98,9 @@
     </div>
 </div>
 
-<div data-table-wrapper class="card-table{% if not samples %} d-none{% endif %}">
+<div data-table-wrapper class="card-table sample-table-card{% if not samples %} d-none{% endif %}">
     <div class="table-responsive">
-        <table class="table align-middle" id="sample-table">
+        <table class="table align-middle sample-list-table" id="sample-table">
             <thead>
                 <tr>
                     <th scope="col">Sample ID</th>
@@ -139,14 +139,14 @@
                     <td data-label="Tests" class="text-center">{{ sample.tests_requested.count }}</td>
                     <td data-label="Status">{% sample_status_badge sample %}</td>
                     <td data-label="Actions" class="text-end td-actions">
-                        <div class="btn-group" role="group">
+                        <div class="btn-group sample-row-actions" role="group">
                             <a href="{% url 'core:sample_detail' pk=sample.sample_id %}" class="btn btn-sm btn-outline-secondary action-icon" data-bs-toggle="tooltip" title="View sample" aria-label="View sample">
                                 <i class="material-icons" aria-hidden="true">visibility</i>
-                                <span class="action-label">View sample</span>
+                                <span class="action-label">View</span>
                             </a>
                             {% if user.is_lab_technician or user.is_admin %}
                                 {% if sample.current_status == 'SENT_TO_LAB' or sample.current_status == 'TESTING_IN_PROGRESS' or sample.current_status == 'RESULTS_ENTERED' %}
-                                <a href="{% url 'core:test_result_entry' sample_id=sample.sample_id %}" class="btn btn-sm btn-outline-secondary action-icon" data-bs-toggle="tooltip" title="Enter results" aria-label="Enter results">
+                                <a href="{% url 'core:test_result_entry' sample_id=sample.sample_id %}" class="btn btn-sm btn-outline-primary action-icon" data-bs-toggle="tooltip" title="Enter results" aria-label="Enter results">
                                     <i class="material-icons" aria-hidden="true">edit_note</i>
                                     <span class="action-label">Results</span>
                                 </a>
@@ -154,7 +154,7 @@
                             {% endif %}
                             {% if user.is_consultant or user.is_admin %}
                                 {% if sample.current_status == 'RESULTS_ENTERED' or sample.current_status == 'REVIEW_PENDING' %}
-                                <a href="{% url 'core:consultant_review' sample_id=sample.sample_id %}" class="btn btn-sm btn-outline-secondary action-icon" data-bs-toggle="tooltip" title="Review report" aria-label="Review report">
+                                <a href="{% url 'core:consultant_review' sample_id=sample.sample_id %}" class="btn btn-sm btn-outline-primary action-icon" data-bs-toggle="tooltip" title="Review report" aria-label="Review report">
                                     <i class="material-icons" aria-hidden="true">rate_review</i>
                                     <span class="action-label">Review</span>
                                 </a>

@@ -316,7 +316,7 @@ main {
 }
 
 .app-nav .nav-link:hover,
-.app-nav .nav-link:focus {
+.app-nav .nav-link:focus-visible {
   background: rgba(15, 118, 110, 0.08);
   color: var(--wl-primary-dark);
 }
@@ -537,9 +537,19 @@ main {
   margin: 0 auto;
 }
 
+@media (min-width: 1400px) {
+  body:has(.sample-list-table) .page-shell {
+    max-width: 1580px;
+  }
+}
+
 @media (min-width: 1800px) {
   .page-shell {
     max-width: 1480px;
+  }
+
+  body:has(.sample-list-table) .page-shell {
+    max-width: 1680px;
   }
 }
 
@@ -1922,6 +1932,47 @@ main {
   background: rgba(15, 118, 110, 0.1);
   border-color: rgba(15, 118, 110, 0.38);
   color: var(--wl-primary-dark);
+}
+
+.sample-list-filter {
+  padding-block: 1.15rem;
+}
+
+.sample-table-card {
+  overflow: visible;
+}
+
+.sample-list-table th:last-child,
+.sample-list-table td.td-actions {
+  width: 1%;
+  min-width: 156px;
+  white-space: nowrap;
+}
+
+.sample-row-actions {
+  gap: 0.35rem;
+}
+
+.sample-row-actions.btn-group {
+  display: inline-flex;
+}
+
+.sample-row-actions.btn-group > .btn {
+  border-radius: 0.38rem !important;
+}
+
+.sample-row-actions .action-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding-inline: 0.58rem;
+}
+
+.sample-row-actions .action-icon .action-label {
+  display: inline;
+  font-size: 0.78rem;
+  font-weight: 700;
 }
 
 .results-shell {
@@ -3416,8 +3467,9 @@ main {
 
 /* Sticky table header inside card-table for long lists */
 .card-table .table-responsive {
-  max-height: calc(100vh - 18rem);
-  overflow-y: auto;
+  max-height: none;
+  overflow-x: auto;
+  overflow-y: visible;
 }
 
 .card-table thead th {
