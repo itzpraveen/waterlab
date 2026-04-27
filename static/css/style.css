@@ -538,17 +538,13 @@ main {
 }
 
 @media (min-width: 1400px) {
-  body:has(.sample-list-table) .page-shell {
+  .page-shell {
     max-width: 1580px;
   }
 }
 
 @media (min-width: 1800px) {
   .page-shell {
-    max-width: 1480px;
-  }
-
-  body:has(.sample-list-table) .page-shell {
     max-width: 1680px;
   }
 }
