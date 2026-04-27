@@ -1,4 +1,5 @@
 from django.contrib import messages
+from django.db.models import Count, Q
 from django.urls import reverse_lazy
 from django.views.generic import CreateView, DetailView, ListView, UpdateView
 
@@ -12,10 +13,35 @@ class CustomerListView(RoleRequiredMixin, ListView):
     model = Customer
     template_name = 'core/customer_list.html'
     context_object_name = 'customers'
+    paginate_by = 25
     allowed_roles = list(_SENSITIVE_ROLES)
 
+    def get_search_query(self):
+        return (self.request.GET.get('q') or '').strip()
+
     def get_queryset(self):
-        return apply_user_scope(super().get_queryset(), self.request.user)
+        queryset = Customer.objects.annotate(sample_count=Count('samples')).order_by('name')
+        query = self.get_search_query()
+        if query:
+            queryset = queryset.filter(
+                Q(name__icontains=query)
+                | Q(email__icontains=query)
+                | Q(phone__icontains=query)
+                | Q(house_name_door_no__icontains=query)
+                | Q(street_locality_landmark__icontains=query)
+                | Q(village_town_city__icontains=query)
+                | Q(panchayat_municipality__icontains=query)
+                | Q(taluk__icontains=query)
+                | Q(district__icontains=query)
+                | Q(pincode__icontains=query)
+            )
+        return apply_user_scope(queryset, self.request.user)
+
+    def get_query_string(self):
+        query_params = self.request.GET.copy()
+        query_params.pop('page', None)
+        encoded = query_params.urlencode()
+        return f'&{encoded}' if encoded else ''
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -36,6 +62,20 @@ class CustomerListView(RoleRequiredMixin, ListView):
                 self.request.user,
             )[:5]
         )
+
+        page_obj = context.get('page_obj')
+        context['search_query'] = self.get_search_query()
+        context['query_string'] = self.get_query_string()
+        context['show_reset_filters'] = bool(context['search_query'])
+
+        if page_obj:
+            context['customer_count'] = page_obj.paginator.count
+            context['page_start_index'] = page_obj.start_index()
+            context['page_end_index'] = page_obj.end_index()
+        else:
+            context['customer_count'] = len(context.get('customers', []))
+            context['page_start_index'] = 0
+            context['page_end_index'] = context['customer_count']
 
         return context
 

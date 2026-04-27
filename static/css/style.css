@@ -919,6 +919,51 @@ main {
   border-bottom: 0;
 }
 
+.directory-toolbar {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: minmax(260px, 1fr) auto auto;
+  align-items: end;
+}
+
+.directory-toolbar__search {
+  min-width: 0;
+}
+
+.directory-toolbar__search .input-group {
+  flex-wrap: nowrap;
+}
+
+.directory-toolbar__search .input-group .form-control {
+  flex: 1 1 auto;
+  width: 1%;
+  min-width: 0;
+}
+
+.directory-toolbar__actions {
+  display: inline-flex;
+  gap: 0.6rem;
+  align-items: center;
+}
+
+.directory-toolbar__count {
+  display: grid;
+  justify-items: end;
+  min-width: 150px;
+  color: rgba(15, 23, 42, 0.58);
+  line-height: 1.2;
+}
+
+.directory-count__range {
+  color: #0f172a;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.directory-count__label {
+  font-size: 0.84rem;
+}
+
 @media (max-width: 1200px) {
   .dashboard-kpis {
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -931,8 +976,18 @@ main {
 
 @media (max-width: 768px) {
   .dashboard-kpis,
-  .queue-grid {
+  .queue-grid,
+  .directory-toolbar {
     grid-template-columns: 1fr;
+  }
+
+  .directory-toolbar__actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .directory-toolbar__count {
+    justify-items: start;
   }
 
   .dashboard-panel__header {

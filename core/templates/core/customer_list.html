@@ -6,8 +6,9 @@
 {% block page_header %}
 <div class="page-header">
     <div class="page-heading">
+        <span class="page-eyebrow"><i class="material-icons">contacts</i>Customer records</span>
         <h1 class="page-title">Customer directory</h1>
-        <p class="page-subtitle">Manage customer profiles and launch new sample requests.</p>
+        <p class="page-subtitle">Search customer profiles, review sample volume, and start new sample requests.</p>
     </div>
     {% if user.is_frontdesk or user.is_admin %}
     <a href="{% url 'core:customer_add' %}" class="btn btn-primary"><i class="material-icons me-1">person_add</i>Add customer</a>
@@ -17,13 +18,37 @@
 
 {% block content %}
 <div class="info-card mb-4">
-    <label for="customer-search" class="form-label">Search customers</label>
-    <div class="input-group">
-        <span class="input-group-text"><i class="material-icons">search</i></span>
-        <input type="text" id="customer-search" class="form-control" placeholder="Search by name, email, or phone"
-               data-table-search="#customer-table"
-               data-empty-state="#no-customers-state">
-    </div>
+    <form method="get" class="directory-toolbar">
+        <div class="directory-toolbar__search">
+            <label for="customer-search" class="form-label">Search customers</label>
+            <div class="input-group">
+                <span class="input-group-text"><i class="material-icons">search</i></span>
+                <input type="text"
+                       id="customer-search"
+                       name="q"
+                       class="form-control"
+                       placeholder="Search by name, email, phone, or place"
+                       value="{{ search_query }}">
+            </div>
+        </div>
+        <div class="directory-toolbar__actions">
+            <button type="submit" class="btn btn-primary">
+                <i class="material-icons me-1">search</i>
+                Search
+            </button>
+            {% if show_reset_filters %}
+            <a href="{% url 'core:customer_list' %}" class="btn btn-outline-secondary">Reset</a>
+            {% endif %}
+        </div>
+        <div class="directory-toolbar__count">
+            {% if customer_count %}
+            <span class="directory-count__range">{{ page_start_index }}-{{ page_end_index }}</span>
+            <span class="directory-count__label">of {{ customer_count }} customer{{ customer_count|pluralize }}</span>
+            {% else %}
+            <span class="directory-count__label">No customers found</span>
+            {% endif %}
+        </div>
+    </form>
 </div>
 
 <div data-table-wrapper class="card-table{% if not customers %} d-none{% endif %}">
@@ -62,8 +87,16 @@
                         <span class="text-muted">Not provided</span>
                         {% endif %}
                     </td>
-                    <td><span class="chip-soft">{{ customer.get_district_display }}</span></td>
-                    <td class="text-center">{{ customer.samples.count }}</td>
+                    <td>
+                        {% if customer.district %}
+                        <span class="chip-soft">{{ customer.get_district_display }}</span>
+                        {% else %}
+                        <span class="text-muted">Not provided</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-center">
+                        <span class="badge-soft{% if customer.sample_count %} info{% endif %}">{{ customer.sample_count }}</span>
+                    </td>
                     <td class="text-end">
                         <div class="btn-group" role="group">
                             <a href="{% url 'core:customer_detail' pk=customer.customer_id %}" class="btn btn-sm btn-outline-secondary" data-bs-toggle="tooltip" title="View">
@@ -84,6 +117,32 @@
             </tbody>
         </table>
     </div>
+
+    {% if is_paginated %}
+    <nav aria-label="Customer pagination" class="results-pagination">
+        <ul class="pagination pagination-modern justify-content-center">
+            <li class="page-item {% if not page_obj.has_previous %}disabled{% endif %}">
+                <a class="page-link" href="{% if page_obj.has_previous %}?page={{ page_obj.previous_page_number }}{{ query_string }}{% else %}#!{% endif %}" aria-label="Previous">
+                    <span aria-hidden="true">&laquo;</span>
+                </a>
+            </li>
+            {% for num in page_obj.paginator.page_range %}
+                {% if page_obj.number == num %}
+                    <li class="page-item active" aria-current="page"><span class="page-link">{{ num }}</span></li>
+                {% elif num == 1 or num == page_obj.paginator.num_pages or num >= page_obj.number|add:'-2' and num <= page_obj.number|add:'2' %}
+                    <li class="page-item"><a class="page-link" href="?page={{ num }}{{ query_string }}">{{ num }}</a></li>
+                {% elif num == page_obj.number|add:'-3' or num == page_obj.number|add:'3' %}
+                    <li class="page-item disabled"><span class="page-link">&hellip;</span></li>
+                {% endif %}
+            {% endfor %}
+            <li class="page-item {% if not page_obj.has_next %}disabled{% endif %}">
+                <a class="page-link" href="{% if page_obj.has_next %}?page={{ page_obj.next_page_number }}{{ query_string }}{% else %}#!{% endif %}" aria-label="Next">
+                    <span aria-hidden="true">&raquo;</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+    {% endif %}
 </div>
 
 <div id="no-customers-state" class="empty-state{% if customers %} d-none{% endif %}">

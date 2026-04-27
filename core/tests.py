@@ -127,6 +127,60 @@ class CustomerModelTests(TestCase):
              Customer.objects.create(**duplicate_data)
 
 
+class CustomerListViewTests(TestCase):
+    def setUp(self):
+        self.admin_user = CustomUser.objects.create_user(
+            username="customer_admin",
+            password="password",
+            role="admin",
+        )
+        self.customers = []
+        for index in range(30):
+            self.customers.append(
+                Customer.objects.create(
+                    name=f"Customer {index:02d}",
+                    phone=f"9876500{index:03d}",
+                    email=f"customer-list-{index}@example.com",
+                    street_locality_landmark=f"Directory Street {index}",
+                    village_town_city=f"Directory Town {index}",
+                    district="Ernakulam",
+                    pincode="682001",
+                )
+            )
+
+    def test_pagination_exposes_older_customers(self):
+        self.client.force_login(self.admin_user)
+
+        response = self.client.get(reverse('core:customer_list'))
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.context['is_paginated'])
+        self.assertContains(response, "1-25")
+        self.assertContains(response, "of 30 customers")
+        self.assertContains(response, "?page=2")
+        self.assertContains(response, self.customers[0].name)
+        self.assertNotContains(response, self.customers[-1].name)
+
+        response = self.client.get(reverse('core:customer_list'), {'page': 2})
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "26-30")
+        self.assertContains(response, self.customers[-1].name)
+
+    def test_search_runs_against_all_customers(self):
+        self.client.force_login(self.admin_user)
+
+        response = self.client.get(reverse('core:customer_list'), {'q': 'Directory Street 29'})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['customer_count'], 1)
+        self.assertContains(response, self.customers[-1].name)
+
+    def test_pagination_preserves_search_query(self):
+        self.client.force_login(self.admin_user)
+
+        response = self.client.get(reverse('core:customer_list'), {'q': 'Customer'})
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "?page=2&amp;q=Customer")
+
+
 class SampleModelTests(TestCase):
     def setUp(self):
         self.customer = Customer.objects.create(
