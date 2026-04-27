@@ -3747,6 +3747,34 @@ main {
   text-transform: uppercase;
 }
 
+.card-table thead th,
+.card-table tbody td,
+.table-modern thead th,
+.table-modern tbody td,
+.dashboard-table thead th,
+.dashboard-table tbody td {
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+.card-table thead th:first-child,
+.card-table tbody td:first-child,
+.table-modern thead th:first-child,
+.table-modern tbody td:first-child,
+.dashboard-table thead th:first-child,
+.dashboard-table tbody td:first-child {
+  padding-left: 1.35rem;
+}
+
+.card-table thead th:last-child,
+.card-table tbody td:last-child,
+.table-modern thead th:last-child,
+.table-modern tbody td:last-child,
+.dashboard-table thead th:last-child,
+.dashboard-table tbody td:last-child {
+  padding-right: 1.35rem;
+}
+
 .card-table tbody td,
 .table-modern tbody td {
   padding-block: 0.82rem;
@@ -3849,6 +3877,22 @@ main {
 .card-table .td-actions .action-icon {
   gap: 0.35rem;
   padding-inline: 0.58rem;
+}
+
+.card-table th:last-child,
+.card-table td.td-actions {
+  min-width: 172px;
+}
+
+#customer-table th:last-child,
+#customer-table td.td-actions {
+  min-width: 250px;
+}
+
+.card-table td.td-actions .btn-group,
+.card-table td.td-actions .user-actions {
+  justify-content: flex-end;
+  gap: 0.4rem;
 }
 
 @media (min-width: 641px) {
