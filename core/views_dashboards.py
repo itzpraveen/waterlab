@@ -52,13 +52,22 @@ class AdminDashboardView(AdminRequiredMixin, TemplateView):
                 current_status__in=['SENT_TO_LAB', 'TESTING_IN_PROGRESS']
             ).count()
             context['review_pending_count'] = Sample.objects.filter(current_status='REVIEW_PENDING').count()
-            context['completed_samples_count'] = Sample.objects.filter(current_status='REPORT_APPROVED').count()
+            context['completed_samples_count'] = Sample.objects.filter(
+                current_status__in=['REPORT_APPROVED', 'REPORT_SENT']
+            ).count()
 
             context['recent_customers'] = Customer.objects.order_by('-customer_id')[:5]
             context['recent_samples'] = Sample.objects.select_related('customer').order_by('-collection_datetime')[:10]
             context['recent_users'] = CustomUser.objects.order_by('-date_joined')[:5]
 
-            context['user_stats'] = CustomUser.objects.values('role').annotate(count=Count('pk'))
+            role_labels = dict(CustomUser.ROLE_CHOICES)
+            context['user_stats'] = [
+                {
+                    'role': role_labels.get(stat['role'], stat['role'] or 'Undefined'),
+                    'count': stat['count'],
+                }
+                for stat in CustomUser.objects.values('role').annotate(count=Count('pk')).order_by('role')
+            ]
 
             context['today_samples_count'] = Sample.objects.filter(
                 collection_datetime__date=timezone.now().date()
@@ -72,8 +81,8 @@ class AdminDashboardView(AdminRequiredMixin, TemplateView):
             ).select_related('customer').order_by('collection_datetime')[:5]
 
             context['samples_awaiting_review'] = Sample.objects.filter(
-                current_status='RESULTS_ENTERED'
-            ).select_related('customer').order_by('-collection_datetime')[:5]
+                current_status='REVIEW_PENDING'
+            ).select_related('customer').order_by('collection_datetime')[:5]
 
         except Exception as exc:
             logger.exception("Failed to build admin dashboard context")
@@ -176,4 +185,3 @@ class ConsultantDashboardView(ConsultantRequiredMixin, TemplateView):
             ).values('status').annotate(count=Count('review_id')),
         })
         return context
-

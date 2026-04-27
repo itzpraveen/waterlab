@@ -5,154 +5,208 @@
 {% block page_header %}
 <div class="page-header">
     <div class="page-heading">
+        <span class="page-eyebrow"><i class="material-icons">water_drop</i>Operations control</span>
         <h1 class="page-title">Administrator overview</h1>
-        <p class="page-subtitle">System-wide metrics and shortcuts for daily administration.</p>
+        <p class="page-subtitle">Monitor sample flow, staff access, and daily lab workload from one place.</p>
     </div>
-    <div class="badge-soft info"><i class="material-icons">admin_panel_settings</i>{{ user.get_role_display }}</div>
+    <div class="page-actions">
+        <a href="{% url 'core:sample_add' %}" class="btn btn-primary">
+            <i class="material-icons me-1">add_task</i>
+            New sample
+        </a>
+        <a href="{% url 'core:audit_trail' %}" class="btn btn-outline-secondary">
+            <i class="material-icons me-1">history</i>
+            Audit trail
+        </a>
+    </div>
 </div>
 {% endblock %}
 
 {% block content %}
-<section class="stat-grid mb-4">
-    <a class="stat-card stat-card--link" href="{% url 'core:customer_list' %}">
-        <div class="stat-icon"><i class="material-icons">people</i></div>
-        <div class="stat-value">{{ total_customers }}</div>
-        <p class="stat-label mb-0">Total customers</p>
-    </a>
-    <a class="stat-card stat-card--link" href="{% url 'core:sample_list' %}">
-        <div class="stat-icon"><i class="material-icons">science</i></div>
-        <div class="stat-value">{{ total_samples }}</div>
-        <p class="stat-label mb-0">Total samples</p>
-    </a>
-    <a class="stat-card stat-card--link" href="{% url 'core:sample_list' %}?status=PENDING">
-        <div class="stat-icon"><i class="material-icons">hourglass_top</i></div>
-        <div class="stat-value">{{ pending_samples_count }}</div>
-        <p class="stat-label mb-0">Pending samples</p>
-    </a>
-    <a class="stat-card stat-card--link" href="{% url 'core:sample_list' %}?status=IN_LAB">
-        <div class="stat-icon"><i class="material-icons">experiment</i></div>
-        <div class="stat-value">{{ testing_samples_count }}</div>
-        <p class="stat-label mb-0">In lab</p>
-    </a>
-    <a class="stat-card stat-card--link" href="{% url 'core:sample_list' %}?status=AWAITING_REVIEW">
-        <div class="stat-icon"><i class="material-icons">fact_check</i></div>
-        <div class="stat-value">{{ review_pending_count }}</div>
-        <p class="stat-label mb-0">Awaiting review</p>
-    </a>
-    <a class="stat-card stat-card--link" href="{% url 'core:sample_list' %}?status=COMPLETED">
-        <div class="stat-icon"><i class="material-icons">task_alt</i></div>
-        <div class="stat-value">{{ completed_samples_count }}</div>
-        <p class="stat-label mb-0">Completed</p>
-    </a>
-    <a class="stat-card stat-card--link" href="{% url 'core:sample_list' %}?collected=today">
-        <div class="stat-icon"><i class="material-icons">calendar_month</i></div>
-        <div class="stat-value">{{ today_samples_count }}</div>
-        <p class="stat-label mb-0">Collected today</p>
-    </a>
-    <a class="stat-card stat-card--link" href="{% url 'core:sample_list' %}?collected=week">
-        <div class="stat-icon"><i class="material-icons">date_range</i></div>
-        <div class="stat-value">{{ week_samples_count }}</div>
-        <p class="stat-label mb-0">Last 7 days</p>
-    </a>
-</section>
+<section class="dashboard-shell">
+    <div class="dashboard-kpis">
+        <a class="dashboard-kpi dashboard-kpi--primary" href="{% url 'core:sample_list' %}">
+            <span class="dashboard-kpi__label">Total samples</span>
+            <strong class="dashboard-kpi__value">{{ total_samples }}</strong>
+            <span class="dashboard-kpi__meta"><i class="material-icons">inventory_2</i>All registered samples</span>
+        </a>
+        <a class="dashboard-kpi" href="{% url 'core:sample_list' %}?status=PENDING">
+            <span class="dashboard-kpi__label">Pending intake</span>
+            <strong class="dashboard-kpi__value">{{ pending_samples_count }}</strong>
+            <span class="dashboard-kpi__meta"><i class="material-icons">hourglass_top</i>Received at front desk</span>
+        </a>
+        <a class="dashboard-kpi" href="{% url 'core:sample_list' %}?status=IN_LAB">
+            <span class="dashboard-kpi__label">In laboratory</span>
+            <strong class="dashboard-kpi__value">{{ testing_samples_count }}</strong>
+            <span class="dashboard-kpi__meta"><i class="material-icons">science</i>Testing workload</span>
+        </a>
+        <a class="dashboard-kpi dashboard-kpi--attention" href="{% url 'core:sample_list' %}?status=AWAITING_REVIEW">
+            <span class="dashboard-kpi__label">Awaiting review</span>
+            <strong class="dashboard-kpi__value">{{ review_pending_count }}</strong>
+            <span class="dashboard-kpi__meta"><i class="material-icons">fact_check</i>Needs consultant review</span>
+        </a>
+        <a class="dashboard-kpi" href="{% url 'core:sample_list' %}?collected=today">
+            <span class="dashboard-kpi__label">Collected today</span>
+            <strong class="dashboard-kpi__value">{{ today_samples_count }}</strong>
+            <span class="dashboard-kpi__meta"><i class="material-icons">today</i>Daily intake</span>
+        </a>
+        <a class="dashboard-kpi" href="{% url 'core:customer_list' %}">
+            <span class="dashboard-kpi__label">Customers</span>
+            <strong class="dashboard-kpi__value">{{ total_customers }}</strong>
+            <span class="dashboard-kpi__meta"><i class="material-icons">groups</i>Active directory</span>
+        </a>
+    </div>
 
-<section class="info-card mb-4">
-    <div class="section-title"><i class="material-icons">flash_on</i>Quick actions</div>
-    <div class="quick-link-bar">
+    <div class="dashboard-action-rail" aria-label="Quick actions">
         <a href="{% url 'core:customer_add' %}" class="action-chip action-chip--primary"><i class="material-icons">person_add</i>Add customer</a>
         <a href="{% url 'core:sample_add' %}" class="action-chip action-chip--primary"><i class="material-icons">note_add</i>Register sample</a>
         <a href="{% url 'core:sample_list' %}" class="action-chip"><i class="material-icons">inventory_2</i>Manage samples</a>
-        <a href="{% url 'core:customer_list' %}" class="action-chip"><i class="material-icons">groups</i>Customer directory</a>
-        <a href="{% url 'core:setup_test_parameters' %}" class="action-chip"><i class="material-icons">tune</i>Test parameters</a>
-        <a href="{% url 'core:audit_trail' %}" class="action-chip"><i class="material-icons">history</i>Audit trail</a>
-        <a href="/admin/" class="action-chip"><i class="material-icons">admin_panel_settings</i>Django admin</a>
+        <a href="{% url 'core:test_result_list' %}" class="action-chip"><i class="material-icons">list_alt</i>Results</a>
+        <a href="{% url 'core:setup_test_parameters' %}" class="action-chip"><i class="material-icons">tune</i>Test setup</a>
+        <a href="{% url 'core:user_list' %}" class="action-chip"><i class="material-icons">admin_panel_settings</i>Users</a>
+    </div>
+
+    <div class="dashboard-main-grid">
+        <section class="dashboard-panel dashboard-panel--wide">
+            <div class="dashboard-panel__header">
+                <div>
+                    <h2>Operations queue</h2>
+                    <p>Samples that need lab or review action first.</p>
+                </div>
+                <a href="{% url 'core:sample_list' %}" class="btn btn-sm btn-outline-secondary">View all</a>
+            </div>
+
+            <div class="queue-grid">
+                <div class="queue-column">
+                    <div class="queue-column__title">
+                        <span><i class="material-icons">science</i>In lab</span>
+                        <span class="badge-soft info">{{ testing_samples_count }}</span>
+                    </div>
+                    <div class="queue-list">
+                        {% for sample_item in samples_in_lab %}
+                        <a class="queue-row" href="{% url 'core:sample_detail' pk=sample_item.sample_id %}">
+                            <span class="queue-row__main">
+                                <strong>{{ sample_item.display_id|default:sample_item.sample_id }}</strong>
+                                <span>{{ sample_item.customer.name }}</span>
+                            </span>
+                            <span class="queue-row__meta">
+                                <span>{{ sample_item.collection_datetime|date:'M d' }}</span>
+                                <span>{{ sample_item.get_current_status_display }}</span>
+                            </span>
+                        </a>
+                        {% empty %}
+                        <div class="queue-empty">No samples are in lab processing.</div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="queue-column">
+                    <div class="queue-column__title">
+                        <span><i class="material-icons">rate_review</i>Awaiting review</span>
+                        <span class="badge-soft warning">{{ review_pending_count }}</span>
+                    </div>
+                    <div class="queue-list">
+                        {% for sample_item in samples_awaiting_review %}
+                        <a class="queue-row" href="{% url 'core:sample_detail' pk=sample_item.sample_id %}">
+                            <span class="queue-row__main">
+                                <strong>{{ sample_item.display_id|default:sample_item.sample_id }}</strong>
+                                <span>{{ sample_item.customer.name }}</span>
+                            </span>
+                            <span class="queue-row__meta">
+                                <span>{{ sample_item.collection_datetime|date:'M d' }}</span>
+                                <span>{{ sample_item.get_current_status_display }}</span>
+                            </span>
+                        </a>
+                        {% empty %}
+                        <div class="queue-empty">No samples are waiting for consultant review.</div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="dashboard-panel">
+            <div class="dashboard-panel__header">
+                <div>
+                    <h2>Staff access</h2>
+                    <p>{{ total_users }} user{{ total_users|pluralize }} across active roles.</p>
+                </div>
+                <a href="{% url 'core:user_list' %}" class="btn btn-sm btn-outline-secondary">Manage</a>
+            </div>
+            <div class="role-list">
+                {% for stat in user_stats %}
+                <div class="role-row">
+                    <span>{{ stat.role }}</span>
+                    <strong>{{ stat.count }}</strong>
+                </div>
+                {% empty %}
+                <div class="queue-empty">No users found.</div>
+                {% endfor %}
+            </div>
+        </section>
+
+        <section class="dashboard-panel">
+            <div class="dashboard-panel__header">
+                <div>
+                    <h2>Recent customers</h2>
+                    <p>Newest customer records in the directory.</p>
+                </div>
+                <a href="{% url 'core:customer_list' %}" class="btn btn-sm btn-outline-secondary">Directory</a>
+            </div>
+            <div class="queue-list">
+                {% for item in recent_customers %}
+                <a class="queue-row" href="{% url 'core:customer_detail' pk=item.customer_id %}">
+                    <span class="queue-row__main">
+                        <strong>{{ item.name }}</strong>
+                        <span>{{ item.phone|default:'No phone' }}</span>
+                    </span>
+                    <span class="queue-row__chevron"><i class="material-icons">chevron_right</i></span>
+                </a>
+                {% empty %}
+                <div class="queue-empty">No recent customers.</div>
+                {% endfor %}
+            </div>
+        </section>
+
+        <section class="dashboard-panel dashboard-panel--wide">
+            <div class="dashboard-panel__header">
+                <div>
+                    <h2>Recently collected</h2>
+                    <p>Latest samples entering the system.</p>
+                </div>
+                <a href="{% url 'core:sample_list' %}?collected=week" class="btn btn-sm btn-outline-secondary">Last 7 days</a>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-sm align-middle dashboard-table mb-0">
+                    <thead>
+                        <tr>
+                            <th>Sample</th>
+                            <th>Customer</th>
+                            <th>Collected</th>
+                            <th>Status</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for sample_item in recent_samples %}
+                        <tr>
+                            <td class="fw-semibold">{{ sample_item.display_id|default:sample_item.sample_id }}</td>
+                            <td>{{ sample_item.customer.name }}</td>
+                            <td>{{ sample_item.collection_datetime|date:'M d, Y' }}</td>
+                            <td><span class="badge-soft">{{ sample_item.get_current_status_display }}</span></td>
+                            <td class="text-end">
+                                <a href="{% url 'core:sample_detail' pk=sample_item.sample_id %}" class="btn btn-sm btn-outline-secondary">View</a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-muted text-center py-4">No samples found.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
     </div>
 </section>
-
-<div class="row g-4 align-items-stretch">
-    <div class="col-lg-6">
-        <div class="info-card h-100">
-            <div class="section-title"><i class="material-icons">supervisor_account</i>User mix</div>
-            {% if user_stats %}
-            <ul class="list-group list-group-flush small">
-                {% for stat in user_stats %}
-                <li class="list-group-item d-flex justify-content-between align-items-center">
-                    {{ stat.role|default:"Undefined" }}
-                    <span class="badge bg-light text-dark">{{ stat.count }}</span>
-                </li>
-                {% endfor %}
-            </ul>
-            {% else %}
-            <p class="text-muted small mb-0">No additional users found.</p>
-            {% endif %}
-        </div>
-    </div>
-    <div class="col-lg-6">
-        <div class="info-card h-100">
-            <div class="section-title"><i class="material-icons">person_add</i>Recent customers</div>
-            {% if recent_customers %}
-            <ul class="list-group list-group-flush small">
-                {% for item in recent_customers %}
-                <li class="list-group-item d-flex justify-content-between align-items-center">
-                    <span>{{ item.name }}</span>
-                    <a href="{% url 'core:customer_detail' pk=item.customer_id %}" class="btn btn-sm btn-outline-secondary">View</a>
-                </li>
-                {% endfor %}
-            </ul>
-            {% else %}
-            <p class="text-muted small mb-0">No recent customers.</p>
-            {% endif %}
-        </div>
-    </div>
-    <div class="col-12">
-        <div class="info-card h-100">
-            <div class="section-title"><i class="material-icons">science</i>Samples in lab</div>
-            {% if samples_in_lab %}
-            <ul class="list-group list-group-flush small">
-                {% for sample_item in samples_in_lab %}
-                <li class="list-group-item d-flex justify-content-between align-items-center">
-                    <div>
-                        <div class="fw-semibold">{{ sample_item.sample_id }}</div>
-                        <div class="text-muted">{{ sample_item.customer.name }}</div>
-                    </div>
-                    <a href="{% url 'core:sample_detail' pk=sample_item.sample_id %}" class="btn btn-sm btn-outline-secondary">View</a>
-                </li>
-                {% endfor %}
-            </ul>
-            {% else %}
-            <p class="text-muted small mb-0">No samples currently in lab processing.</p>
-            {% endif %}
-        </div>
-    </div>
-</div>
-
-<div class="info-card mt-4">
-    <div class="section-title"><i class="material-icons">playlist_add_check</i>Samples awaiting review</div>
-    {% if samples_awaiting_review %}
-    <div class="table-responsive">
-        <table class="table table-sm align-middle mb-0">
-            <thead>
-                <tr>
-                    <th>Sample</th>
-                    <th>Customer</th>
-                    <th>Collected</th>
-                    <th></th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for sample_item in samples_awaiting_review %}
-                <tr>
-                    <td>{{ sample_item.sample_id }}</td>
-                    <td>{{ sample_item.customer.name }}</td>
-                    <td>{{ sample_item.collection_datetime|date:'M d, Y' }}</td>
-                    <td class="text-end"><a href="{% url 'core:sample_detail' pk=sample_item.sample_id %}" class="btn btn-sm btn-outline-secondary">View</a></td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-    {% else %}
-    <p class="text-muted mb-0">Great! There are no samples waiting for consultant review.</p>
-    {% endif %}
-</div>
 {% endblock %}
