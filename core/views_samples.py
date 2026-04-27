@@ -5,6 +5,7 @@ from datetime import timedelta
 from django.contrib import messages
 from django.core.exceptions import ValidationError
 from django.db import transaction
+from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
 from django.utils import timezone
@@ -30,33 +31,106 @@ class SampleListView(RoleRequiredMixin, ListView):
     context_object_name = 'samples'
     paginate_by = 25
     allowed_roles = list(_SENSITIVE_ROLES)
+    STATUS_GROUPS = {
+        'PENDING': ['RECEIVED_FRONT_DESK'],
+        'IN_LAB': ['SENT_TO_LAB', 'TESTING_IN_PROGRESS'],
+        'AWAITING_REVIEW': ['REVIEW_PENDING'],
+        'COMPLETED': ['REPORT_APPROVED', 'REPORT_SENT'],
+    }
+
+    def get_search_query(self):
+        return (self.request.GET.get('q') or '').strip()
+
+    def get_status_values(self):
+        valid_statuses = {code for code, _ in Sample.SAMPLE_STATUS_CHOICES}
+        selected = []
+
+        for raw_status in self.request.GET.getlist('status'):
+            status_key = (raw_status or '').upper().strip()
+            if not status_key:
+                continue
+            if status_key in self.STATUS_GROUPS:
+                selected.extend(self.STATUS_GROUPS[status_key])
+            elif status_key in valid_statuses:
+                selected.append(status_key)
+
+        return list(dict.fromkeys(selected))
+
+    def get_selected_status_key(self):
+        raw_statuses = [value for value in self.request.GET.getlist('status') if value]
+        if len(raw_statuses) != 1:
+            return ''
+        return raw_statuses[0].upper().strip()
+
+    def get_collected_filter(self):
+        collected = (self.request.GET.get('collected') or '').lower().strip()
+        if collected in {'today', 'week'}:
+            return collected
+        return ''
 
     def get_queryset(self):
         qs = (
             Sample.objects.select_related('customer')
             .prefetch_related('tests_requested')
-            .order_by('-collection_datetime')
+            .order_by('-collection_datetime', '-display_id')
         )
-        status_param = self.request.GET.get('status')
-        if status_param:
-            status_key = status_param.upper()
-            status_map = {
-                'PENDING': ['RECEIVED_FRONT_DESK'],
-                'IN_LAB': ['SENT_TO_LAB', 'TESTING_IN_PROGRESS'],
-                'AWAITING_REVIEW': ['REVIEW_PENDING'],
-                'COMPLETED': ['REPORT_APPROVED', 'REPORT_SENT'],
-            }
-            if status_key in status_map:
-                qs = qs.filter(current_status__in=status_map[status_key])
-            else:
-                qs = qs.filter(current_status=status_key)
 
-        collected_scope = self.request.GET.get('collected')
+        query = self.get_search_query()
+        if query:
+            qs = qs.filter(
+                Q(display_id__icontains=query)
+                | Q(customer__name__icontains=query)
+                | Q(customer__phone__icontains=query)
+                | Q(customer__email__icontains=query)
+                | Q(sample_source__icontains=query)
+                | Q(sampling_location__icontains=query)
+                | Q(referred_by__icontains=query)
+            )
+
+        status_values = self.get_status_values()
+        if status_values:
+            qs = qs.filter(current_status__in=status_values)
+
+        collected_scope = self.get_collected_filter()
         if collected_scope == 'today':
-            qs = qs.filter(collection_datetime__date=timezone.now().date())
+            qs = qs.filter(collection_datetime__date=timezone.localdate())
         elif collected_scope == 'week':
             qs = qs.filter(collection_datetime__gte=timezone.now() - timedelta(days=7))
         return apply_user_scope(qs, self.request.user)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        query_params = self.request.GET.copy()
+        query_params.pop('page', None)
+        query_string = query_params.urlencode()
+        page_obj = context.get('page_obj')
+
+        context['query_string'] = f'&{query_string}' if query_string else ''
+        context['search_query'] = self.get_search_query()
+        context['status_filter'] = self.get_selected_status_key()
+        context['collected_filter'] = self.get_collected_filter()
+        context['status_values'] = self.get_status_values()
+        context['sample_status_choices'] = Sample.SAMPLE_STATUS_CHOICES
+        context['status_group_choices'] = [
+            ('PENDING', 'Pending intake'),
+            ('IN_LAB', 'In laboratory'),
+            ('AWAITING_REVIEW', 'Awaiting review'),
+            ('COMPLETED', 'Completed'),
+        ]
+        context['show_reset_filters'] = bool(
+            context['search_query'] or context['status_values'] or context['collected_filter']
+        )
+
+        if page_obj:
+            context['sample_count'] = page_obj.paginator.count
+            context['page_start_index'] = page_obj.start_index()
+            context['page_end_index'] = page_obj.end_index()
+        else:
+            context['sample_count'] = len(context.get('samples', []))
+            context['page_start_index'] = 0
+            context['page_end_index'] = context['sample_count']
+
+        return context
 
 
 class SampleDetailView(RoleRequiredMixin, DetailView):

@@ -19,37 +19,60 @@
 
 {% block content %}
 <div class="info-card mb-4">
-    <div class="row g-3 align-items-end">
+    <form method="get" class="row g-3 align-items-end">
         <div class="col-md-6 col-lg-4">
             <label for="sample-search" class="form-label">Search samples</label>
             <div class="input-group">
                 <span class="input-group-text"><i class="material-icons">search</i></span>
                 <input type="text"
                        id="sample-search"
+                       name="q"
                        class="form-control"
                        placeholder="Search by ID, customer, or source"
-                       data-table-search="#sample-table"
-                       data-status-filter="#status-filter"
-                       data-empty-state="#no-samples-state">
+                       value="{{ search_query }}">
             </div>
         </div>
         <div class="col-md-4 col-lg-3">
             <label for="status-filter" class="form-label">Status</label>
-            <select id="status-filter" class="form-select">
+            <select id="status-filter" name="status" class="form-select">
                 <option value="">All statuses</option>
-                <option value="RECEIVED_FRONT_DESK">Received at front desk</option>
-                <option value="SENT_TO_LAB">Sent to lab</option>
-                <option value="TESTING_IN_PROGRESS">Testing in progress</option>
-                <option value="RESULTS_ENTERED">Results entered</option>
-                <option value="REVIEW_PENDING">Review pending</option>
-                <option value="REPORT_APPROVED">Report approved</option>
-                <option value="REPORT_SENT">Report sent</option>
+                <optgroup label="Workflow groups">
+                    {% for value, label in status_group_choices %}
+                    <option value="{{ value }}" {% if status_filter == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </optgroup>
+                <optgroup label="Exact statuses">
+                    {% for value, label in sample_status_choices %}
+                    <option value="{{ value }}" {% if status_filter == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </optgroup>
             </select>
         </div>
-        <div class="col-md-2 ms-auto text-md-end">
-            <p class="text-muted small mb-0">{{ samples|length }} active sample{{ samples|length|pluralize }}</p>
+        <div class="col-md-4 col-lg-2">
+            <label for="collected-filter" class="form-label">Collected</label>
+            <select id="collected-filter" name="collected" class="form-select">
+                <option value="">Any time</option>
+                <option value="today" {% if collected_filter == 'today' %}selected{% endif %}>Today</option>
+                <option value="week" {% if collected_filter == 'week' %}selected{% endif %}>Past 7 days</option>
+            </select>
         </div>
-    </div>
+        <div class="col-md-auto">
+            <button type="submit" class="btn btn-primary">
+                <i class="material-icons me-1">filter_alt</i>
+                Filter
+            </button>
+            {% if show_reset_filters %}
+            <a href="{% url 'core:sample_list' %}" class="btn btn-outline-secondary ms-2">Reset</a>
+            {% endif %}
+        </div>
+        <div class="col-md ms-auto text-md-end">
+            {% if sample_count %}
+            <p class="text-muted small mb-0">Showing {{ page_start_index }}-{{ page_end_index }} of {{ sample_count }} sample{{ sample_count|pluralize }}</p>
+            {% else %}
+            <p class="text-muted small mb-0">No samples found</p>
+            {% endif %}
+        </div>
+    </form>
 </div>
 
 <div data-table-wrapper class="card-table{% if not samples %} d-none{% endif %}">
@@ -70,7 +93,9 @@
                 {% for sample in samples %}
                 <tr data-status="{{ sample.current_status }}">
                     <td>
-                        <a href="{% url 'core:sample_detail' pk=sample.sample_id %}" class="fw-semibold text-decoration-none">{{ sample.sample_id|truncatechars:12 }}</a>
+                        <a href="{% url 'core:sample_detail' pk=sample.sample_id %}" class="fw-semibold text-decoration-none">
+                            {% if sample.display_id %}{{ sample.display_id }}{% else %}{{ sample.sample_id|truncatechars:12 }}{% endif %}
+                        </a>
                     </td>
                     <td>
                         <div class="d-flex align-items-center gap-2">
@@ -128,6 +153,32 @@
             </tbody>
         </table>
     </div>
+
+    {% if is_paginated %}
+    <nav aria-label="Sample pagination" class="results-pagination">
+        <ul class="pagination pagination-modern justify-content-center">
+            <li class="page-item {% if not page_obj.has_previous %}disabled{% endif %}">
+                <a class="page-link" href="{% if page_obj.has_previous %}?page={{ page_obj.previous_page_number }}{{ query_string }}{% else %}#!{% endif %}" aria-label="Previous">
+                    <span aria-hidden="true">&laquo;</span>
+                </a>
+            </li>
+            {% for num in page_obj.paginator.page_range %}
+                {% if page_obj.number == num %}
+                    <li class="page-item active" aria-current="page"><span class="page-link">{{ num }}</span></li>
+                {% elif num == 1 or num == page_obj.paginator.num_pages or num >= page_obj.number|add:'-2' and num <= page_obj.number|add:'2' %}
+                    <li class="page-item"><a class="page-link" href="?page={{ num }}{{ query_string }}">{{ num }}</a></li>
+                {% elif num == page_obj.number|add:'-3' or num == page_obj.number|add:'3' %}
+                    <li class="page-item disabled"><span class="page-link">&hellip;</span></li>
+                {% endif %}
+            {% endfor %}
+            <li class="page-item {% if not page_obj.has_next %}disabled{% endif %}">
+                <a class="page-link" href="{% if page_obj.has_next %}?page={{ page_obj.next_page_number }}{{ query_string }}{% else %}#!{% endif %}" aria-label="Next">
+                    <span aria-hidden="true">&raquo;</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+    {% endif %}
 </div>
 
 <div id="no-samples-state" class="empty-state{% if samples %} d-none{% endif %}">

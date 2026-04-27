@@ -1326,6 +1326,70 @@ class TestResultEntryViewTests(TestCase):
         self.assertTrue(TestResult.objects.filter(sample=self.sample, parameter=self.parameter).exists())
 
 
+class SampleListViewTests(TestCase):
+    def setUp(self):
+        self.customer = Customer.objects.create(
+            name="Sample Index Customer",
+            phone="7777777777",
+            email="sampleindex@example.com",
+            street_locality_landmark="Sample Street",
+            village_town_city="Sampletown",
+            district="Ernakulam",
+            pincode="682001"
+        )
+        self.admin_user = CustomUser.objects.create_user(
+            username="sample_admin",
+            password="password",
+            role="admin"
+        )
+        base_time = timezone.now()
+        self.samples = []
+        for index in range(30):
+            self.samples.append(
+                Sample.objects.create(
+                    customer=self.customer,
+                    collection_datetime=base_time - timedelta(days=index),
+                    sample_source='WELL',
+                    collected_by='CUSTOMER',
+                    sampling_location=f"Sample Location {index}",
+                )
+            )
+
+    def test_pagination_exposes_older_samples(self):
+        self.client.force_login(self.admin_user)
+
+        response = self.client.get(reverse('core:sample_list'))
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.context['is_paginated'])
+        self.assertContains(response, "Showing 1-25 of 30 samples")
+        self.assertContains(response, "?page=2")
+        self.assertContains(response, self.samples[0].display_id)
+        self.assertNotContains(response, self.samples[-1].display_id)
+
+        response = self.client.get(reverse('core:sample_list'), {'page': 2})
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Showing 26-30 of 30 samples")
+        self.assertContains(response, self.samples[-1].display_id)
+
+    def test_search_runs_against_all_samples(self):
+        self.client.force_login(self.admin_user)
+
+        response = self.client.get(reverse('core:sample_list'), {'q': 'Sample Location 29'})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['sample_count'], 1)
+        self.assertContains(response, self.samples[-1].display_id)
+
+    def test_pagination_preserves_filters(self):
+        self.client.force_login(self.admin_user)
+
+        response = self.client.get(
+            reverse('core:sample_list'),
+            {'status': 'RECEIVED_FRONT_DESK'},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "?page=2&amp;status=RECEIVED_FRONT_DESK")
+
+
 class TestResultListViewTests(TestCase):
     def setUp(self):
         self.customer = Customer.objects.create(
