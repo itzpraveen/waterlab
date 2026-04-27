@@ -12,7 +12,7 @@
     <div class="page-actions">
         <a href="{% url 'core:sample_add' %}" class="btn btn-primary">
             <i class="material-icons me-1">add_task</i>
-            New sample
+            Register sample
         </a>
         <a href="{% url 'core:audit_trail' %}" class="btn btn-outline-secondary">
             <i class="material-icons me-1">history</i>
@@ -59,8 +59,8 @@
 
     <div class="dashboard-action-rail" aria-label="Quick actions">
         <a href="{% url 'core:customer_add' %}" class="action-chip action-chip--primary"><i class="material-icons">person_add</i>Add customer</a>
-        <a href="{% url 'core:sample_add' %}" class="action-chip action-chip--primary"><i class="material-icons">note_add</i>Register sample</a>
         <a href="{% url 'core:sample_list' %}" class="action-chip"><i class="material-icons">inventory_2</i>Manage samples</a>
+        <a href="{% url 'core:sample_list' %}?status=AWAITING_REVIEW" class="action-chip"><i class="material-icons">rate_review</i>Review queue</a>
         <a href="{% url 'core:test_result_list' %}" class="action-chip"><i class="material-icons">list_alt</i>Results</a>
         <a href="{% url 'core:setup_test_parameters' %}" class="action-chip"><i class="material-icons">tune</i>Test setup</a>
         <a href="{% url 'core:user_list' %}" class="action-chip"><i class="material-icons">admin_panel_settings</i>Users</a>
@@ -84,16 +84,17 @@
                     </div>
                     <div class="queue-list">
                         {% for sample_item in samples_in_lab %}
-                        <a class="queue-row" href="{% url 'core:sample_detail' pk=sample_item.sample_id %}">
-                            <span class="queue-row__main">
+                        <div class="queue-row queue-row--action">
+                            <a class="queue-row__main" href="{% url 'core:sample_detail' pk=sample_item.sample_id %}">
                                 <strong>{{ sample_item.display_id|default:sample_item.sample_id }}</strong>
                                 <span>{{ sample_item.customer.name }}</span>
-                            </span>
+                            </a>
                             <span class="queue-row__meta">
                                 <span>{{ sample_item.collection_datetime|date:'M d' }}</span>
                                 <span>{{ sample_item.get_current_status_display }}</span>
                             </span>
-                        </a>
+                            <a class="queue-row__action" href="{% url 'core:test_result_entry' sample_id=sample_item.sample_id %}">Results</a>
+                        </div>
                         {% empty %}
                         <div class="queue-empty">No samples are in lab processing.</div>
                         {% endfor %}
@@ -107,16 +108,17 @@
                     </div>
                     <div class="queue-list">
                         {% for sample_item in samples_awaiting_review %}
-                        <a class="queue-row" href="{% url 'core:sample_detail' pk=sample_item.sample_id %}">
-                            <span class="queue-row__main">
+                        <div class="queue-row queue-row--action">
+                            <a class="queue-row__main" href="{% url 'core:sample_detail' pk=sample_item.sample_id %}">
                                 <strong>{{ sample_item.display_id|default:sample_item.sample_id }}</strong>
                                 <span>{{ sample_item.customer.name }}</span>
-                            </span>
+                            </a>
                             <span class="queue-row__meta">
                                 <span>{{ sample_item.collection_datetime|date:'M d' }}</span>
                                 <span>{{ sample_item.get_current_status_display }}</span>
                             </span>
-                        </a>
+                            <a class="queue-row__action queue-row__action--primary" href="{% url 'core:consultant_review' sample_id=sample_item.sample_id %}">Review</a>
+                        </div>
                         {% empty %}
                         <div class="queue-empty">No samples are waiting for consultant review.</div>
                         {% endfor %}
@@ -193,7 +195,25 @@
                             <td class="fw-semibold">{{ sample_item.display_id|default:sample_item.sample_id }}</td>
                             <td>{{ sample_item.customer.name }}</td>
                             <td>{{ sample_item.collection_datetime|date:'M d, Y' }}</td>
-                            <td><span class="badge-soft">{{ sample_item.get_current_status_display }}</span></td>
+                            <td>
+                                {% with status=sample_item.current_status %}
+                                    {% if status == 'RECEIVED_FRONT_DESK' %}
+                                    <span class="dashboard-status dashboard-status--default" title="{{ sample_item.get_current_status_display }}">Front desk</span>
+                                    {% elif status == 'SENT_TO_LAB' %}
+                                    <span class="dashboard-status dashboard-status--info" title="{{ sample_item.get_current_status_display }}">Sent to lab</span>
+                                    {% elif status == 'TESTING_IN_PROGRESS' %}
+                                    <span class="dashboard-status dashboard-status--info" title="{{ sample_item.get_current_status_display }}">Testing</span>
+                                    {% elif status == 'RESULTS_ENTERED' %}
+                                    <span class="dashboard-status dashboard-status--warning" title="{{ sample_item.get_current_status_display }}">Results entered</span>
+                                    {% elif status == 'REVIEW_PENDING' %}
+                                    <span class="dashboard-status dashboard-status--warning" title="{{ sample_item.get_current_status_display }}">Review</span>
+                                    {% elif status == 'REPORT_APPROVED' or status == 'REPORT_SENT' %}
+                                    <span class="dashboard-status dashboard-status--success" title="{{ sample_item.get_current_status_display }}">Complete</span>
+                                    {% else %}
+                                    <span class="dashboard-status dashboard-status--muted" title="{{ sample_item.get_current_status_display }}">{{ sample_item.get_current_status_display }}</span>
+                                    {% endif %}
+                                {% endwith %}
+                            </td>
                             <td class="text-end">
                                 <a href="{% url 'core:sample_detail' pk=sample_item.sample_id %}" class="btn btn-sm btn-outline-secondary">View</a>
                             </td>

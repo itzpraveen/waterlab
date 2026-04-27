@@ -83,7 +83,7 @@
                     <li class="nav-item">
                         <a class="nav-link {% if 'setup_test_parameters' == request.resolver_match.url_name %}active{% endif %}" href="{% url 'core:setup_test_parameters' %}">
                             <i class="material-icons align-middle me-1">tune</i>
-                            Test Setup
+                            Setup
                         </a>
                     </li>
                     {% endif %}
@@ -98,7 +98,7 @@
                                type="search"
                                name="q"
                                value="{{ request.GET.q|default:'' }}"
-                               placeholder="Search ID, customer, phone"
+                               placeholder="Search records"
                                autocomplete="off">
                     </div>
                 </form>
