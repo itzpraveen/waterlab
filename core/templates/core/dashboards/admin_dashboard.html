@@ -1,4 +1,5 @@
 {% extends 'core/base.html' %}
+{% load core_extras %}
 
 {% block title %}Admin Dashboard - Water Lab LIMS{% endblock %}
 
@@ -195,25 +196,7 @@
                             <td class="fw-semibold">{{ sample_item.display_id|default:sample_item.sample_id }}</td>
                             <td>{{ sample_item.customer.name }}</td>
                             <td>{{ sample_item.collection_datetime|date:'M d, Y' }}</td>
-                            <td>
-                                {% with status=sample_item.current_status %}
-                                    {% if status == 'RECEIVED_FRONT_DESK' %}
-                                    <span class="dashboard-status dashboard-status--default" title="{{ sample_item.get_current_status_display }}">Front desk</span>
-                                    {% elif status == 'SENT_TO_LAB' %}
-                                    <span class="dashboard-status dashboard-status--info" title="{{ sample_item.get_current_status_display }}">Sent to lab</span>
-                                    {% elif status == 'TESTING_IN_PROGRESS' %}
-                                    <span class="dashboard-status dashboard-status--info" title="{{ sample_item.get_current_status_display }}">Testing</span>
-                                    {% elif status == 'RESULTS_ENTERED' %}
-                                    <span class="dashboard-status dashboard-status--warning" title="{{ sample_item.get_current_status_display }}">Results entered</span>
-                                    {% elif status == 'REVIEW_PENDING' %}
-                                    <span class="dashboard-status dashboard-status--warning" title="{{ sample_item.get_current_status_display }}">Review</span>
-                                    {% elif status == 'REPORT_APPROVED' or status == 'REPORT_SENT' %}
-                                    <span class="dashboard-status dashboard-status--success" title="{{ sample_item.get_current_status_display }}">Complete</span>
-                                    {% else %}
-                                    <span class="dashboard-status dashboard-status--muted" title="{{ sample_item.get_current_status_display }}">{{ sample_item.get_current_status_display }}</span>
-                                    {% endif %}
-                                {% endwith %}
-                            </td>
+                            <td>{% sample_status_badge sample_item compact=True show_icon=False %}</td>
                             <td class="text-end">
                                 <a href="{% url 'core:sample_detail' pk=sample_item.sample_id %}" class="btn btn-sm btn-outline-secondary">View</a>
                             </td>

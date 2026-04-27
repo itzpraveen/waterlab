@@ -1,4 +1,5 @@
 {% extends 'core/base.html' %}
+{% load core_extras %}
 
 {% block title %}Search - WaterLab LIMS{% endblock %}
 
@@ -45,7 +46,7 @@
                         <strong>{{ sample.display_id|default:sample.sample_id }}</strong>
                         <span>{{ sample.customer.name }} · {{ sample.get_sample_source_display }}{% if sample.sampling_location %} · {{ sample.sampling_location }}{% endif %}</span>
                     </span>
-                    <span class="search-result-row__meta">{{ sample.get_current_status_display }}</span>
+                    <span class="search-result-row__meta">{% sample_status_badge sample compact=True show_icon=False %}</span>
                 </a>
                 {% endfor %}
             </div>

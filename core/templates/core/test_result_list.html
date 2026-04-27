@@ -1,5 +1,5 @@
 {% extends 'core/base.html' %}
-{% load static %}
+{% load static core_extras %}
 
 {% block title %}{{ page_title|default:"Test Results" }} - WaterLab LIMS{% endblock %}
 
@@ -76,11 +76,7 @@
                 <div>
                     <div class="results-card__headline">
                         <span class="results-card__id">{{ sample.display_id }}</span>
-                        {% with status=sample.current_status %}
-                        <span class="badge-soft {% if status == 'REPORT_APPROVED' or status == 'REPORT_SENT' %}success{% elif status == 'RESULTS_ENTERED' or status == 'REVIEW_PENDING' %}warning{% elif status == 'TESTING_IN_PROGRESS' %}info{% else %}info{% endif %}">
-                            {{ sample.get_current_status_display }}
-                        </span>
-                        {% endwith %}
+                        {% sample_status_badge sample compact=True show_icon=False %}
                     </div>
                     <ul class="results-card__meta">
                         <li><i class="material-icons" aria-hidden="true">person</i>{{ sample.customer.name }}</li>
@@ -129,8 +125,8 @@
                         <tbody>
                             {% for result in category.list %}
                             <tr>
-                                <td class="text-center text-muted">{{ forloop.counter }}</td>
-                                <td>
+                                <td data-label="#" class="text-center text-muted">{{ forloop.counter }}</td>
+                                <td data-label="Test parameter">
                                     <div class="results-param">
                                         <span class="results-param__name">{{ result.parameter.name }}</span>
                                         {% if result.parameter.method %}
@@ -138,10 +134,10 @@
                                         {% endif %}
                                     </div>
                                 </td>
-                                <td class="text-muted d-none d-lg-table-cell">{{ result.parameter.method|default:"--" }}</td>
-                                <td class="text-center fw-semibold">{{ result.result_value }}</td>
-                                <td>{{ result.parameter.unit|default:"--" }}</td>
-                                <td>
+                                <td data-label="Method" class="text-muted d-none d-lg-table-cell">{{ result.parameter.method|default:"--" }}</td>
+                                <td data-label="Result" class="text-center fw-semibold">{{ result.result_value }}</td>
+                                <td data-label="Unit">{{ result.parameter.unit|default:"--" }}</td>
+                                <td data-label="Acceptable range">
                                     {% if result.parameter.max_limit_display %}
                                         <span class="results-range">{{ result.parameter.max_limit_display }}</span>
                                     {% elif result.parameter.min_permissible_limit and result.parameter.max_permissible_limit %}

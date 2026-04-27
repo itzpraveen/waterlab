@@ -1,4 +1,5 @@
 {% extends 'core/base.html' %}
+{% load core_extras %}
 
 {% block title %}Consultant Review - Water Lab LIMS{% endblock %}
 
@@ -42,7 +43,7 @@
                 </div>
                 <div class="data-pair">
                     <dt>Status</dt>
-                    <dd>{{ sample.get_current_status_display }}</dd>
+                    <dd>{% sample_status_badge sample %}</dd>
                 </div>
             </dl>
         </div>
@@ -64,7 +65,7 @@
                     <tbody>
                         {% for result in test_results %}
                         <tr>
-                            <td>
+                            <td data-label="Parameter">
                                 <div class="results-param">
                                     <span class="results-param__name">{{ result.parameter.name }}</span>
                                     {% if result.parameter.method %}
@@ -75,9 +76,9 @@
                                     {% endif %}
                                 </div>
                             </td>
-                            <td class="text-center fw-semibold">{{ result.result_value }}</td>
-                            <td>{{ result.parameter.unit|default:"--" }}</td>
-                            <td>
+                            <td data-label="Result" class="text-center fw-semibold">{{ result.result_value }}</td>
+                            <td data-label="Unit">{{ result.parameter.unit|default:"--" }}</td>
+                            <td data-label="Limits">
                                 {% if result.parameter.max_limit_display %}
                                     <span class="results-range">{{ result.parameter.max_limit_display }}</span>
                                 {% elif result.parameter.min_permissible_limit and result.parameter.max_permissible_limit %}
@@ -90,7 +91,7 @@
                                     <span class="text-muted">Not specified</span>
                                 {% endif %}
                             </td>
-                            <td>{{ result.observation|default:"-" }}</td>
+                            <td data-label="Observation">{{ result.observation|default:"-" }}</td>
                         </tr>
                         {% endfor %}
                     </tbody>

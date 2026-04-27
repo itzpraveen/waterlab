@@ -1,4 +1,5 @@
 {% extends 'core/base.html' %}
+{% load core_extras %}
 
 {% block title %}Lab Dashboard - Water Lab LIMS{% endblock %}
 
@@ -75,7 +76,7 @@
                 {% for sample in samples_for_testing %}
                 <div class="list-group-item d-flex flex-column flex-lg-row gap-3 align-items-lg-center justify-content-between">
                     <div>
-                        <div class="fw-semibold">{{ sample.sample_id }}</div>
+                        <div class="fw-semibold">{{ sample.display_id|default:sample.sample_id }}</div>
                         <div class="text-muted small">
                             {{ sample.customer.name }} · Collected {{ sample.collection_datetime|date:"M d, Y H:i" }}
                         </div>
@@ -84,9 +85,9 @@
                         </div>
                     </div>
                     <div class="d-flex flex-column align-items-start align-items-lg-end gap-2">
-                        <span class="badge bg-warning-subtle text-warning-emphasis">{{ sample.get_current_status_display }}</span>
+                        {% sample_status_badge sample %}
                         <div class="btn-group btn-group-sm">
-                            <a href="{% url 'core:sample_detail' sample.pk %}" class="btn btn-outline-secondary">Details</a>
+                            <a href="{% url 'core:sample_detail' sample.pk %}" class="btn btn-outline-secondary">View sample</a>
                             <a href="{% url 'core:test_result_entry' sample.pk %}" class="btn btn-primary">Enter results</a>
                         </div>
                     </div>
@@ -96,7 +97,8 @@
             {% else %}
             <div class="empty-state">
                 <i class="material-icons">task_alt</i>
-                <p class="mb-0">There are no samples waiting for lab processing.</p>
+                <p class="mb-2">There are no samples waiting for lab processing.</p>
+                <a href="{% url 'core:sample_list' %}?status=IN_LAB" class="btn btn-sm btn-outline-secondary">View lab queue</a>
             </div>
             {% endif %}
         </div>
@@ -112,7 +114,7 @@
                         <div>
                             <div class="fw-semibold">{{ result.parameter.name }}</div>
                             <div class="text-muted small">
-                                Sample {{ result.sample.sample_id }} · {{ result.test_date|date:"M d, Y H:i" }}
+                                Sample {{ result.sample.display_id|default:result.sample.sample_id }} · {{ result.test_date|date:"M d, Y H:i" }}
                             </div>
                         </div>
                         <span class="badge bg-primary-subtle text-primary-emphasis">
@@ -153,13 +155,13 @@
                 <div class="list-group-item d-flex justify-content-between align-items-start gap-3">
                     <div>
                         <a href="{% url 'core:sample_detail' sample.pk %}" class="fw-semibold text-decoration-none">
-                            {{ sample.sample_id }}
+                            {{ sample.display_id|default:sample.sample_id }}
                         </a>
                         <div class="text-muted small">
                             {{ sample.customer.name }} · {{ sample.collection_datetime|date:"M d, Y H:i" }}
                         </div>
                     </div>
-                    <span class="badge bg-success-subtle text-success-emphasis">{{ sample.get_current_status_display }}</span>
+                    {% sample_status_badge sample compact=True show_icon=False %}
                 </div>
                 {% endfor %}
             </div>
@@ -171,7 +173,7 @@
     <div class="col-12 col-lg-6">
         <div class="info-card h-100">
             <div class="section-title"><i class="material-icons">tips_and_updates</i>Testing toolkit</div>
-            <p class="text-muted mb-3">Need to revisit limits or update parameters? Jump straight into the configuration screens.</p>
+            <p class="text-muted mb-3">Shortcuts for testing work and result history.</p>
             <div class="d-flex flex-wrap gap-2">
                 <a href="{% url 'core:setup_test_parameters' %}" class="btn btn-outline-secondary btn-sm"><i class="material-icons me-1">tune</i>Parameter library</a>
                 <a href="{% url 'core:test_result_list' %}" class="btn btn-outline-secondary btn-sm"><i class="material-icons me-1">table_chart</i>Results archive</a>

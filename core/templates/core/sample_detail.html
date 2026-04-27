@@ -1,5 +1,5 @@
 {% extends 'core/base.html' %}
-{% load static %}
+{% load static core_extras %}
 
 {% block title %}Sample {{ sample.sample_id }} - Water Lab LIMS{% endblock %}
 
@@ -9,17 +9,7 @@
         <h1 class="page-title">Sample {{ sample.display_id|default:sample.sample_id }}</h1>
         <p class="page-subtitle">Collected {{ sample.collection_datetime|date:"M d, Y H:i" }} for {{ sample.customer.name }}.</p>
         <div class="d-flex flex-wrap gap-2 mt-2">
-            {% with status=sample.current_status %}
-                {% if status == 'REPORT_APPROVED' or status == 'REPORT_SENT' %}
-                    <span class="badge-soft success"><i class="material-icons">check_circle</i>{{ sample.get_current_status_display }}</span>
-                {% elif status == 'RESULTS_ENTERED' or status == 'REVIEW_PENDING' %}
-                    <span class="badge-soft warning"><i class="material-icons">hourglass_empty</i>{{ sample.get_current_status_display }}</span>
-                {% elif status == 'TESTING_IN_PROGRESS' %}
-                    <span class="badge-soft info"><i class="material-icons">science</i>{{ sample.get_current_status_display }}</span>
-                {% else %}
-                    <span class="badge-soft"><i class="material-icons">assignment</i>{{ sample.get_current_status_display }}</span>
-                {% endif %}
-            {% endwith %}
+            {% sample_status_badge sample %}
             <span class="badge-soft info"><i class="material-icons">opacity</i>{{ sample.get_sample_source_display }}</span>
         </div>
     </div>
@@ -29,7 +19,7 @@
         </a>
         {% if user.is_lab_technician or user.is_admin %}
         <a href="{% url 'core:sample_report_metadata' sample.pk %}" class="btn btn-primary">
-            <i class="material-icons me-1">tune</i>Update report metadata
+            <i class="material-icons me-1">tune</i>Report metadata
         </a>
         {% endif %}
     </div>
@@ -37,6 +27,8 @@
 {% endblock %}
 
 {% block content %}
+{% sample_workflow_steps sample as workflow_steps %}
+{% sample_next_step sample as next_step %}
 <div class="summary-grid">
     {% with status=sample.current_status %}
     <div class="summary-card">
@@ -98,6 +90,30 @@
         </span>
     </div>
 </div>
+
+<section class="workflow-panel">
+    <div class="workflow-panel__header">
+        <div>
+            <h2>Sample lifecycle</h2>
+            <p>Current workflow position and the next operational step.</p>
+        </div>
+        <div class="next-action next-action--{{ next_step.tone }}">
+            <i class="material-icons" aria-hidden="true">{{ next_step.icon }}</i>
+            <span>
+                <strong>{{ next_step.label }}</strong>
+                <small>{{ next_step.description }}</small>
+            </span>
+        </div>
+    </div>
+    <ol class="workflow-steps" aria-label="Sample lifecycle">
+        {% for step in workflow_steps %}
+        <li class="workflow-step workflow-step--{{ step.state }}">
+            <span class="workflow-step__marker"><i class="material-icons" aria-hidden="true">{{ step.icon }}</i></span>
+            <span class="workflow-step__label">{{ step.label }}</span>
+        </li>
+        {% endfor %}
+    </ol>
+</section>
 
 <div class="row g-4">
     <div class="col-12 col-xl-7">
@@ -253,11 +269,11 @@
                         </tr>
                             {% for entry in tests %}
                             <tr>
-                                <td class="text-center">{{ entry.index }}</td>
-                                <td>{{ entry.item.name }}</td>
-                                <td>{{ entry.item.method|default:"--" }}</td>
-                                <td>{{ entry.item.unit }}</td>
-                                <td>
+                                <td data-label="Sl No" class="text-center">{{ entry.index }}</td>
+                                <td data-label="Test">{{ entry.item.name }}</td>
+                                <td data-label="Method">{{ entry.item.method|default:"--" }}</td>
+                                <td data-label="Unit">{{ entry.item.unit }}</td>
+                                <td data-label="Permissible range">
                                     {% if entry.item.max_limit_display %}
                                         {{ entry.item.max_limit_display }}
                                     {% elif entry.item.min_permissible_limit and entry.item.max_permissible_limit %}
@@ -305,12 +321,12 @@
                         </tr>
                             {% for entry in category_results %}
                             <tr class="{% if entry.is_out_of_range %}result-out-of-range{% endif %}">
-                                <td class="text-center">{{ entry.index }}</td>
-                                <td>{{ entry.item.parameter.name }}</td>
-                                <td>{{ entry.item.parameter.method|default:"--" }}</td>
-                                <td class="text-center fw-semibold result-value">{{ entry.item.result_value }}</td>
-                                <td>{{ entry.item.parameter.unit }}</td>
-                                <td>
+                                <td data-label="Sl No" class="text-center">{{ entry.index }}</td>
+                                <td data-label="Parameter">{{ entry.item.parameter.name }}</td>
+                                <td data-label="Method">{{ entry.item.parameter.method|default:"--" }}</td>
+                                <td data-label="Result" class="text-center fw-semibold result-value">{{ entry.item.result_value }}</td>
+                                <td data-label="Unit">{{ entry.item.parameter.unit }}</td>
+                                <td data-label="Limits">
                                     {% if entry.item.parameter.max_limit_display %}
                                         {{ entry.item.parameter.max_limit_display }}
                                     {% elif entry.item.parameter.min_permissible_limit and entry.item.parameter.max_permissible_limit %}
@@ -323,7 +339,7 @@
                                         <span class="text-muted">Not specified</span>
                                     {% endif %}
                                 </td>
-                                <td class="text-center">
+                                <td data-label="Status" class="text-center">
                                     {% if entry.item.parameter.max_limit_display %}
                                         <span class="badge-soft">Qualitative limit</span>
                                     {% elif entry.item.parameter.min_permissible_limit is not None and entry.item.parameter.max_permissible_limit is not None %}
@@ -344,7 +360,7 @@
                                         <span class="badge-soft">No limits set</span>
                                     {% endif %}
                                 </td>
-                                <td>{{ entry.item.observation|default:entry.item.remarks|default:"—" }}</td>
+                                <td data-label="Observation">{{ entry.item.observation|default:entry.item.remarks|default:"—" }}</td>
                             </tr>
                             {% endfor %}
                         {% endfor %}
@@ -357,7 +373,7 @@
 
     <div class="col-12 col-xl-5">
         <div class="info-card mb-4">
-            <div class="section-title"><i class="material-icons">play_for_work</i>Workflow actions</div>
+            <div class="section-title"><i class="material-icons">play_for_work</i>Next actions</div>
             <div class="action-stack">
                 {% if user.is_frontdesk or user.is_admin %}
                 <a href="{% url 'core:sample_edit' sample.pk %}" class="btn btn-outline-primary"><i class="material-icons me-1">edit</i>Edit sample</a>
@@ -374,7 +390,7 @@
 
                 {% if user.is_lab_technician or user.is_admin %}
                     {% if sample.current_status == 'SENT_TO_LAB' or sample.current_status == 'TESTING_IN_PROGRESS' or sample.current_status == 'RESULTS_ENTERED' or user.is_admin and sample.current_status == 'REVIEW_PENDING' %}
-                    <a href="{% url 'core:test_result_entry' sample.pk %}" class="btn btn-outline-secondary"><i class="material-icons me-1">edit_note</i>Enter / edit results</a>
+                    <a href="{% url 'core:test_result_entry' sample.pk %}" class="btn btn-outline-secondary"><i class="material-icons me-1">edit_note</i>Enter results</a>
                     {% endif %}
                     {% if sample.current_status == 'RESULTS_ENTERED' %}
                     <form method="post" action="{% url 'core:sample_status_update' sample.pk %}">
@@ -425,7 +441,7 @@
 
                 {% if user.is_consultant or user.is_admin %}
                     {% if sample.current_status == 'RESULTS_ENTERED' or sample.current_status == 'REVIEW_PENDING' %}
-                    <a href="{% url 'core:consultant_review' sample.pk %}" class="btn btn-outline-secondary"><i class="material-icons me-1">rate_review</i>Consultant review</a>
+                    <a href="{% url 'core:consultant_review' sample.pk %}" class="btn btn-outline-secondary"><i class="material-icons me-1">rate_review</i>Review report</a>
                     {% endif %}
                 {% endif %}
 
@@ -468,11 +484,11 @@
                 <dt class="col-5 text-muted">Status</dt>
                 <dd class="col-7 mb-0">
                     {% if sample.review.status == 'APPROVED' %}
-                        <span class="badge-soft success">Approved</span>
+                        {% review_status_badge sample.review %}
                     {% elif sample.review.status == 'REJECTED' %}
-                        <span class="badge-soft danger">Rejected</span>
+                        {% review_status_badge sample.review %}
                     {% else %}
-                        <span class="badge-soft warning">{{ sample.review.get_status_display }}</span>
+                        {% review_status_badge sample.review %}
                     {% endif %}
                 </dd>
             </dl>

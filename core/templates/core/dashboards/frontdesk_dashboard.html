@@ -79,7 +79,7 @@
                         <a href="{% url 'core:customer_detail' customer.pk %}" class="fw-semibold text-decoration-none">
                             {{ customer.name }}
                         </a>
-                        <a href="{% url 'core:sample_add' %}?customer={{ customer.pk }}" class="btn btn-sm btn-outline-primary">Add sample</a>
+                        <a href="{% url 'core:sample_add' %}?customer={{ customer.pk }}" class="btn btn-sm btn-outline-primary">Register sample</a>
                     </div>
                     <div class="text-muted small">
                         {% if customer.email %}{{ customer.email }}{% endif %}
@@ -108,7 +108,7 @@
             <ul class="list-group list-group-flush">
                 {% for status in samples_by_status %}
                 <li class="list-group-item d-flex justify-content-between align-items-center">
-                    <span class="text-muted">{{ status.current_status|replace:"_, "|title }}</span>
+                    {% sample_status_badge status.current_status compact=True show_icon=False %}
                     <span class="badge bg-secondary-subtle text-secondary-emphasis">{{ status.count }}</span>
                 </li>
                 {% endfor %}
@@ -137,14 +137,12 @@
             <tbody>
                 {% for sample in recent_samples %}
                 <tr>
-                    <td>{{ sample.sample_id }}</td>
-                    <td>{{ sample.customer.name }}</td>
-                    <td>{{ sample.collection_datetime|date:"M d, Y H:i" }}</td>
-                    <td>
-                        <span class="badge bg-info-subtle text-info-emphasis">{{ sample.get_current_status_display }}</span>
-                    </td>
-                    <td class="text-end">
-                        <a href="{% url 'core:sample_detail' sample.pk %}" class="btn btn-sm btn-outline-secondary">Details</a>
+                    <td data-label="Sample">{{ sample.display_id|default:sample.sample_id }}</td>
+                    <td data-label="Customer">{{ sample.customer.name }}</td>
+                    <td data-label="Collected">{{ sample.collection_datetime|date:"M d, Y H:i" }}</td>
+                    <td data-label="Status">{% sample_status_badge sample compact=True show_icon=False %}</td>
+                    <td data-label="Action" class="text-end td-actions">
+                        <a href="{% url 'core:sample_detail' sample.pk %}" class="btn btn-sm btn-outline-secondary">View sample</a>
                     </td>
                 </tr>
                 {% endfor %}
@@ -178,7 +176,7 @@
     <div class="col-12 col-lg-6">
         <div class="info-card h-100">
             <div class="section-title"><i class="material-icons">help_outline</i>Need anything else?</div>
-            <p class="text-muted mb-3">Keep the lab updated by logging new samples promptly and reminding consultants when reports are ready.</p>
+            <p class="text-muted mb-3">Use these shortcuts for the next front desk handoff.</p>
             <div class="d-flex flex-wrap gap-2">
                 <a href="{% url 'core:customer_list' %}" class="btn btn-outline-secondary btn-sm"><i class="material-icons me-1">contacts</i>Customer directory</a>
                 <a href="{% url 'core:sample_list' %}?status=REPORT_APPROVED" class="btn btn-outline-secondary btn-sm"><i class="material-icons me-1">share</i>Hand over reports</a>

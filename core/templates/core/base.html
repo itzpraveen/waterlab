@@ -27,7 +27,7 @@
 
     {% block extra_css %}{% endblock %}
 </head>
-<body class="app-body">
+<body class="app-body{% if user.is_authenticated %} app-body--authenticated{% endif %}">
 <a class="visually-hidden-focusable" href="#main-content">Skip to content</a>
 
 <header class="app-header">

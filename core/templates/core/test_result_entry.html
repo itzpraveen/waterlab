@@ -1,5 +1,5 @@
 {% extends 'core/base.html' %}
-{% load static %}
+{% load static core_extras %}
 
 {% block title %}Test Result Entry - {{ sample.sample_id }}{% endblock %}
 
@@ -18,7 +18,7 @@
         {% if user.is_lab_technician or user.is_admin %}
         <a href="{% url 'core:sample_report_metadata' sample.pk %}" class="btn btn-primary">
             <i class="material-icons align-middle me-1">tune</i>
-            Update report metadata
+            Report metadata
         </a>
         {% endif %}
     </div>
@@ -32,7 +32,7 @@
     <section class="info-card result-summary">
         <div class="section-title d-flex align-items-center justify-content-between">
             <span><i class="material-icons">science</i> Sample overview</span>
-            <span class="badge-soft info">{{ sample.get_current_status_display }}</span>
+            {% sample_status_badge sample %}
         </div>
         <div class="result-summary-grid">
             <div class="summary-item">

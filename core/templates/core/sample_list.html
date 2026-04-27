@@ -1,4 +1,5 @@
 {% extends 'core/base.html' %}
+{% load core_extras %}
 
 {% block title %}Sample Management - Water Lab LIMS{% endblock %}
 
@@ -11,7 +12,7 @@
     {% if user.is_frontdesk or user.is_admin %}
     <a href="{% url 'core:sample_add' %}" class="btn btn-primary">
         <i class="material-icons me-1">add_task</i>
-        New sample
+        Register sample
     </a>
     {% endif %}
 </div>
@@ -28,7 +29,7 @@
                        id="sample-search"
                        name="q"
                        class="form-control"
-                       placeholder="Search by ID, customer, or source"
+                       placeholder="ID, customer, source"
                        value="{{ search_query }}">
             </div>
         </div>
@@ -73,6 +74,28 @@
             {% endif %}
         </div>
     </form>
+    <div class="sample-filter-chips" aria-label="Common sample filters">
+        <a href="{% url 'core:sample_list' %}?status=PENDING" class="sample-filter-chip{% if status_filter == 'PENDING' %} is-active{% endif %}">
+            <i class="material-icons" aria-hidden="true">assignment</i>
+            Pending intake
+        </a>
+        <a href="{% url 'core:sample_list' %}?status=IN_LAB" class="sample-filter-chip{% if status_filter == 'IN_LAB' %} is-active{% endif %}">
+            <i class="material-icons" aria-hidden="true">science</i>
+            In lab
+        </a>
+        <a href="{% url 'core:sample_list' %}?status=AWAITING_REVIEW" class="sample-filter-chip{% if status_filter == 'AWAITING_REVIEW' %} is-active{% endif %}">
+            <i class="material-icons" aria-hidden="true">rate_review</i>
+            Awaiting review
+        </a>
+        <a href="{% url 'core:sample_list' %}?status=COMPLETED" class="sample-filter-chip{% if status_filter == 'COMPLETED' %} is-active{% endif %}">
+            <i class="material-icons" aria-hidden="true">verified</i>
+            Completed
+        </a>
+        <a href="{% url 'core:sample_list' %}?collected=today" class="sample-filter-chip{% if collected_filter == 'today' %} is-active{% endif %}">
+            <i class="material-icons" aria-hidden="true">today</i>
+            Today
+        </a>
+    </div>
 </div>
 
 <div data-table-wrapper class="card-table{% if not samples %} d-none{% endif %}">
@@ -114,24 +137,12 @@
                         {% endif %}
                     </td>
                     <td data-label="Tests" class="text-center">{{ sample.tests_requested.count }}</td>
-                    <td data-label="Status">
-                        {% with status=sample.current_status %}
-                            {% if status == 'REPORT_APPROVED' or status == 'REPORT_SENT' %}
-                                <span class="badge-soft success"><i class="material-icons">check_circle</i>{{ sample.get_current_status_display }}</span>
-                            {% elif status == 'RESULTS_ENTERED' or status == 'REVIEW_PENDING' %}
-                                <span class="badge-soft warning"><i class="material-icons">hourglass_empty</i>{{ sample.get_current_status_display }}</span>
-                            {% elif status == 'TESTING_IN_PROGRESS' %}
-                                <span class="badge-soft info"><i class="material-icons">science</i>{{ sample.get_current_status_display }}</span>
-                            {% else %}
-                                <span class="badge-soft"><i class="material-icons">assignment</i>{{ sample.get_current_status_display }}</span>
-                            {% endif %}
-                        {% endwith %}
-                    </td>
+                    <td data-label="Status">{% sample_status_badge sample %}</td>
                     <td data-label="Actions" class="text-end td-actions">
                         <div class="btn-group" role="group">
                             <a href="{% url 'core:sample_detail' pk=sample.sample_id %}" class="btn btn-sm btn-outline-secondary action-icon" data-bs-toggle="tooltip" title="View sample" aria-label="View sample">
                                 <i class="material-icons" aria-hidden="true">visibility</i>
-                                <span class="action-label">View</span>
+                                <span class="action-label">View sample</span>
                             </a>
                             {% if user.is_lab_technician or user.is_admin %}
                                 {% if sample.current_status == 'SENT_TO_LAB' or sample.current_status == 'TESTING_IN_PROGRESS' or sample.current_status == 'RESULTS_ENTERED' %}
@@ -143,7 +154,7 @@
                             {% endif %}
                             {% if user.is_consultant or user.is_admin %}
                                 {% if sample.current_status == 'RESULTS_ENTERED' or sample.current_status == 'REVIEW_PENDING' %}
-                                <a href="{% url 'core:consultant_review' sample_id=sample.sample_id %}" class="btn btn-sm btn-outline-secondary action-icon" data-bs-toggle="tooltip" title="Consultant review" aria-label="Consultant review">
+                                <a href="{% url 'core:consultant_review' sample_id=sample.sample_id %}" class="btn btn-sm btn-outline-secondary action-icon" data-bs-toggle="tooltip" title="Review report" aria-label="Review report">
                                     <i class="material-icons" aria-hidden="true">rate_review</i>
                                     <span class="action-label">Review</span>
                                 </a>
@@ -191,7 +202,7 @@
     {% if user.is_frontdesk or user.is_admin %}
     <a href="{% url 'core:sample_add' %}" class="btn btn-primary btn-sm">
         <i class="material-icons me-1">add_task</i>
-        Add sample
+        Register sample
     </a>
     {% endif %}
 </div>

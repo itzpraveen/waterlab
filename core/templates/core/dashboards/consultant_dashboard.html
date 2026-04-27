@@ -67,7 +67,7 @@
                 {% for sample in samples_for_review %}
                 <div class="list-group-item d-flex flex-column flex-lg-row gap-3 align-items-lg-center justify-content-between">
                     <div>
-                        <div class="fw-semibold">{{ sample.sample_id }}</div>
+                        <div class="fw-semibold">{{ sample.display_id|default:sample.sample_id }}</div>
                         <div class="text-muted small">
                             {{ sample.customer.name }} · Collected {{ sample.collection_datetime|date:"M d, Y H:i" }}
                         </div>
@@ -77,10 +77,10 @@
                         </div>
                     </div>
                     <div class="d-flex flex-column align-items-start align-items-lg-end gap-2">
-                        <span class="badge bg-warning-subtle text-warning-emphasis">{{ sample.get_current_status_display }}</span>
+                        {% sample_status_badge sample %}
                         <div class="btn-group btn-group-sm">
-                            <a href="{% url 'core:sample_detail' sample.pk %}" class="btn btn-outline-secondary">Details</a>
-                            <a href="{% url 'core:consultant_review' sample.pk %}" class="btn btn-primary">Review</a>
+                            <a href="{% url 'core:sample_detail' sample.pk %}" class="btn btn-outline-secondary">View sample</a>
+                            <a href="{% url 'core:consultant_review' sample.pk %}" class="btn btn-primary">Review report</a>
                         </div>
                     </div>
                 </div>
@@ -89,7 +89,8 @@
             {% else %}
             <div class="empty-state">
                 <i class="material-icons">celebration</i>
-                <p class="mb-0">All caught up—no samples are waiting for review.</p>
+                <p class="mb-2">No samples are waiting for review.</p>
+                <a href="{% url 'core:sample_list' %}?status=REPORT_APPROVED" class="btn btn-sm btn-outline-secondary">View approved reports</a>
             </div>
             {% endif %}
         </div>
@@ -104,15 +105,13 @@
                     <div class="d-flex justify-content-between align-items-start gap-3">
                         <div>
                             <a href="{% url 'core:sample_detail' review.sample.pk %}" class="fw-semibold text-decoration-none">
-                                Sample {{ review.sample.sample_id|truncatechars:12 }}
+                                Sample {{ review.sample.display_id|default:review.sample.sample_id|truncatechars:12 }}
                             </a>
                             <div class="text-muted small">
                                 {{ review.sample.customer.name }} · {{ review.review_date|date:"M d, Y H:i" }}
                             </div>
                         </div>
-                        <span class="badge {% if review.status == 'APPROVED' %}bg-success-subtle text-success-emphasis{% elif review.status == 'REJECTED' %}bg-danger-subtle text-danger-emphasis{% else %}bg-warning-subtle text-warning-emphasis{% endif %}">
-                            {{ review.get_status_display }}
-                        </span>
+                        {% review_status_badge review %}
                     </div>
                     {% if review.comments %}
                     <div class="bg-light rounded p-2 small">
@@ -159,36 +158,20 @@
     </div>
     <div class="col-12 col-lg-6">
         <div class="info-card h-100">
-            <div class="section-title"><i class="material-icons">verified_user</i>Quality indicators</div>
-            <div class="row g-3">
-                <div class="col-6">
-                    <div class="p-3 rounded border h-100">
-                        <div class="text-muted small text-uppercase">Average review time</div>
-                        <p class="h4 mb-1">2.5 hours</p>
-                        <p class="text-success small mb-0">15% faster vs last month</p>
-                    </div>
-                </div>
-                <div class="col-6">
-                    <div class="p-3 rounded border h-100">
-                        <div class="text-muted small text-uppercase">Approval rate</div>
-                        <p class="h4 mb-1">94%</p>
-                        <p class="text-success small mb-0">Up by 2%</p>
-                    </div>
-                </div>
-                <div class="col-6">
-                    <div class="p-3 rounded border h-100">
-                        <div class="text-muted small text-uppercase">Reviews completed</div>
-                        <p class="h4 mb-1">{{ my_reviews }}</p>
-                        <p class="text-muted small mb-0">This month to date</p>
-                    </div>
-                </div>
-                <div class="col-6">
-                    <div class="p-3 rounded border h-100">
-                        <div class="text-muted small text-uppercase">Productivity score</div>
-                        <p class="h4 mb-1">Excellent</p>
-                        <p class="text-success small mb-0">98 / 100</p>
-                    </div>
-                </div>
+            <div class="section-title"><i class="material-icons">verified_user</i>Review focus</div>
+            <div class="focus-list">
+                <a href="{% url 'core:sample_list' %}?status=REVIEW_PENDING" class="focus-row">
+                    <span><i class="material-icons" aria-hidden="true">rate_review</i>Reports needing review</span>
+                    <strong>{{ pending_reviews }}</strong>
+                </a>
+                <a href="{% url 'core:sample_list' %}?status=REPORT_APPROVED" class="focus-row">
+                    <span><i class="material-icons" aria-hidden="true">verified</i>Approved reports</span>
+                    <strong>{{ approved_reports }}</strong>
+                </a>
+                <a href="/admin/core/consultantreview/" class="focus-row">
+                    <span><i class="material-icons" aria-hidden="true">history</i>Total reviews logged</span>
+                    <strong>{{ my_reviews }}</strong>
+                </a>
             </div>
         </div>
     </div>
