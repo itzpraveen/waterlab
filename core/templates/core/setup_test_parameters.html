@@ -8,7 +8,7 @@
 <div class="page-header">
     <div class="page-heading">
         <span class="page-eyebrow">Laboratory configuration</span>
-        <h1 class="page-title">Test Parameters Setup</h1>
+        <h1 class="page-title">Test parameter setup</h1>
         <p class="page-subtitle">Manage standard test parameters to keep sample analysis consistent and compliant.</p>
     </div>
     <div class="page-actions">
@@ -21,53 +21,56 @@
 {% endblock %}
 
 {% block content %}
-<div class="param-layout">
-    <section class="info-card param-card">
+<div class="param-layout param-layout--overview">
+    <section class="info-card param-card setup-guide-card">
         <div class="section-title"><i class="material-icons">checklist</i> Guided setup</div>
-        <div class="row g-3 align-items-center">
-            <div class="col-md-4">
-                <div class="small text-muted">Step 1</div>
-                <div class="fw-semibold">Create categories</div>
-                <div class="text-muted small">Add or rename test groupings.</div>
-            </div>
-            <div class="col-md-3">
-                <a href="{% url 'core:setup_test_categories' %}" class="btn btn-outline-secondary w-100">
+        <div class="setup-step-list">
+            <article class="setup-step">
+                <span class="setup-step__marker">1</span>
+                <div class="setup-step__body">
+                    <span class="setup-step__eyebrow">Categories</span>
+                    <strong>Create categories</strong>
+                    <small>Add or rename test groupings.</small>
+                </div>
+                <a href="{% url 'core:setup_test_categories' %}" class="btn btn-outline-secondary btn-sm">
                     <i class="material-icons align-middle me-1">category</i>Manage
                 </a>
-            </div>
-            <div class="col-md-5 text-muted small">{{ categories|length }} categor{{ categories|length|pluralize:"y,ies" }} available</div>
-        </div>
-        <hr>
-        <div class="row g-3 align-items-center">
-            <div class="col-md-4">
-                <div class="small text-muted">Step 2</div>
-                <div class="fw-semibold">Add parameters</div>
-                <div class="text-muted small">Use the form below or add our recommended set.</div>
-            </div>
-            <div class="col-md-3">
+                <span class="setup-step__meta">{{ categories|length }} categor{{ categories|length|pluralize:"y,ies" }}</span>
+            </article>
+            <article class="setup-step">
+                <span class="setup-step__marker">2</span>
+                <div class="setup-step__body">
+                    <span class="setup-step__eyebrow">Parameters</span>
+                    <strong>Add parameters</strong>
+                    <small>Use the form below or seed the recommended set.</small>
+                </div>
                 <form method="post" class="m-0">
                     {% csrf_token %}
-                    <button type="submit" name="action" value="create_standard" class="btn btn-outline-primary w-100">
+                    <button type="submit" name="action" value="create_standard" class="btn btn-outline-primary btn-sm">
                         <i class="material-icons align-middle me-1">playlist_add_check</i>
                         Add recommended
                     </button>
                 </form>
-            </div>
-            <div class="col-md-5 text-muted small">Safe to repeat—won't change your order</div>
-        </div>
-        <hr>
-        <div class="row g-3 align-items-center">
-            <div class="col-md-4">
-                <div class="small text-muted">Step 3</div>
-                <div class="fw-semibold">Arrange order</div>
-                <div class="text-muted small">Drag rows in the table to set order.</div>
-            </div>
+                <span class="setup-step__meta">Repeat-safe</span>
+            </article>
+            <article class="setup-step">
+                <span class="setup-step__marker">3</span>
+                <div class="setup-step__body">
+                    <span class="setup-step__eyebrow">Order</span>
+                    <strong>Arrange report order</strong>
+                    <small>Drag rows in the table to control forms and PDFs.</small>
+                </div>
+                <span class="setup-step__meta">Table controlled</span>
+            </article>
         </div>
     </section>
-    <section class="info-card param-card">
-        <div class="section-title"><i class="material-icons">insights</i> Laboratory presets</div>
+    <section class="info-card param-card param-card--presets">
+        <div class="section-title"><i class="material-icons">insights</i> Parameter coverage</div>
         {% if existing_params %}
-        <p class="text-muted small mb-3">{{ existing_params.count }} parameter{{ existing_params.count|pluralize }} ready for sample registration.</p>
+        <div class="param-metric">
+            <strong>{{ existing_params.count }}</strong>
+            <span>parameter{{ existing_params.count|pluralize }} ready for sample registration</span>
+        </div>
         <div class="chip-grid">
             {% for param in existing_params %}
             <span class="chip-pill">
@@ -89,10 +92,10 @@
         {% endif %}
     </section>
 
-    <section class="info-card param-card param-card--standard">
-        <div class="section-title"><i class="material-icons">tune</i> Add a custom parameter</div>
-        <div class="row g-3">
-            <div class="col-md-4">
+    <section class="info-card param-card param-card--standard param-card--library">
+        <div class="section-title"><i class="material-icons">tune</i> Parameter library</div>
+        <div class="parameter-library-toolbar">
+            <div>
                 <label for="filter_category" class="form-label">Filter by category</label>
                 <form method="get">
                     <select id="filter_category" name="category" class="form-select" onchange="this.form.submit()">
@@ -103,12 +106,13 @@
                     </select>
                 </form>
             </div>
-            <div class="col-md-8 small text-muted d-flex align-items-end">Drag rows below to reorder within {% if selected_category %}{{ selected_category.name }}{% else %}each category{% endif %}.</div>
+            <p class="small text-muted mb-0">Drag rows below to reorder within {% if selected_category %}{{ selected_category.name }}{% else %}each category{% endif %}.</p>
         </div>
+    </section>
 </div>
 
-    <section class="info-card param-card param-card--full">
-    <div class="section-title"><i class="material-icons">add_circle</i> Add a custom parameter</div>
+<section class="info-card param-card param-card--full">
+    <div class="section-title"><i class="material-icons">add_circle</i> Create parameter</div>
     <p class="text-muted">Capture analytes unique to your lab. Newly added parameters are immediately available for sample registration.</p>
 
     {% if form.non_field_errors %}
