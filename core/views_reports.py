@@ -8,6 +8,7 @@ from io import BytesIO
 
 from django.contrib import messages
 from django.contrib.staticfiles import finders
+from django.core.exceptions import ImproperlyConfigured
 from django.http import FileResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.utils import timezone
@@ -16,7 +17,11 @@ from django.utils.text import slugify
 from reportlab.lib.utils import ImageReader
 
 from .models import Invoice, LabProfile, Sample
-from .services.ai_remarks import split_bilingual_remarks
+from .services.ai_remarks import (
+    AIRemarkError,
+    generate_ai_review_draft,
+    split_bilingual_remarks,
+)
 from .services.malayalam_report import append_pdf_pages, render_malayalam_remarks_pdf
 from .views_common import (
     _choose_signer_with_signature,
@@ -52,6 +57,9 @@ def download_sample_report_view(request, pk):
 
     layout = (request.GET.get('layout') or 'branded').casefold()
     include_branding = layout != 'plain'
+    # When ?remarks=ai, the remarks and recommendations are generated fresh by AI at
+    # download time instead of using the consultant's saved review.
+    ai_mode = (request.GET.get('remarks') or '').casefold() == 'ai'
     background_template = None
     watermark_image = None
     if include_branding:
@@ -552,12 +560,32 @@ def download_sample_report_view(request, pk):
         return serial_counter
 
     review = getattr(sample, 'review', None)
-    if review:
-        recommendations_text = (review.recommendations or '').strip()
-        comments_text = (review.comments or '').strip()
-    else:
-        recommendations_text = ''
-        comments_text = ''
+    comments_text = ''
+    recommendations_text = ''
+
+    if ai_mode:
+        try:
+            ai_draft = generate_ai_review_draft(sample)
+            comments_text = ai_draft.comments
+            recommendations_text = ai_draft.recommendations
+        except (ImproperlyConfigured, AIRemarkError) as exc:
+            ai_mode = False
+            messages.warning(
+                request,
+                f"AI report could not be generated ({exc}); using the saved review instead.",
+            )
+        except Exception as exc:
+            ai_mode = False
+            logger.exception("Failed to generate AI report for sample %s", sample.sample_id)
+            messages.warning(
+                request,
+                _format_error_message("AI report could not be generated; using the saved review instead.", exc),
+            )
+
+    if not ai_mode:
+        if review:
+            recommendations_text = (review.recommendations or '').strip()
+            comments_text = (review.comments or '').strip()
 
     # The AI draft stores English and Malayalam together. Keep only English on the
     # main (ReportLab) report and carry the Malayalam onto a separate WeasyPrint page,
@@ -725,6 +753,8 @@ def download_sample_report_view(request, pk):
         pdf_bytes = append_pdf_pages(pdf_bytes, malayalam_pdf)
 
     filename_suffix = '_plain' if not include_branding else ''
+    if ai_mode:
+        filename_suffix += '_ai'
     customer_fragment = _customer_filename_fragment(sample)
     response = FileResponse(
         BytesIO(pdf_bytes),
@@ -732,7 +762,11 @@ def download_sample_report_view(request, pk):
         filename=f'WaterQualityReport_{customer_fragment}_{sample.display_id}{filename_suffix}.pdf',
     )
 
-    if sample.current_status == 'REPORT_APPROVED':
+    # The AI-drafted report is a supplementary download, so it must not advance the
+    # workflow (even if AI generation failed and fell back). Only the official report
+    # download marks the sample as sent.
+    ai_report_requested = (request.GET.get('remarks') or '').casefold() == 'ai'
+    if not ai_report_requested and sample.current_status == 'REPORT_APPROVED':
         try:
             sample.update_status('REPORT_SENT', request.user)
             messages.info(

@@ -428,6 +428,11 @@
                 <a href="{% url 'core:download_sample_report' pk=sample.pk %}?layout=plain" class="btn btn-outline-secondary" target="_blank">
                     <i class="material-icons me-1">print</i>Plain report
                 </a>
+                {% if user.is_consultant or user.is_admin %}
+                <a href="{% url 'core:download_sample_report' pk=sample.pk %}?remarks=ai" class="btn btn-outline-secondary" target="_blank">
+                    <i class="material-icons me-1">auto_awesome</i>AI report
+                </a>
+                {% endif %}
                 {% endif %}
 
                 {% if user.is_consultant or user.is_admin %}
