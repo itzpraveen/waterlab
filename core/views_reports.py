@@ -94,7 +94,30 @@ def download_sample_report_view(request, pk):
     buffer = BytesIO()
 
     def _register_body_fonts() -> tuple[str, str]:
-        """Use built-in Helvetica so Latin text always renders (no custom fonts)."""
+        """Use bundled Malayalam-capable fonts when available, else built-ins."""
+        from reportlab.pdfbase import pdfmetrics
+        from reportlab.pdfbase.ttfonts import TTFont
+
+        def _font_path(filename: str) -> str:
+            return (
+                finders.find(f'fonts/{filename}')
+                or os.path.join(settings.BASE_DIR, 'static', 'fonts', filename)
+            )
+
+        regular_path = _font_path('NotoSansMalayalam-Regular.ttf')
+        bold_path = _font_path('NotoSansMalayalam-Bold.ttf')
+
+        try:
+            if regular_path and os.path.exists(regular_path):
+                if 'NotoSansMalayalam' not in pdfmetrics.getRegisteredFontNames():
+                    pdfmetrics.registerFont(TTFont('NotoSansMalayalam', regular_path))
+                if bold_path and os.path.exists(bold_path):
+                    if 'NotoSansMalayalam-Bold' not in pdfmetrics.getRegisteredFontNames():
+                        pdfmetrics.registerFont(TTFont('NotoSansMalayalam-Bold', bold_path))
+                    return 'NotoSansMalayalam', 'NotoSansMalayalam-Bold'
+                return 'NotoSansMalayalam', 'NotoSansMalayalam'
+        except Exception:
+            logger.warning("Could not register Malayalam report fonts.", exc_info=True)
         return 'Helvetica', 'Helvetica-Bold'
 
     class ReportDocTemplate(BaseDocTemplate):

@@ -1,6 +1,8 @@
+import json
 import uuid
+from unittest.mock import patch
 
-from django.test import SimpleTestCase, TestCase
+from django.test import SimpleTestCase, TestCase, override_settings
 from django.urls import reverse
 from .models import (
     Customer,
@@ -12,8 +14,9 @@ from .models import (
     ResultStatusOverride,
     LabProfile,
 )
+from .services.ai_remarks import generate_ai_review_draft
 from django.utils import timezone
-from django.core.exceptions import ValidationError
+from django.core.exceptions import ImproperlyConfigured, ValidationError
 from django.db.utils import IntegrityError
 from datetime import timedelta
 
@@ -36,11 +39,11 @@ class CustomerModelTests(TestCase):
         customer = Customer.objects.create(**self.customer_data)
         self.assertEqual(customer.name, self.customer_data["name"])
         self.assertEqual(customer.email, self.customer_data["email"])
-        self.assertTrue(customer.customer_code.startswith(f"CUST{timezone.now().year}-"))
+        self.assertRegex(customer.customer_code, r"^C-[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{6}$")
         self.assertTrue(Customer.objects.filter(email=self.customer_data["email"]).exists())
 
-    def test_customer_code_generation_is_sequential(self):
-        """Customers receive privacy-safe sequential codes."""
+    def test_customer_code_generation_is_random_format_and_unique(self):
+        """Customers receive short privacy-safe random codes."""
         first = Customer.objects.create(**self.customer_data)
         second_data = self.customer_data.copy()
         second_data["name"] = "Second Test Customer"
@@ -48,13 +51,9 @@ class CustomerModelTests(TestCase):
         second_data["email"] = "second-test-customer@example.com"
         second = Customer.objects.create(**second_data)
 
-        prefix = f"CUST{timezone.now().year}-"
-        self.assertTrue(first.customer_code.startswith(prefix))
-        self.assertTrue(second.customer_code.startswith(prefix))
-        self.assertEqual(
-            int(second.customer_code.split("-")[-1]),
-            int(first.customer_code.split("-")[-1]) + 1,
-        )
+        self.assertRegex(first.customer_code, r"^C-[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{6}$")
+        self.assertRegex(second.customer_code, r"^C-[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{6}$")
+        self.assertNotEqual(first.customer_code, second.customer_code)
 
     def test_customer_str_representation(self):
         """Test the string representation of the Customer model."""
@@ -1266,6 +1265,93 @@ class ConsultantReviewModelTests(TestCase):
 
         self.sample_for_review.refresh_from_db()
         self.assertEqual(self.sample_for_review.current_status, 'REPORT_APPROVED')
+
+
+class FakeOpenAIResponse:
+    def __init__(self, payload):
+        self.payload = json.dumps(payload).encode('utf-8')
+
+    def read(self):
+        return self.payload
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc, traceback):
+        return False
+
+
+class AIRemarksServiceTests(TestCase):
+    def setUp(self):
+        self.customer = Customer.objects.create(
+            name="AI Draft Customer",
+            phone="9876543210",
+            email="ai-draft@example.com",
+            street_locality_landmark="AI Street",
+            village_town_city="Kochi",
+            district="Ernakulam",
+            pincode="682001",
+        )
+        self.sample = Sample.objects.create(
+            customer=self.customer,
+            collection_datetime=timezone.now(),
+            sample_source='WELL',
+            collected_by="Front Desk",
+            current_status='REVIEW_PENDING',
+        )
+        self.parameter = TestParameter.objects.create(
+            name="Total Coliform",
+            unit="MPN/100ml",
+            max_permissible_limit=0,
+            category="Microbiological",
+        )
+        self.sample.tests_requested.add(self.parameter)
+        self.lab_user = CustomUser.objects.create_user(
+            username="ai_lab_user",
+            password="password",
+            role="lab",
+        )
+        TestResult.objects.create(
+            sample=self.sample,
+            parameter=self.parameter,
+            result_value="10",
+            technician=self.lab_user,
+            observation="Detected",
+        )
+
+    @override_settings(OPENAI_API_KEY='')
+    def test_generate_ai_review_draft_requires_api_key(self):
+        with self.assertRaises(ImproperlyConfigured):
+            generate_ai_review_draft(self.sample)
+
+    @override_settings(
+        OPENAI_API_KEY='test-key',
+        OPENAI_REMARKS_MODEL='gpt-5-mini',
+        OPENAI_RESPONSES_URL='https://api.openai.com/v1/responses',
+        OPENAI_REMARKS_TIMEOUT=10,
+    )
+    @patch('core.services.ai_remarks.urllib.request.urlopen')
+    def test_generate_ai_review_draft_uses_structured_response(self, mock_urlopen):
+        mock_urlopen.return_value = FakeOpenAIResponse({
+            'output_text': json.dumps({
+                'remarks_english': 'Total Coliform is above the acceptable limit.',
+                'recommendations_english': 'Disinfect the source and retest after treatment.',
+                'remarks_malayalam': 'Malayalam remarks text.',
+                'recommendations_malayalam': 'Malayalam recommendations text.',
+            })
+        })
+
+        draft = generate_ai_review_draft(self.sample)
+
+        request = mock_urlopen.call_args.args[0]
+        request_payload = json.loads(request.data.decode('utf-8'))
+        self.assertEqual(request_payload['model'], 'gpt-5-mini')
+        self.assertEqual(request_payload['text']['format']['type'], 'json_schema')
+        self.assertIn('Total Coliform', request_payload['input'][1]['content'])
+        self.assertIn('English:', draft.comments)
+        self.assertIn('Malayalam:', draft.comments)
+        self.assertIn('Disinfect the source', draft.recommendations)
+        self.assertEqual(draft.model, 'gpt-5-mini')
 
 
 class SampleReopenForCorrectionViewTests(TestCase):

@@ -2,8 +2,9 @@ import logging
 from collections import OrderedDict
 from datetime import timedelta
 
+from django.conf import settings
 from django.contrib import messages
-from django.core.exceptions import ValidationError
+from django.core.exceptions import ImproperlyConfigured, ValidationError
 from django.db import transaction
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
@@ -20,6 +21,7 @@ from .mixins import (
     RoleRequiredMixin,
 )
 from .models import AuditTrail, ConsultantReview, Customer, Invoice, LabProfile, Sample, TestResult
+from .services.ai_remarks import AIRemarkError, generate_ai_review_draft
 from .views_common import _SENSITIVE_ROLES, _format_error_message, apply_user_scope
 
 logger = logging.getLogger(__name__)
@@ -388,76 +390,102 @@ def consultant_review(request, sample_id):
     except ConsultantReview.DoesNotExist:
         review = None
 
+    draft_comments = None
+    draft_recommendations = None
+
     if request.method == 'POST':
-        action = request.POST.get('status')
+        submit_action = request.POST.get('submit_action', '')
         comments = request.POST.get('comments', '').strip()
         recommendations = request.POST.get('recommendations', '').strip()
 
-        if action in ['APPROVED', 'REJECTED']:
+        if submit_action == 'generate_ai_remarks':
             try:
-                with transaction.atomic():
-                    if review:
-                        old_values = {
-                            'status': review.status,
-                            'comments': review.comments,
-                            'recommendations': review.recommendations,
-                        }
-                        review.status = action
-                        review.comments = comments
-                        review.recommendations = recommendations
-                        review.reviewer = request.user
-                        review.review_date = timezone.now()
-                        review.save()
-                        AuditTrail.log_change(
-                            user=request.user,
-                            action='UPDATE',
-                            instance=review,
-                            old_values=old_values,
-                            new_values=request.POST.dict(),
-                            request=request,
-                        )
-                    else:
-                        review = ConsultantReview.objects.create(
-                            sample=sample,
-                            reviewer=request.user,
-                            status=action,
-                            comments=comments,
-                            recommendations=recommendations,
-                        )
-                        AuditTrail.log_change(
-                            user=request.user,
-                            action='CREATE',
-                            instance=review,
-                            request=request,
-                        )
+                draft = generate_ai_review_draft(sample)
+            except ImproperlyConfigured:
+                messages.error(request, 'AI remarks are not configured. Add OPENAI_API_KEY in the environment.')
+                draft_comments = comments
+                draft_recommendations = recommendations
+            except AIRemarkError as exc:
+                messages.error(request, str(exc))
+                draft_comments = comments
+                draft_recommendations = recommendations
+            except Exception as exc:
+                logger.exception("Failed to generate AI remarks for sample %s", sample.sample_id)
+                messages.error(request, _format_error_message('Error generating AI remarks.', exc))
+                draft_comments = comments
+                draft_recommendations = recommendations
+            else:
+                draft_comments = draft.comments
+                draft_recommendations = draft.recommendations
+                messages.success(request, f'AI draft generated with {draft.model}. Review and edit before saving.')
+        else:
+            action = request.POST.get('status')
 
-                    if action == 'APPROVED':
-                        messages.success(
-                            request,
-                            f'Review for sample {sample.sample_id} saved as Approved. Sample status updated accordingly.',
-                        )
-                    elif action == 'REJECTED':
-                        messages.warning(
-                            request,
-                            f'Review for sample {sample.sample_id} saved as Rejected. Sample status updated accordingly.',
-                        )
-                    else:
-                        messages.info(
-                            request,
-                            f'Review for sample {sample.sample_id} saved with status {action}.',
-                        )
+            if action in ['APPROVED', 'REJECTED']:
+                try:
+                    with transaction.atomic():
+                        if review:
+                            old_values = {
+                                'status': review.status,
+                                'comments': review.comments,
+                                'recommendations': review.recommendations,
+                            }
+                            review.status = action
+                            review.comments = comments
+                            review.recommendations = recommendations
+                            review.reviewer = request.user
+                            review.review_date = timezone.now()
+                            review.save()
+                            AuditTrail.log_change(
+                                user=request.user,
+                                action='UPDATE',
+                                instance=review,
+                                old_values=old_values,
+                                new_values=request.POST.dict(),
+                                request=request,
+                            )
+                        else:
+                            review = ConsultantReview.objects.create(
+                                sample=sample,
+                                reviewer=request.user,
+                                status=action,
+                                comments=comments,
+                                recommendations=recommendations,
+                            )
+                            AuditTrail.log_change(
+                                user=request.user,
+                                action='CREATE',
+                                instance=review,
+                                request=request,
+                            )
 
+                        if action == 'APPROVED':
+                            messages.success(
+                                request,
+                                f'Review for sample {sample.sample_id} saved as Approved. Sample status updated accordingly.',
+                            )
+                        elif action == 'REJECTED':
+                            messages.warning(
+                                request,
+                                f'Review for sample {sample.sample_id} saved as Rejected. Sample status updated accordingly.',
+                            )
+                        else:
+                            messages.info(
+                                request,
+                                f'Review for sample {sample.sample_id} saved with status {action}.',
+                            )
+
+                        return redirect('core:sample_detail', pk=sample.sample_id)
+
+                except Exception as exc:
+                    logger.exception(
+                        "Failed to process consultant review for sample %s",
+                        sample.sample_id,
+                    )
+                    messages.error(request, _format_error_message('Error processing review.', exc))
                     return redirect('core:sample_detail', pk=sample.sample_id)
 
-            except Exception as exc:
-                logger.exception(
-                    "Failed to process consultant review for sample %s",
-                    sample.sample_id,
-                )
-                messages.error(request, _format_error_message('Error processing review.', exc))
-                return redirect('core:sample_detail', pk=sample.sample_id)
-
-        messages.error(request, 'Invalid action specified.')
+            messages.error(request, 'Invalid action specified.')
 
     test_results = sample.results.select_related('parameter', 'parameter__category_obj').order_by(
         'parameter__category_obj__display_order',
@@ -471,6 +499,11 @@ def consultant_review(request, sample_id):
         'review': review,
         'test_results': test_results,
         'can_review': sample.current_status == 'REVIEW_PENDING',
+        'ai_remarks_configured': bool(getattr(settings, 'OPENAI_API_KEY', '').strip()),
+        'comments_value': draft_comments if draft_comments is not None else (review.comments if review else ''),
+        'recommendations_value': (
+            draft_recommendations if draft_recommendations is not None else (review.recommendations if review else '')
+        ),
     }
 
     return render(request, 'core/consultant_review.html', context)

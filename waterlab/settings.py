@@ -260,6 +260,12 @@ EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
 EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
 DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='webmaster@localhost')
 
+# OpenAI-powered consultant remarks drafts
+OPENAI_API_KEY = config('OPENAI_API_KEY', default='')
+OPENAI_REMARKS_MODEL = config('OPENAI_REMARKS_MODEL', default='gpt-5-mini')
+OPENAI_RESPONSES_URL = config('OPENAI_RESPONSES_URL', default='https://api.openai.com/v1/responses')
+OPENAI_REMARKS_TIMEOUT = config('OPENAI_REMARKS_TIMEOUT', default=30, cast=int)
+
 # Logging Configuration (Optional - Basic example)
 # For more advanced logging, refer to Django documentation.
 LOGGING = {

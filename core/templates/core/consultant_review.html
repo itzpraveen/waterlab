@@ -124,23 +124,36 @@
 
             <div class="form-field">
                 <label for="comments">Comments</label>
-                <textarea name="comments" id="comments" rows="4" class="form-control">{{ review.comments }}</textarea>
+                <textarea name="comments" id="comments" rows="6" class="form-control">{{ comments_value }}</textarea>
                 <small class="form-hint">Share any summary notes for the report.</small>
             </div>
 
             <div class="form-field">
                 <label for="recommendations">Recommendations</label>
-                <textarea name="recommendations" id="recommendations" rows="4" class="form-control">{{ review.recommendations }}</textarea>
+                <textarea name="recommendations" id="recommendations" rows="6" class="form-control">{{ recommendations_value }}</textarea>
                 <small class="form-hint">Optional suggestions for corrective action.</small>
             </div>
 
             <div class="form-actions">
                 <a href="{% url 'core:sample_detail' pk=sample.sample_id %}" class="btn btn-outline-secondary">Cancel</a>
+                <button
+                    type="submit"
+                    name="submit_action"
+                    value="generate_ai_remarks"
+                    class="btn btn-outline-secondary"
+                    {% if not ai_remarks_configured %}disabled{% endif %}
+                >
+                    <i class="material-icons me-1">auto_awesome</i>
+                    Generate AI draft
+                </button>
                 <button type="submit" class="btn btn-primary">
                     <i class="material-icons me-1">save</i>
                     Save review
                 </button>
             </div>
+            {% if not ai_remarks_configured %}
+            <small class="form-hint d-block mt-3">Set OPENAI_API_KEY to enable AI draft generation.</small>
+            {% endif %}
         </form>
     </div>
 </div>

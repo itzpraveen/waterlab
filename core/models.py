@@ -1,5 +1,6 @@
 import logging
 import os
+import secrets
 import uuid
 
 from decimal import Decimal, InvalidOperation
@@ -41,6 +42,8 @@ RESULT_STATUS_CHOICES = [
 ]
 
 VALID_RESULT_STATUSES = {choice[0] for choice in RESULT_STATUS_CHOICES}
+CUSTOMER_CODE_ALPHABET = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ'
+CUSTOMER_CODE_RANDOM_LENGTH = 6
 
 
 def normalize_text_value(value: str) -> str:
@@ -265,26 +268,15 @@ class Customer(models.Model):
 
     @classmethod
     def generate_customer_code(cls) -> str:
-        prefix = f"CUST{timezone.now().year}-"
-        with transaction.atomic():
-            existing_codes = (
-                cls.objects
-                .filter(customer_code__startswith=prefix)
-                .select_for_update()
-                .values_list('customer_code', flat=True)
+        for _ in range(20):
+            suffix = ''.join(
+                secrets.choice(CUSTOMER_CODE_ALPHABET)
+                for _ in range(CUSTOMER_CODE_RANDOM_LENGTH)
             )
-            sequence = 1
-            parsed_sequences = []
-            for code in existing_codes:
-                try:
-                    parsed_sequences.append(int(str(code).split('-')[-1]))
-                except (TypeError, ValueError, IndexError):
-                    continue
-
-            if parsed_sequences:
-                sequence = max(parsed_sequences) + 1
-
-            return f"{prefix}{sequence:04d}"
+            candidate = f"C-{suffix}"
+            if not cls.objects.filter(customer_code=candidate).exists():
+                return candidate
+        raise IntegrityError("Could not generate a unique customer code.")
 
 
 class LabProfile(models.Model):

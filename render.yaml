@@ -23,6 +23,10 @@ services:
         value: admin@waterlab.com
       - key: ADMIN_PASSWORD
         sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: OPENAI_REMARKS_MODEL
+        value: gpt-5-mini
       - key: DATABASE_URL
         fromDatabase:
           name: waterlab-db
