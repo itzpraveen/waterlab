@@ -204,7 +204,9 @@ def generate_ai_review_draft(sample) -> AIRemarkDraft:
 
     model = _clean_text(runtime_config.get('model')) or 'gpt-5-mini'
     endpoint = _clean_text(getattr(settings, 'OPENAI_RESPONSES_URL', '')) or 'https://api.openai.com/v1/responses'
-    timeout = int(getattr(settings, 'OPENAI_REMARKS_TIMEOUT', 30))
+    # Generous default: stronger models (e.g. gpt-5) can take well over 30s, and the
+    # call runs in a background thread so it does not block a web worker.
+    timeout = int(getattr(settings, 'OPENAI_REMARKS_TIMEOUT', 180))
 
     request_payload = {
         'model': model,

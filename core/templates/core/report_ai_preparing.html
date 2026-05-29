@@ -29,7 +29,7 @@
   var downloadUrl = "{{ download_url|escapejs }}";
   var sampleUrl = "{{ sample_url|escapejs }}";
   var attempts = 0;
-  var maxAttempts = 60; // ~2 minutes at 2s intervals
+  var maxAttempts = 105; // ~3.5 minutes at 2s intervals (covers a slow gpt-5 call)
 
   function showError(msg) {
     var spinner = document.getElementById('ai-prep-spinner');
