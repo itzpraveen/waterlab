@@ -17,7 +17,7 @@ from django.utils.text import slugify
 from reportlab.lib.utils import ImageReader
 
 from .models import Invoice, LabProfile, Sample
-from .services.ai_remarks import split_bilingual_remarks
+from .services.ai_remarks import bullet_items, split_bilingual_remarks
 from .services.ai_report_jobs import delete_ai_job, load_ai_job, start_ai_job
 from .services.malayalam_report import append_pdf_pages, render_malayalam_remarks_pdf
 from .views_common import (
@@ -137,6 +137,7 @@ def download_sample_report_view(request, pk):
         Image,
         KeepTogether,
         ListFlowable,
+        ListItem,
         PageBreak,
         PageTemplate,
         Paragraph,
@@ -733,20 +734,37 @@ def download_sample_report_view(request, pk):
 
     elements.append(PageBreak())
 
+    def _remarks_flowables(text, fallback):
+        """Render remark text as a bullet list when it has multiple points."""
+        items = bullet_items(text)
+        if len(items) >= 2:
+            return [ListFlowable(
+                [ListItem(
+                    Paragraph(_safe_text(item, preserve_breaks=True), styles['Normal']),
+                    leftIndent=12,
+                    value=None,
+                ) for item in items],
+                bulletType='bullet',
+                bulletColor=text_color,
+                bulletFontSize=6,
+                leftIndent=14,
+                spaceBefore=1,
+            )]
+        if (text or '').strip():
+            return [Paragraph(_safe_text(text, preserve_breaks=True), styles['Normal'])]
+        return [Paragraph(fallback, styles['Normal'])]
+
     elements.append(Paragraph("REMARKS", styles['SectionTitle']))
-    if comments_text:
-        elements.append(Paragraph(_safe_text(comments_text, preserve_breaks=True), styles['Normal']))
-    else:
-        elements.append(Paragraph(
-            "The sample has been analysed in accordance with IS 10500:2012 guidelines. Outcomes above include automated compliance status for each parameter.",
-            styles['Normal'],
-        ))
+    elements.extend(_remarks_flowables(
+        comments_text,
+        "The sample has been analysed in accordance with IS 10500:2012 guidelines. Outcomes above include automated compliance status for each parameter.",
+    ))
     elements.append(Spacer(1, 12))
     elements.append(Paragraph("Consultant Recommendations", styles['SectionTitle']))
-    if recommendations_text:
-        elements.append(Paragraph(_safe_text(recommendations_text, preserve_breaks=True), styles['Normal']))
-    else:
-        elements.append(Paragraph("No consultant recommendations recorded for this sample.", styles['Normal']))
+    elements.extend(_remarks_flowables(
+        recommendations_text,
+        "No consultant recommendations recorded for this sample.",
+    ))
     elements.append(Spacer(1, 18))
     _append_consultant_signature_section()
 

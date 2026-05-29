@@ -54,6 +54,8 @@ def render_malayalam_remarks_pdf(*, sample, remarks_ml, recommendations_ml, bran
 
     from django.template.loader import render_to_string
 
+    from core.services.ai_remarks import bullet_items
+
     context = {
         'branded': branded,
         'sample_code': sample.display_id or str(sample.sample_id),
@@ -61,6 +63,8 @@ def render_malayalam_remarks_pdf(*, sample, remarks_ml, recommendations_ml, bran
         'customer_name': getattr(sample.customer, 'name', '') or '',
         'remarks_ml': remarks_ml,
         'recommendations_ml': recommendations_ml,
+        'remarks_ml_items': bullet_items(remarks_ml),
+        'recommendations_ml_items': bullet_items(recommendations_ml),
         'font_regular_url': _file_uri(
             'fonts/NotoSansMalayalam-Regular.ttf', 'static/fonts/NotoSansMalayalam-Regular.ttf'
         ),

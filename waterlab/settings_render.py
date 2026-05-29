@@ -229,7 +229,7 @@ DEFAULT_FROM_EMAIL = 'Water Lab LIMS <noreply@waterlab.com>'
 OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY', '')
 OPENAI_REMARKS_MODEL = os.environ.get('OPENAI_REMARKS_MODEL', 'gpt-5-mini')
 OPENAI_RESPONSES_URL = os.environ.get('OPENAI_RESPONSES_URL', 'https://api.openai.com/v1/responses')
-OPENAI_REMARKS_TIMEOUT = int(os.environ.get('OPENAI_REMARKS_TIMEOUT', '30'))
+OPENAI_REMARKS_TIMEOUT = int(os.environ.get('OPENAI_REMARKS_TIMEOUT', '180'))
 
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

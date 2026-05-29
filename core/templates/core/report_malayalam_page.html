@@ -88,6 +88,16 @@
       margin: 0;
     }
 
+    ul.bullets {
+      margin: 0;
+      padding-left: 6mm;
+    }
+
+    ul.bullets li {
+      margin: 0 0 1.5mm 0;
+      padding-left: 1mm;
+    }
+
     .empty {
       color: #6B7280;
       font-style: italic;
@@ -104,9 +114,13 @@
   </div>
 
   <h2>അഭിപ്രായങ്ങൾ (Remarks)</h2>
-  {% if remarks_ml %}<p class="section-text">{{ remarks_ml }}</p>{% else %}<p class="empty">—</p>{% endif %}
+  {% if remarks_ml_items %}<ul class="bullets">{% for item in remarks_ml_items %}<li>{{ item }}</li>{% endfor %}</ul>
+  {% elif remarks_ml %}<p class="section-text">{{ remarks_ml }}</p>
+  {% else %}<p class="empty">—</p>{% endif %}
 
   <h2>ശുപാർശകൾ (Recommendations)</h2>
-  {% if recommendations_ml %}<p class="section-text">{{ recommendations_ml }}</p>{% else %}<p class="empty">—</p>{% endif %}
+  {% if recommendations_ml_items %}<ul class="bullets">{% for item in recommendations_ml_items %}<li>{{ item }}</li>{% endfor %}</ul>
+  {% elif recommendations_ml %}<p class="section-text">{{ recommendations_ml }}</p>
+  {% else %}<p class="empty">—</p>{% endif %}
 </body>
 </html>

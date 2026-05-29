@@ -100,7 +100,9 @@ def _build_prompt(sample):
         "and do not guarantee safety beyond the listed parameters.\n"
         "Remarks should summarize which parameters are present or outside limits and which major groups are within limits.\n"
         "Recommendations should suggest practical water-treatment or retesting actions only when supported by the results.\n"
-        "Write professional report-ready text in both English and Malayalam. Keep each language concise.\n\n"
+        "Format BOTH remarks and recommendations as short bullet points for readability: one concise point per line, "
+        "each line starting with '- ', no numbering, no headings, no intro sentence. Aim for 2-5 bullets each.\n"
+        "Write professional report-ready text in both English and Malayalam. Keep each bullet concise.\n\n"
         f"Lab result data:\n{json.dumps(payload, ensure_ascii=False)}"
     )
 
@@ -173,6 +175,19 @@ def split_bilingual_remarks(text):
 
     english_part = _ENGLISH_MARKER.sub('', english_part, count=1).strip()
     return english_part, malayalam_part.strip()
+
+
+_BULLET_PREFIX = re.compile(r'^\s*[\-•●▪‣\*]+\s*')
+
+
+def bullet_items(text):
+    """Split text into clean bullet items (one per non-empty line, markers stripped)."""
+    items = []
+    for line in (text or '').splitlines():
+        cleaned = _BULLET_PREFIX.sub('', line).strip()
+        if cleaned:
+            items.append(cleaned)
+    return items
 
 
 def get_ai_review_runtime_config() -> dict:
