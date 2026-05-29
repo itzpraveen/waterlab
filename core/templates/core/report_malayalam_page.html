@@ -23,15 +23,10 @@
     @page {
       size: A4;
       {% if branded %}
-      /* Match the ReportLab branded pages so content clears the header/footer
-         baked into the background image. */
-      margin: 54mm 18mm 34mm 18mm;
-      {% if background_url %}
-      background-image: url('{{ background_url }}');
-      background-repeat: no-repeat;
-      background-position: left top;
-      background-size: 210mm 297mm;
-      {% endif %}
+      /* Margins clear the header/footer baked into the background image. The
+         background is drawn by a fixed <img> anchored to the page corner (see
+         .page-bg) because WeasyPrint offsets @page backgrounds into the margin box. */
+      margin: 60mm 18mm 36mm 18mm;
       {% else %}
       margin: 22mm 18mm 20mm 18mm;
       {% endif %}
@@ -46,14 +41,15 @@
       line-height: 1.7;
     }
 
-    {% if branded and watermark_url %}
-    .watermark {
+    {% if branded and background_url %}
+    /* Full-sheet branded background repeated on every page. Negative offsets equal
+       to the page margins push it from the content box out to the page corner. */
+    .page-bg {
       position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      width: 110mm;
-      opacity: 0.10;
+      top: -60mm;
+      left: -18mm;
+      width: 210mm;
+      height: 297mm;
       z-index: -1;
     }
     {% endif %}
@@ -106,7 +102,7 @@
   </style>
 </head>
 <body>
-  {% if branded and watermark_url %}<img class="watermark" src="{{ watermark_url }}" alt="">{% endif %}
+  {% if branded and background_url %}<img class="page-bg" src="{{ background_url }}" alt="">{% endif %}
 
   <h1>ജല പരിശോധന റിപ്പോർട്ട് — മലയാളം</h1>
   <div class="meta">
