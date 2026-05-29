@@ -8,20 +8,17 @@ from io import BytesIO
 
 from django.contrib import messages
 from django.contrib.staticfiles import finders
-from django.core.exceptions import ImproperlyConfigured
-from django.http import FileResponse
-from django.shortcuts import get_object_or_404, redirect
+from django.http import FileResponse, JsonResponse
+from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
 from django.utils.text import slugify
 
 from reportlab.lib.utils import ImageReader
 
 from .models import Invoice, LabProfile, Sample
-from .services.ai_remarks import (
-    AIRemarkError,
-    generate_ai_review_draft,
-    split_bilingual_remarks,
-)
+from .services.ai_remarks import split_bilingual_remarks
+from .services.ai_report_jobs import delete_ai_job, load_ai_job, start_ai_job
 from .services.malayalam_report import append_pdf_pages, render_malayalam_remarks_pdf
 from .views_common import (
     _choose_signer_with_signature,
@@ -30,6 +27,18 @@ from .views_common import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+def _render_ai_preparing(request, sample, job_id: str):
+    """Render the lightweight page that polls a background AI report job."""
+    base = reverse('core:download_sample_report', kwargs={'pk': sample.pk})
+    return render(request, 'core/report_ai_preparing.html', {
+        'sample': sample,
+        'job_id': job_id,
+        'poll_url': f'{base}?remarks=ai&job={job_id}&poll=1',
+        'download_url': f'{base}?remarks=ai&job={job_id}',
+        'sample_url': reverse('core:sample_detail', kwargs={'pk': sample.pk}),
+    })
 
 
 def _customer_filename_fragment(sample: Sample) -> str:
@@ -57,9 +66,7 @@ def download_sample_report_view(request, pk):
 
     layout = (request.GET.get('layout') or 'branded').casefold()
     include_branding = layout != 'plain'
-    # When ?remarks=ai, the remarks and recommendations are generated fresh by AI at
-    # download time instead of using the consultant's saved review.
-    ai_mode = (request.GET.get('remarks') or '').casefold() == 'ai'
+    ai_requested = (request.GET.get('remarks') or '').casefold() == 'ai'
     background_template = None
     watermark_image = None
     if include_branding:
@@ -79,6 +86,53 @@ def download_sample_report_view(request, pk):
     if sample.current_status not in ['REPORT_APPROVED', 'REPORT_SENT']:
         messages.error(request, "Report is not yet approved or available for download.")
         return redirect('core:sample_detail', pk=sample.pk)
+
+    # --- AI report orchestration --------------------------------------------
+    # The AI draft (~10-30s model call) runs in a background thread so the browser
+    # is never held. ``ai_override`` carries the AI text into the PDF build below.
+    ai_job_id = (request.GET.get('job') or '').strip()
+    ai_override = None
+    if ai_requested:
+        # Status poll for the "preparing" page.
+        if ai_job_id and request.GET.get('poll'):
+            job = load_ai_job(ai_job_id)
+            if not job or str(job.get('sample_pk')) != str(sample.pk):
+                return JsonResponse({'status': 'error', 'message': 'Session expired.'}, status=404)
+            return JsonResponse({'status': job.get('status', 'pending'), 'message': job.get('message', '')})
+
+        review = getattr(sample, 'review', None)
+        has_saved_review = bool(
+            review and ((review.comments or '').strip() or (review.recommendations or '').strip())
+        )
+
+        if ai_job_id:
+            job = load_ai_job(ai_job_id)
+            if not job or str(job.get('sample_pk')) != str(sample.pk):
+                messages.error(request, "AI report session expired. Please try again.")
+                return redirect('core:sample_detail', pk=sample.pk)
+            status = job.get('status')
+            if status == 'pending':
+                return _render_ai_preparing(request, sample, ai_job_id)
+            if status == 'error':
+                messages.warning(
+                    request,
+                    f"AI report could not be generated ({job.get('message')}); using the saved review instead.",
+                )
+            elif status == 'ready':
+                ai_override = (job.get('comments', ''), job.get('recommendations', ''))
+            delete_ai_job(ai_job_id)
+        elif has_saved_review:
+            # A review (often a previously generated AI draft) already exists -> reuse it,
+            # no model call needed.
+            pass
+        else:
+            # Nothing saved yet -> kick off the background draft and show the wait page.
+            try:
+                return _render_ai_preparing(request, sample, start_ai_job(sample))
+            except Exception:
+                logger.exception("Failed to start AI report job for sample %s", sample.sample_id)
+                messages.error(request, "Could not start AI report generation. Please try again.")
+                return redirect('core:sample_detail', pk=sample.pk)
 
     from django.conf import settings
     from reportlab.lib import colors
@@ -548,29 +602,12 @@ def download_sample_report_view(request, pk):
     comments_text = ''
     recommendations_text = ''
 
-    if ai_mode:
-        try:
-            ai_draft = generate_ai_review_draft(sample)
-            comments_text = ai_draft.comments
-            recommendations_text = ai_draft.recommendations
-        except (ImproperlyConfigured, AIRemarkError) as exc:
-            ai_mode = False
-            messages.warning(
-                request,
-                f"AI report could not be generated ({exc}); using the saved review instead.",
-            )
-        except Exception as exc:
-            ai_mode = False
-            logger.exception("Failed to generate AI report for sample %s", sample.sample_id)
-            messages.warning(
-                request,
-                _format_error_message("AI report could not be generated; using the saved review instead.", exc),
-            )
-
-    if not ai_mode:
-        if review:
-            recommendations_text = (review.recommendations or '').strip()
-            comments_text = (review.comments or '').strip()
+    if ai_override is not None:
+        # AI text produced by the background job (already English + Malayalam combined).
+        comments_text, recommendations_text = ai_override
+    elif review:
+        recommendations_text = (review.recommendations or '').strip()
+        comments_text = (review.comments or '').strip()
 
     # The AI draft stores English and Malayalam together. Keep only English on the
     # main (ReportLab) report and carry the Malayalam onto a separate WeasyPrint page,
@@ -738,7 +775,7 @@ def download_sample_report_view(request, pk):
         pdf_bytes = append_pdf_pages(pdf_bytes, malayalam_pdf)
 
     filename_suffix = '_plain' if not include_branding else ''
-    if ai_mode:
+    if ai_requested:
         filename_suffix += '_ai'
     customer_fragment = _customer_filename_fragment(sample)
     response = FileResponse(
@@ -748,10 +785,8 @@ def download_sample_report_view(request, pk):
     )
 
     # The AI-drafted report is a supplementary download, so it must not advance the
-    # workflow (even if AI generation failed and fell back). Only the official report
-    # download marks the sample as sent.
-    ai_report_requested = (request.GET.get('remarks') or '').casefold() == 'ai'
-    if not ai_report_requested and sample.current_status == 'REPORT_APPROVED':
+    # workflow. Only the official report download marks the sample as sent.
+    if not ai_requested and sample.current_status == 'REPORT_APPROVED':
         try:
             sample.update_status('REPORT_SENT', request.user)
             messages.info(
