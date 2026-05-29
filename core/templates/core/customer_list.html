@@ -27,7 +27,7 @@
                        id="customer-search"
                        name="q"
                        class="form-control"
-                       placeholder="Search by name, email, phone, or place"
+                       placeholder="Search by code, name, email, phone, or place"
                        value="{{ search_query }}">
             </div>
         </div>
@@ -57,6 +57,7 @@
             <thead>
                 <tr>
                     <th scope="col">Name</th>
+                    <th scope="col">Code</th>
                     <th scope="col">Email</th>
                     <th scope="col">Phone</th>
                     <th scope="col">District</th>
@@ -72,6 +73,12 @@
                             <span class="table-avatar">{{ customer.name|first|upper }}</span>
                             <a href="{% url 'core:customer_detail' pk=customer.customer_id %}" class="fw-semibold text-decoration-none">{{ customer.name }}</a>
                         </div>
+                    </td>
+                    <td data-label="Code">
+                        <span class="record-code record-code--compact">
+                            <i class="material-icons" aria-hidden="true">qr_code_2</i>
+                            <span>{{ customer.customer_code }}</span>
+                        </span>
                     </td>
                     <td data-label="Email">
                         {% if customer.email %}

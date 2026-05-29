@@ -69,7 +69,7 @@
                     <div>
                         <div class="fw-semibold">{{ sample.display_id|default:sample.sample_id }}</div>
                         <div class="text-muted small">
-                            {{ sample.customer.name }} · Collected {{ sample.collection_datetime|date:"M d, Y H:i" }}
+                            {{ sample.customer.customer_code }} · {{ sample.customer.name }} · Collected {{ sample.collection_datetime|date:"M d, Y H:i" }}
                         </div>
                         <div class="text-muted small">
                             {{ sample.get_sample_source_display }}
@@ -108,7 +108,7 @@
                                 Sample {{ review.sample.display_id|default:review.sample.sample_id|truncatechars:12 }}
                             </a>
                             <div class="text-muted small">
-                                {{ review.sample.customer.name }} · {{ review.review_date|date:"M d, Y H:i" }}
+                                {{ review.sample.customer.customer_code }} · {{ review.sample.customer.name }} · {{ review.review_date|date:"M d, Y H:i" }}
                             </div>
                         </div>
                         {% review_status_badge review %}

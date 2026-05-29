@@ -88,7 +88,7 @@
                         <div class="queue-row queue-row--action">
                             <a class="queue-row__main" href="{% url 'core:sample_detail' pk=sample_item.sample_id %}">
                                 <strong>{{ sample_item.display_id|default:sample_item.sample_id }}</strong>
-                                <span>{{ sample_item.customer.name }}</span>
+                                <span>{{ sample_item.customer.customer_code }} · {{ sample_item.customer.name }}</span>
                             </a>
                             <span class="queue-row__meta">
                                 <span>{{ sample_item.collection_datetime|date:'M d' }}</span>
@@ -112,7 +112,7 @@
                         <div class="queue-row queue-row--action">
                             <a class="queue-row__main" href="{% url 'core:sample_detail' pk=sample_item.sample_id %}">
                                 <strong>{{ sample_item.display_id|default:sample_item.sample_id }}</strong>
-                                <span>{{ sample_item.customer.name }}</span>
+                                <span>{{ sample_item.customer.customer_code }} · {{ sample_item.customer.name }}</span>
                             </a>
                             <span class="queue-row__meta">
                                 <span>{{ sample_item.collection_datetime|date:'M d' }}</span>
@@ -194,7 +194,10 @@
                         {% for sample_item in recent_samples %}
                         <tr>
                             <td class="fw-semibold">{{ sample_item.display_id|default:sample_item.sample_id }}</td>
-                            <td>{{ sample_item.customer.name }}</td>
+                            <td>
+                                <div class="fw-semibold">{{ sample_item.customer.customer_code }}</div>
+                                <div class="text-muted small">{{ sample_item.customer.name }}</div>
+                            </td>
                             <td>{{ sample_item.collection_datetime|date:'M d, Y' }}</td>
                             <td>{% sample_status_badge sample_item compact=True show_icon=False %}</td>
                             <td class="text-end">

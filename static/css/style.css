@@ -1859,6 +1859,40 @@ main {
   color: var(--wl-accent);
 }
 
+.record-code {
+  min-height: 2.35rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  max-width: 100%;
+  padding: 0.45rem 0.7rem;
+  border-radius: 0.5rem;
+  border: 1px solid rgba(15, 118, 110, 0.22);
+  background: rgba(240, 253, 250, 0.9);
+  color: #0f766e;
+  font-weight: 700;
+  letter-spacing: 0;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.record-code .material-icons {
+  font-size: 1rem;
+}
+
+.record-code--compact {
+  min-height: 0;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.82rem;
+}
+
+.record-code--muted {
+  border-color: rgba(148, 163, 184, 0.35);
+  background: rgba(248, 250, 252, 0.92);
+  color: #64748b;
+  font-weight: 600;
+}
+
 .status-badge {
   display: inline-flex;
   align-items: center;

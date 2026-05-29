@@ -18,12 +18,12 @@ from .models import (
 
 @admin.register(Customer)
 class CustomerAdmin(admin.ModelAdmin):
-    list_display = ['name', 'email', 'phone', 'district', 'village_town_city']
+    list_display = ['customer_code', 'name', 'email', 'phone', 'district', 'village_town_city']
     list_filter = ['district', 'taluk']
-    search_fields = ['name', 'email', 'phone', 'village_town_city']
+    search_fields = ['customer_code', 'name', 'email', 'phone', 'village_town_city']
     fieldsets = (
         ('Personal Information', {
-            'fields': ('name', 'email', 'phone')
+            'fields': ('customer_code', 'name', 'email', 'phone')
         }),
         ('Address Details', {
             'fields': ('house_name_door_no', 'street_locality_landmark', 'village_town_city', 
@@ -34,7 +34,7 @@ class CustomerAdmin(admin.ModelAdmin):
             'classes': ('collapse',)
         })
     )
-    readonly_fields = ['address']
+    readonly_fields = ['customer_code', 'address']
 
 @admin.register(KeralaLocation)
 class KeralaLocationAdmin(admin.ModelAdmin):

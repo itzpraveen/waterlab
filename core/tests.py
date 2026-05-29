@@ -36,7 +36,25 @@ class CustomerModelTests(TestCase):
         customer = Customer.objects.create(**self.customer_data)
         self.assertEqual(customer.name, self.customer_data["name"])
         self.assertEqual(customer.email, self.customer_data["email"])
+        self.assertTrue(customer.customer_code.startswith(f"CUST{timezone.now().year}-"))
         self.assertTrue(Customer.objects.filter(email=self.customer_data["email"]).exists())
+
+    def test_customer_code_generation_is_sequential(self):
+        """Customers receive privacy-safe sequential codes."""
+        first = Customer.objects.create(**self.customer_data)
+        second_data = self.customer_data.copy()
+        second_data["name"] = "Second Test Customer"
+        second_data["phone"] = "1234567891"
+        second_data["email"] = "second-test-customer@example.com"
+        second = Customer.objects.create(**second_data)
+
+        prefix = f"CUST{timezone.now().year}-"
+        self.assertTrue(first.customer_code.startswith(prefix))
+        self.assertTrue(second.customer_code.startswith(prefix))
+        self.assertEqual(
+            int(second.customer_code.split("-")[-1]),
+            int(first.customer_code.split("-")[-1]) + 1,
+        )
 
     def test_customer_str_representation(self):
         """Test the string representation of the Customer model."""
@@ -172,6 +190,17 @@ class CustomerListViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.context['customer_count'], 1)
         self.assertContains(response, self.customers[-1].name)
+
+    def test_search_runs_against_customer_code(self):
+        self.client.force_login(self.admin_user)
+        target_customer = self.customers[-1]
+
+        response = self.client.get(reverse('core:customer_list'), {'q': target_customer.customer_code})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['customer_count'], 1)
+        self.assertContains(response, target_customer.customer_code)
+        self.assertContains(response, target_customer.name)
 
     def test_pagination_preserves_search_query(self):
         self.client.force_login(self.admin_user)
@@ -1483,6 +1512,14 @@ class GlobalSearchViewTests(TestCase):
         self.assertContains(response, "View all matching samples")
         self.assertContains(response, "View all matching customers")
 
+    def test_global_search_returns_customer_code_matches(self):
+        self.client.force_login(self.admin_user)
+        response = self.client.get(reverse('core:global_search'), {'q': self.customer.customer_code})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.customer.customer_code)
+        self.assertContains(response, self.sample.display_id)
+
     def test_empty_global_search_does_not_dump_records(self):
         self.client.force_login(self.admin_user)
         response = self.client.get(reverse('core:global_search'))
@@ -1548,6 +1585,15 @@ class TestResultListViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         samples = response.context['samples_with_results']
         self.assertEqual(list(samples), [self.sample_a])
+
+    def test_search_filters_results_by_customer_code(self):
+        self.client.force_login(self.lab_user)
+        response = self.client.get(reverse('core:test_result_list'), {'q': self.customer.customer_code})
+
+        self.assertEqual(response.status_code, 200)
+        samples = list(response.context['samples_with_results'])
+        self.assertIn(self.sample_a, samples)
+        self.assertIn(self.sample_b, samples)
 
     def test_status_filter_with_virtual_bucket(self):
         self.client.force_login(self.lab_user)

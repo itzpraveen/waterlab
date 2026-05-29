@@ -40,6 +40,10 @@
                 <span class="summary-value">{{ sample.display_id|default:sample.sample_id }}</span>
             </div>
             <div class="summary-item">
+                <span class="summary-label">Customer code</span>
+                <span class="summary-value">{{ sample.customer.customer_code }}</span>
+            </div>
+            <div class="summary-item">
                 <span class="summary-label">Customer</span>
                 <span class="summary-value"><a href="{% url 'core:customer_detail' pk=sample.customer.customer_id %}" class="link-muted">{{ sample.customer.name }}</a></span>
             </div>

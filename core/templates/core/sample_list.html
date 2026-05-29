@@ -29,7 +29,7 @@
                        id="sample-search"
                        name="q"
                        class="form-control"
-                       placeholder="ID, customer, source"
+                       placeholder="Sample ID, customer code, customer, source"
                        value="{{ search_query }}">
             </div>
         </div>
@@ -125,7 +125,7 @@
                             <span class="table-avatar">{{ sample.customer.name|first|upper }}</span>
                             <div>
                                 <a href="{% url 'core:customer_detail' pk=sample.customer.customer_id %}" class="text-decoration-none">{{ sample.customer.name }}</a>
-                                <div class="text-muted small">{{ sample.customer.phone }}</div>
+                                <div class="text-muted small">{{ sample.customer.customer_code }}{% if sample.customer.phone %} · {{ sample.customer.phone }}{% endif %}</div>
                             </div>
                         </div>
                     </td>

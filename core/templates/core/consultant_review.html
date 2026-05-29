@@ -8,7 +8,7 @@
     <div class="page-heading">
         <span class="page-eyebrow">Consultant review</span>
         <h1 class="page-title">Review sample {{ sample.display_id|default:sample.sample_id }}</h1>
-        <p class="page-subtitle">Customer {{ sample.customer.name }} - Collected {{ sample.collection_datetime|date:"M d, Y H:i" }}</p>
+        <p class="page-subtitle">Customer {{ sample.customer.customer_code }} - Collected {{ sample.collection_datetime|date:"M d, Y H:i" }}</p>
     </div>
     <div class="page-actions">
         <a href="{% url 'core:sample_detail' pk=sample.sample_id %}" class="btn btn-outline-secondary">
@@ -28,6 +28,10 @@
                 <div class="data-pair">
                     <dt>Sample ID</dt>
                     <dd>{{ sample.display_id|default:sample.sample_id }}</dd>
+                </div>
+                <div class="data-pair">
+                    <dt>Customer Code</dt>
+                    <dd>{{ sample.customer.customer_code }}</dd>
                 </div>
                 <div class="data-pair">
                     <dt>Customer</dt>

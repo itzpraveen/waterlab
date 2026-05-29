@@ -77,7 +77,7 @@
                 <div class="list-group-item d-flex flex-column gap-2">
                     <div class="d-flex justify-content-between align-items-start gap-3">
                         <a href="{% url 'core:customer_detail' customer.pk %}" class="fw-semibold text-decoration-none">
-                            {{ customer.name }}
+                            {{ customer.customer_code }} · {{ customer.name }}
                         </a>
                         <a href="{% url 'core:sample_add' %}?customer={{ customer.pk }}" class="btn btn-sm btn-outline-primary">Register sample</a>
                     </div>
@@ -138,7 +138,10 @@
                 {% for sample in recent_samples %}
                 <tr>
                     <td data-label="Sample">{{ sample.display_id|default:sample.sample_id }}</td>
-                    <td data-label="Customer">{{ sample.customer.name }}</td>
+                    <td data-label="Customer">
+                        <div class="fw-semibold">{{ sample.customer.customer_code }}</div>
+                        <div class="text-muted small">{{ sample.customer.name }}</div>
+                    </td>
                     <td data-label="Collected">{{ sample.collection_datetime|date:"M d, Y H:i" }}</td>
                     <td data-label="Status">{% sample_status_badge sample compact=True show_icon=False %}</td>
                     <td data-label="Action" class="text-end td-actions">

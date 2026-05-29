@@ -97,6 +97,7 @@ class TestResultListView(LoginRequiredMixin, ListView):
         if query:
             queryset = queryset.filter(
                 Q(display_id__icontains=query)
+                | Q(customer__customer_code__icontains=query)
                 | Q(customer__name__icontains=query)
                 | Q(customer__street_locality_landmark__icontains=query)
                 | Q(customer__village_town_city__icontains=query)

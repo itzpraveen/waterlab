@@ -165,6 +165,13 @@ class Customer(models.Model):
     ]
     
     customer_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    customer_code = models.CharField(
+        max_length=20,
+        unique=True,
+        blank=True,
+        editable=False,
+        help_text="Privacy-safe code used to identify customer bottles in the lab.",
+    )
     name = models.CharField(max_length=255)
     phone = models.CharField(max_length=20)
     email = models.EmailField(unique=True, blank=True, null=True)
@@ -239,10 +246,45 @@ class Customer(models.Model):
             address_parts.append(f"Kerala - {pincode_clean}")
 
         self.address = ", ".join(address_parts)
-        super().save(*args, **kwargs)
+        if self.customer_code:
+            return super().save(*args, **kwargs)
+
+        max_attempts = 5
+        for attempt in range(max_attempts):
+            try:
+                with transaction.atomic():
+                    self.customer_code = self.generate_customer_code()
+                    return super().save(*args, **kwargs)
+            except IntegrityError:
+                self.customer_code = ''
+                if attempt == max_attempts - 1:
+                    raise
 
     def __str__(self):
         return self.name
+
+    @classmethod
+    def generate_customer_code(cls) -> str:
+        prefix = f"CUST{timezone.now().year}-"
+        with transaction.atomic():
+            existing_codes = (
+                cls.objects
+                .filter(customer_code__startswith=prefix)
+                .select_for_update()
+                .values_list('customer_code', flat=True)
+            )
+            sequence = 1
+            parsed_sequences = []
+            for code in existing_codes:
+                try:
+                    parsed_sequences.append(int(str(code).split('-')[-1]))
+                except (TypeError, ValueError, IndexError):
+                    continue
+
+            if parsed_sequences:
+                sequence = max(parsed_sequences) + 1
+
+            return f"{prefix}{sequence:04d}"
 
 
 class LabProfile(models.Model):

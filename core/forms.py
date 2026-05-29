@@ -10,6 +10,14 @@ from django.utils import timezone
 from django.conf import settings
 from .models import Customer, Sample, TestParameter, CustomUser, TestCategory, LabProfile # Added TestParameter, CustomUser, TestCategory, LabProfile
 
+
+class CustomerChoiceField(forms.ModelChoiceField):
+    def label_from_instance(self, obj):
+        code = obj.customer_code or 'Uncoded'
+        phone = f" - {obj.phone}" if obj.phone else ''
+        return f"{code} - {obj.name}{phone}"
+
+
 class CustomerForm(forms.ModelForm):
     class Meta:
         model = Customer
@@ -164,6 +172,13 @@ class _ParameterGroup:
 
 
 class SampleForm(forms.ModelForm):
+    customer = CustomerChoiceField(
+        queryset=Customer.objects.all().order_by('customer_code', 'name'),
+        widget=forms.Select(attrs={
+            'class': 'form-control js-searchable-select',
+            'data-placeholder': 'Search customer code, name, or phone...'
+        }),
+    )
     # Accept formats configured in settings for consistency across the app
     _input_formats = getattr(settings, 'DATETIME_INPUT_FORMATS', None) or (
         '%d/%m/%Y %H:%M:%S',
@@ -287,6 +302,7 @@ class SampleForm(forms.ModelForm):
         
         from .models import TestParameter
         # Provide descriptive empty labels so search-enhanced dropdowns display helpful placeholders
+        self.fields['customer'].queryset = Customer.objects.all().order_by('customer_code', 'name')
         self.fields['customer'].empty_label = 'Select a customer'
         self.fields['sample_source'].choices = [('', 'Select a sample source')] + list(Sample.SAMPLE_SOURCE_CHOICES)
         self.fields['collected_by'].choices = [('', 'Select who collected the sample')] + list(Sample.COLLECTED_BY_CHOICES)

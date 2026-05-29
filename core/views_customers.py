@@ -24,7 +24,8 @@ class CustomerListView(RoleRequiredMixin, ListView):
         query = self.get_search_query()
         if query:
             queryset = queryset.filter(
-                Q(name__icontains=query)
+                Q(customer_code__icontains=query)
+                | Q(name__icontains=query)
                 | Q(email__icontains=query)
                 | Q(phone__icontains=query)
                 | Q(house_name_door_no__icontains=query)
@@ -115,8 +116,12 @@ class CustomerCreateView(AuditMixin, FrontDeskRequiredMixin, CreateView):
     def form_valid(self, form):
         if not form.instance.created_by and self.request.user.is_authenticated:
             form.instance.created_by = self.request.user
-        messages.success(self.request, f'Customer "{form.instance.name}" has been created successfully!')
-        return super().form_valid(form)
+        response = super().form_valid(form)
+        messages.success(
+            self.request,
+            f'Customer "{self.object.name}" has been created. Customer code: {self.object.customer_code}.',
+        )
+        return response
 
 
 class CustomerUpdateView(AuditMixin, FrontDeskRequiredMixin, UpdateView):
@@ -131,8 +136,12 @@ class CustomerUpdateView(AuditMixin, FrontDeskRequiredMixin, UpdateView):
         return reverse_lazy('core:customer_detail', kwargs={'pk': self.object.pk})
 
     def form_valid(self, form):
-        messages.success(self.request, f'Customer "{form.instance.name}" has been updated successfully!')
-        return super().form_valid(form)
+        response = super().form_valid(form)
+        messages.success(
+            self.request,
+            f'Customer "{self.object.name}" has been updated. Customer code: {self.object.customer_code}.',
+        )
+        return response
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

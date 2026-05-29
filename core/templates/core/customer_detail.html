@@ -7,7 +7,7 @@
 <div class="page-header">
     <div class="page-heading">
         <h1 class="page-title">{{ customer.name }}</h1>
-        <p class="page-subtitle">Customer ID: {{ customer.customer_id }}</p>
+        <p class="page-subtitle">Customer code: {{ customer.customer_code }}</p>
     </div>
     <a href="{% url 'core:customer_list' %}" class="btn btn-outline-secondary"><i class="material-icons me-1">arrow_back</i>Back to customers</a>
 </div>
@@ -19,6 +19,13 @@
         <div class="info-card mb-4">
             <div class="section-title"><i class="material-icons">contact_phone</i>Contact information</div>
             <dl class="row mb-0 small">
+                <dt class="col-5 text-muted">Customer code</dt>
+                <dd class="col-7 mb-2">
+                    <span class="record-code record-code--compact">
+                        <i class="material-icons" aria-hidden="true">qr_code_2</i>
+                        <span>{{ customer.customer_code }}</span>
+                    </span>
+                </dd>
                 <dt class="col-5 text-muted">Full name</dt>
                 <dd class="col-7 mb-2">{{ customer.name }}</dd>
                 {% if customer.email %}

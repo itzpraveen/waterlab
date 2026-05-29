@@ -6,7 +6,7 @@
 <div class="page-header">
     <div class="page-heading">
         <h1 class="page-title">Update report metadata</h1>
-        <p class="page-subtitle">Add the details that appear on the PDF report for sample {{ sample.display_id|default:sample.sample_id }}.</p>
+        <p class="page-subtitle">Add the details that appear on the PDF report for sample {{ sample.display_id|default:sample.sample_id }} / {{ sample.customer.customer_code }}.</p>
     </div>
     <a href="{% url 'core:sample_detail' sample.pk %}" class="btn btn-outline-secondary"><i class="material-icons me-1">arrow_back</i>Back to sample</a>
 </div>

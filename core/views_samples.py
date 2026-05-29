@@ -19,7 +19,7 @@ from .mixins import (
     LabRequiredMixin,
     RoleRequiredMixin,
 )
-from .models import AuditTrail, ConsultantReview, Invoice, LabProfile, Sample, TestResult
+from .models import AuditTrail, ConsultantReview, Customer, Invoice, LabProfile, Sample, TestResult
 from .views_common import _SENSITIVE_ROLES, _format_error_message, apply_user_scope
 
 logger = logging.getLogger(__name__)
@@ -79,6 +79,7 @@ class SampleListView(RoleRequiredMixin, ListView):
         if query:
             qs = qs.filter(
                 Q(display_id__icontains=query)
+                | Q(customer__customer_code__icontains=query)
                 | Q(customer__name__icontains=query)
                 | Q(customer__phone__icontains=query)
                 | Q(customer__email__icontains=query)
@@ -209,6 +210,15 @@ class SampleCreateView(AuditMixin, FrontDeskRequiredMixin, CreateView):
     form_class = SampleForm
     template_name = 'core/sample_form.html'
     success_url = reverse_lazy('core:sample_list')
+
+    def get_initial(self):
+        initial = super().get_initial()
+        customer_id = (self.request.GET.get('customer') or '').strip()
+        if customer_id:
+            customer = apply_user_scope(Customer.objects.filter(pk=customer_id), self.request.user).first()
+            if customer:
+                initial['customer'] = customer
+        return initial
 
     def form_valid(self, form):
         if not form.instance.created_by and self.request.user.is_authenticated:

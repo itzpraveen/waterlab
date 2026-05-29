@@ -23,7 +23,7 @@
                 <label for="filter-search" class="form-label">Search samples</label>
                 <div class="input-group">
                     <span class="input-group-text"><i class="material-icons" aria-hidden="true">search</i></span>
-                    <input id="filter-search" type="search" name="q" class="form-control" placeholder="Sample ID or customer" value="{{ search_query }}" autocomplete="off">
+                    <input id="filter-search" type="search" name="q" class="form-control" placeholder="Sample ID, customer code, or customer" value="{{ search_query }}" autocomplete="off">
                 </div>
             </div>
             <div class="filter-item">
@@ -79,6 +79,7 @@
                         {% sample_status_badge sample compact=True show_icon=False %}
                     </div>
                     <ul class="results-card__meta">
+                        <li><i class="material-icons" aria-hidden="true">qr_code_2</i>{{ sample.customer.customer_code }}</li>
                         <li><i class="material-icons" aria-hidden="true">person</i>{{ sample.customer.name }}</li>
                         <li><i class="material-icons" aria-hidden="true">event</i>{{ sample.collection_datetime|date:"M d, Y H:i" }}</li>
                         {% if sample.test_completed_on %}

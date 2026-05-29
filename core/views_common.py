@@ -112,7 +112,8 @@ def global_search(request):
     if query:
         customers = apply_user_scope(
             Customer.objects.annotate(sample_count=Count('samples')).filter(
-                Q(name__icontains=query)
+                Q(customer_code__icontains=query)
+                | Q(name__icontains=query)
                 | Q(email__icontains=query)
                 | Q(phone__icontains=query)
                 | Q(house_name_door_no__icontains=query)
@@ -129,6 +130,7 @@ def global_search(request):
             Sample.objects.select_related('customer').filter(
                 Q(display_id__icontains=query)
                 | Q(report_number__icontains=query)
+                | Q(customer__customer_code__icontains=query)
                 | Q(customer__name__icontains=query)
                 | Q(customer__phone__icontains=query)
                 | Q(customer__email__icontains=query)
