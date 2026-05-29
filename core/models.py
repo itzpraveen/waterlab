@@ -1,5 +1,7 @@
 import logging
 import os
+import base64
+import hashlib
 import secrets
 import uuid
 
@@ -14,6 +16,7 @@ from django.db import IntegrityError, models, transaction
 from django.db.models import Q
 from django.templatetags.static import static
 from django.utils import timezone
+from cryptography.fernet import Fernet, InvalidToken
 
 # Validator for Kerala PIN Codes
 def validate_kerala_pincode(value):
@@ -49,6 +52,12 @@ CUSTOMER_CODE_RANDOM_LENGTH = 6
 def normalize_text_value(value: str) -> str:
     """Normalize textual result values for consistent comparisons."""
     return (value or '').strip().casefold()
+
+
+def _ai_settings_cipher() -> Fernet:
+    secret = str(getattr(settings, 'AI_SETTINGS_ENCRYPTION_SECRET', '') or settings.SECRET_KEY)
+    key = base64.urlsafe_b64encode(hashlib.sha256(secret.encode('utf-8')).digest())
+    return Fernet(key)
 
 
 class CustomUser(AbstractUser):
@@ -385,6 +394,109 @@ class LabProfile(models.Model):
                 if os.path.exists(path):
                     return path
         return os.path.join(settings.BASE_DIR, 'static', 'images', 'biofix_logo.png')
+
+
+class AISettings(models.Model):
+    singleton_key = models.PositiveSmallIntegerField(default=1, unique=True, editable=False)
+    is_enabled = models.BooleanField(default=True)
+    model_name = models.CharField(max_length=100, default='gpt-5-mini')
+    encrypted_api_key = models.TextField(blank=True, default='', editable=False)
+    updated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='ai_settings_updates',
+        editable=False,
+    )
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'AI settings'
+        verbose_name_plural = 'AI settings'
+
+    def save(self, *args, **kwargs):
+        self.singleton_key = 1
+        if not (self.model_name or '').strip():
+            self.model_name = 'gpt-5-mini'
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return 'AI settings'
+
+    @classmethod
+    def get_solo(cls):
+        defaults = {
+            'model_name': getattr(settings, 'OPENAI_REMARKS_MODEL', 'gpt-5-mini') or 'gpt-5-mini',
+        }
+        settings_obj, _ = cls.objects.get_or_create(singleton_key=1, defaults=defaults)
+        return settings_obj
+
+    def set_api_key(self, api_key: str):
+        cleaned = (api_key or '').strip()
+        if not cleaned:
+            self.encrypted_api_key = ''
+            return
+        self.encrypted_api_key = _ai_settings_cipher().encrypt(cleaned.encode('utf-8')).decode('utf-8')
+
+    def get_api_key(self) -> str:
+        if not self.encrypted_api_key:
+            return ''
+        try:
+            return _ai_settings_cipher().decrypt(self.encrypted_api_key.encode('utf-8')).decode('utf-8')
+        except (InvalidToken, ValueError):
+            logger.warning("Stored AI API key could not be decrypted.")
+            return ''
+
+    @property
+    def has_stored_api_key(self) -> bool:
+        return bool(self.get_api_key())
+
+    @property
+    def masked_api_key(self) -> str:
+        api_key = self.get_api_key()
+        if not api_key:
+            return ''
+        if len(api_key) <= 8:
+            return '********'
+        return f"{api_key[:3]}...{api_key[-4:]}"
+
+    @property
+    def resolved_model_name(self) -> str:
+        return (self.model_name or getattr(settings, 'OPENAI_REMARKS_MODEL', '') or 'gpt-5-mini').strip()
+
+    @classmethod
+    def get_runtime_config(cls) -> dict:
+        settings_obj = cls.get_solo()
+        if not settings_obj.is_enabled:
+            return {
+                'enabled': False,
+                'api_key': '',
+                'model': settings_obj.resolved_model_name,
+                'source': 'disabled',
+            }
+
+        stored_key = settings_obj.get_api_key()
+        if stored_key:
+            return {
+                'enabled': True,
+                'api_key': stored_key,
+                'model': settings_obj.resolved_model_name,
+                'source': 'admin',
+            }
+
+        env_key = (getattr(settings, 'OPENAI_API_KEY', '') or '').strip()
+        return {
+            'enabled': bool(env_key),
+            'api_key': env_key,
+            'model': settings_obj.resolved_model_name,
+            'source': 'environment' if env_key else 'none',
+        }
+
+    @classmethod
+    def is_configured(cls) -> bool:
+        config = cls.get_runtime_config()
+        return bool(config.get('enabled') and config.get('api_key'))
 
 
 class Sample(models.Model):

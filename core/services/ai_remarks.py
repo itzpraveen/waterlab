@@ -147,12 +147,34 @@ def _combine_language_sections(english, malayalam):
     return "\n\n".join(sections)
 
 
+def get_ai_review_runtime_config() -> dict:
+    try:
+        from core.models import AISettings
+
+        return AISettings.get_runtime_config()
+    except Exception as exc:
+        logger.warning("Could not load AI settings from database: %s", exc)
+        api_key = _clean_text(getattr(settings, 'OPENAI_API_KEY', ''))
+        return {
+            'enabled': bool(api_key),
+            'api_key': api_key,
+            'model': _clean_text(getattr(settings, 'OPENAI_REMARKS_MODEL', '')) or 'gpt-5-mini',
+            'source': 'environment' if api_key else 'none',
+        }
+
+
+def is_ai_review_configured() -> bool:
+    runtime_config = get_ai_review_runtime_config()
+    return bool(runtime_config.get('enabled') and runtime_config.get('api_key'))
+
+
 def generate_ai_review_draft(sample) -> AIRemarkDraft:
-    api_key = _clean_text(getattr(settings, 'OPENAI_API_KEY', ''))
-    if not api_key:
+    runtime_config = get_ai_review_runtime_config()
+    api_key = _clean_text(runtime_config.get('api_key'))
+    if not runtime_config.get('enabled') or not api_key:
         raise ImproperlyConfigured("OPENAI_API_KEY is not configured.")
 
-    model = _clean_text(getattr(settings, 'OPENAI_REMARKS_MODEL', '')) or 'gpt-5-mini'
+    model = _clean_text(runtime_config.get('model')) or 'gpt-5-mini'
     endpoint = _clean_text(getattr(settings, 'OPENAI_RESPONSES_URL', '')) or 'https://api.openai.com/v1/responses'
     timeout = int(getattr(settings, 'OPENAI_REMARKS_TIMEOUT', 30))
 

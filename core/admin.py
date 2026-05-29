@@ -1,6 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from .models import (
+    AISettings,
     Customer,
     Sample,
     TestParameter,
@@ -104,6 +105,37 @@ class LabProfileAdmin(admin.ModelAdmin):
 
     def has_add_permission(self, request):
         if LabProfile.objects.exists():
+            return False
+        return super().has_add_permission(request)
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(AISettings)
+class AISettingsAdmin(admin.ModelAdmin):
+    list_display = ('is_enabled', 'model_name', 'has_stored_key', 'updated_by', 'updated_at')
+    readonly_fields = ('has_stored_key', 'updated_by', 'updated_at')
+    fieldsets = (
+        (None, {
+            'fields': (
+                'is_enabled',
+                'model_name',
+                'has_stored_key',
+            )
+        }),
+        ('Metadata', {
+            'fields': ('updated_by', 'updated_at'),
+        })
+    )
+
+    def has_stored_key(self, obj):
+        return obj.has_stored_api_key
+    has_stored_key.boolean = True
+    has_stored_key.short_description = 'Stored API key'
+
+    def has_add_permission(self, request):
+        if AISettings.objects.exists():
             return False
         return super().has_add_permission(request)
 

@@ -32,6 +32,7 @@ from .views_dashboards import (
 )
 from .views_audit import AuditTrailView
 from .views_users import (
+    AISettingsUpdateView,
     AdminUserListView,
     AdminUserCreateView,
     AdminUserUpdateView,
@@ -94,6 +95,7 @@ __all__ = [
     'FrontDeskDashboardView',
     'ConsultantDashboardView',
     'AuditTrailView',
+    'AISettingsUpdateView',
     'AdminUserListView',
     'AdminUserCreateView',
     'AdminUserUpdateView',

@@ -5,6 +5,7 @@ from unittest.mock import patch
 from django.test import SimpleTestCase, TestCase, override_settings
 from django.urls import reverse
 from .models import (
+    AISettings,
     Customer,
     Sample,
     TestParameter,
@@ -1352,6 +1353,105 @@ class AIRemarksServiceTests(TestCase):
         self.assertIn('Malayalam:', draft.comments)
         self.assertIn('Disinfect the source', draft.recommendations)
         self.assertEqual(draft.model, 'gpt-5-mini')
+
+    @override_settings(OPENAI_API_KEY='')
+    @patch('core.services.ai_remarks.urllib.request.urlopen')
+    def test_generate_ai_review_draft_uses_admin_ai_settings(self, mock_urlopen):
+        settings_obj = AISettings.get_solo()
+        settings_obj.model_name = 'gpt-5-mini'
+        settings_obj.set_api_key('sk-admin-secret')
+        settings_obj.save()
+        mock_urlopen.return_value = FakeOpenAIResponse({
+            'output_text': json.dumps({
+                'remarks_english': 'English remarks.',
+                'recommendations_english': 'English recommendations.',
+                'remarks_malayalam': 'Malayalam remarks.',
+                'recommendations_malayalam': 'Malayalam recommendations.',
+            })
+        })
+
+        draft = generate_ai_review_draft(self.sample)
+
+        request = mock_urlopen.call_args.args[0]
+        self.assertEqual(request.get_header('Authorization'), 'Bearer sk-admin-secret')
+        self.assertEqual(draft.model, 'gpt-5-mini')
+
+
+class AISettingsModelTests(TestCase):
+    def test_api_key_is_encrypted_and_masked(self):
+        settings_obj = AISettings.get_solo()
+        settings_obj.set_api_key('sk-test-secret-1234')
+        settings_obj.save()
+
+        self.assertNotIn('sk-test-secret-1234', settings_obj.encrypted_api_key)
+        self.assertEqual(settings_obj.get_api_key(), 'sk-test-secret-1234')
+        self.assertEqual(settings_obj.masked_api_key, 'sk-...1234')
+        self.assertTrue(settings_obj.has_stored_api_key)
+
+    @override_settings(OPENAI_API_KEY='sk-env-key')
+    def test_runtime_config_prefers_admin_key_over_environment(self):
+        settings_obj = AISettings.get_solo()
+        settings_obj.model_name = 'gpt-5-mini'
+        settings_obj.set_api_key('sk-admin-key')
+        settings_obj.save()
+
+        runtime_config = AISettings.get_runtime_config()
+
+        self.assertEqual(runtime_config['source'], 'admin')
+        self.assertEqual(runtime_config['api_key'], 'sk-admin-key')
+        self.assertEqual(runtime_config['model'], 'gpt-5-mini')
+
+    @override_settings(OPENAI_API_KEY='sk-env-key')
+    def test_runtime_config_uses_environment_when_no_stored_key(self):
+        runtime_config = AISettings.get_runtime_config()
+
+        self.assertEqual(runtime_config['source'], 'environment')
+        self.assertEqual(runtime_config['api_key'], 'sk-env-key')
+        self.assertTrue(AISettings.is_configured())
+
+    @override_settings(OPENAI_API_KEY='sk-env-key')
+    def test_runtime_config_respects_disabled_setting(self):
+        settings_obj = AISettings.get_solo()
+        settings_obj.is_enabled = False
+        settings_obj.save()
+
+        runtime_config = AISettings.get_runtime_config()
+
+        self.assertEqual(runtime_config['source'], 'disabled')
+        self.assertEqual(runtime_config['api_key'], '')
+        self.assertFalse(AISettings.is_configured())
+
+
+class AISettingsViewTests(TestCase):
+    def setUp(self):
+        self.admin_user = CustomUser.objects.create_user(
+            username="ai_settings_admin",
+            password="password",
+            role="admin",
+        )
+
+    def test_admin_can_save_encrypted_api_key_from_ui(self):
+        self.client.force_login(self.admin_user)
+
+        response = self.client.post(reverse('core:ai_settings'), {
+            'is_enabled': 'on',
+            'model_name': 'gpt-5-mini',
+            'api_key': 'sk-ui-secret-1234',
+        })
+
+        self.assertRedirects(response, reverse('core:ai_settings'))
+        settings_obj = AISettings.get_solo()
+        self.assertEqual(settings_obj.get_api_key(), 'sk-ui-secret-1234')
+        self.assertEqual(settings_obj.updated_by, self.admin_user)
+
+    def test_ai_settings_page_shows_admin_status(self):
+        self.client.force_login(self.admin_user)
+
+        response = self.client.get(reverse('core:ai_settings'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'AI settings')
+        self.assertContains(response, 'No API key configured')
 
 
 class SampleReopenForCorrectionViewTests(TestCase):

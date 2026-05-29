@@ -152,7 +152,10 @@
                 </button>
             </div>
             {% if not ai_remarks_configured %}
-            <small class="form-hint d-block mt-3">Set OPENAI_API_KEY to enable AI draft generation.</small>
+            <small class="form-hint d-block mt-3">
+                Configure AI settings to enable draft generation.
+                {% if user.is_admin %}<a href="{% url 'core:ai_settings' %}">Open AI settings</a>{% endif %}
+            </small>
             {% endif %}
         </form>
     </div>

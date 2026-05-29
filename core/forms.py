@@ -8,7 +8,7 @@ from django.contrib.auth.forms import PasswordChangeForm
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 from django.conf import settings
-from .models import Customer, Sample, TestParameter, CustomUser, TestCategory, LabProfile # Added TestParameter, CustomUser, TestCategory, LabProfile
+from .models import AISettings, Customer, Sample, TestParameter, CustomUser, TestCategory, LabProfile
 
 
 class CustomerChoiceField(forms.ModelChoiceField):
@@ -646,6 +646,58 @@ class LabProfileForm(forms.ModelForm):
         if not cleaned.get('name'):
             self.add_error('name', ValidationError('Laboratory name is required.'))
         return cleaned
+
+
+class AISettingsForm(forms.ModelForm):
+    api_key = forms.CharField(
+        label='OpenAI API key',
+        required=False,
+        widget=forms.PasswordInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Paste a new API key',
+            'autocomplete': 'new-password',
+        }),
+        help_text='Leave blank to keep the current stored key.',
+    )
+    clear_api_key = forms.BooleanField(
+        label='Clear stored API key',
+        required=False,
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+    )
+
+    class Meta:
+        model = AISettings
+        fields = ['is_enabled', 'model_name']
+        widgets = {
+            'is_enabled': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'model_name': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'gpt-5-mini',
+            }),
+        }
+        labels = {
+            'is_enabled': 'Enable AI draft generation',
+            'model_name': 'Model',
+        }
+
+    def clean_model_name(self):
+        return (self.cleaned_data.get('model_name') or 'gpt-5-mini').strip()
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        api_key = self.cleaned_data.get('api_key', '')
+        clear_api_key = self.cleaned_data.get('clear_api_key')
+
+        if api_key:
+            instance.set_api_key(api_key)
+        elif clear_api_key:
+            instance.set_api_key('')
+
+        if commit:
+            instance.save()
+            self.save_m2m()
+        return instance
+
 
 class CustomPasswordChangeForm(PasswordChangeForm):
     def __init__(self, *args, **kwargs):

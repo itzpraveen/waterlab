@@ -2,7 +2,6 @@ import logging
 from collections import OrderedDict
 from datetime import timedelta
 
-from django.conf import settings
 from django.contrib import messages
 from django.core.exceptions import ImproperlyConfigured, ValidationError
 from django.db import transaction
@@ -21,7 +20,7 @@ from .mixins import (
     RoleRequiredMixin,
 )
 from .models import AuditTrail, ConsultantReview, Customer, Invoice, LabProfile, Sample, TestResult
-from .services.ai_remarks import AIRemarkError, generate_ai_review_draft
+from .services.ai_remarks import AIRemarkError, generate_ai_review_draft, is_ai_review_configured
 from .views_common import _SENSITIVE_ROLES, _format_error_message, apply_user_scope
 
 logger = logging.getLogger(__name__)
@@ -402,7 +401,7 @@ def consultant_review(request, sample_id):
             try:
                 draft = generate_ai_review_draft(sample)
             except ImproperlyConfigured:
-                messages.error(request, 'AI remarks are not configured. Add OPENAI_API_KEY in the environment.')
+                messages.error(request, 'AI remarks are not configured. Add an API key in AI settings.')
                 draft_comments = comments
                 draft_recommendations = recommendations
             except AIRemarkError as exc:
@@ -499,7 +498,7 @@ def consultant_review(request, sample_id):
         'review': review,
         'test_results': test_results,
         'can_review': sample.current_status == 'REVIEW_PENDING',
-        'ai_remarks_configured': bool(getattr(settings, 'OPENAI_API_KEY', '').strip()),
+        'ai_remarks_configured': is_ai_review_configured(),
         'comments_value': draft_comments if draft_comments is not None else (review.comments if review else ''),
         'recommendations_value': (
             draft_recommendations if draft_recommendations is not None else (review.recommendations if review else '')

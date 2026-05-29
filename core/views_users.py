@@ -11,9 +11,9 @@ from django.views.decorators.http import require_POST
 from django.views.generic import CreateView, ListView, UpdateView
 
 from .decorators import admin_required
-from .forms import AdminUserCreateForm, AdminUserUpdateForm, LabProfileForm
+from .forms import AISettingsForm, AdminUserCreateForm, AdminUserUpdateForm, LabProfileForm
 from .mixins import AdminRequiredMixin, AuditMixin
-from .models import AuditTrail, CustomUser, LabProfile
+from .models import AISettings, AuditTrail, CustomUser, LabProfile
 from .views_common import _format_error_message
 
 logger = logging.getLogger(__name__)
@@ -163,6 +163,51 @@ class LabProfileUpdateView(AuditMixin, AdminRequiredMixin, UpdateView):
         return context
 
 
+class AISettingsUpdateView(AdminRequiredMixin, UpdateView):
+    model = AISettings
+    form_class = AISettingsForm
+    template_name = 'core/ai_settings_form.html'
+    success_url = reverse_lazy('core:ai_settings')
+
+    @staticmethod
+    def _audit_values(settings_obj):
+        runtime_config = settings_obj.get_runtime_config()
+        return {
+            'is_enabled': settings_obj.is_enabled,
+            'model_name': settings_obj.model_name,
+            'has_stored_api_key': settings_obj.has_stored_api_key,
+            'runtime_source': runtime_config.get('source'),
+        }
+
+    def get_object(self, queryset=None):
+        return AISettings.get_solo()
+
+    def form_valid(self, form):
+        old_values = self._audit_values(self.object)
+        form.instance.updated_by = self.request.user
+        response = super().form_valid(form)
+        new_values = self._audit_values(self.object)
+        AuditTrail.log_change(
+            user=self.request.user,
+            action='UPDATE',
+            instance=self.object,
+            old_values=old_values,
+            new_values=new_values,
+            request=self.request,
+        )
+        messages.success(self.request, 'AI settings updated successfully.')
+        return response
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        runtime_config = self.object.get_runtime_config()
+        context['page_title'] = 'AI settings'
+        context['runtime_config'] = runtime_config
+        context['env_api_key_configured'] = bool((getattr(settings, 'OPENAI_API_KEY', '') or '').strip())
+        context['masked_api_key'] = self.object.masked_api_key
+        return context
+
+
 @login_required
 @admin_required
 @require_POST
@@ -208,4 +253,3 @@ def toggle_user_active(request, pk):
         messages.error(request, _format_error_message('Unable to change user status.', exc))
 
     return redirect(redirect_target)
-

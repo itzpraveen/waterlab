@@ -81,7 +81,7 @@
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link {% if 'setup_test_parameters' == request.resolver_match.url_name %}active{% endif %}" href="{% url 'core:setup_test_parameters' %}">
+                        <a class="nav-link {% if 'setup_test_parameters' == request.resolver_match.url_name or 'setup_test_categories' == request.resolver_match.url_name or 'ai_settings' == request.resolver_match.url_name %}active{% endif %}" href="{% url 'core:setup_test_parameters' %}">
                             <i class="material-icons align-middle me-1">tune</i>
                             Setup
                         </a>
@@ -117,6 +117,7 @@
                             {% if user.is_admin %}
                             <li class="dropdown-label">Administration</li>
                             <li><a class="dropdown-item" href="{% url 'core:lab_profile' %}"><span class="dropdown-icon material-icons">business</span>Lab profile</a></li>
+                            <li><a class="dropdown-item" href="{% url 'core:ai_settings' %}"><span class="dropdown-icon material-icons">auto_awesome</span>AI settings</a></li>
                             <li><a class="dropdown-item" href="{% url 'core:audit_trail' %}"><span class="dropdown-icon material-icons">history</span>Audit trail</a></li>
                             <li><a class="dropdown-item" href="{% url 'admin:index' %}" target="_blank"><span class="dropdown-icon material-icons">settings_applications</span>Django Admin</a></li>
                             <li class="dropdown-separator" role="separator"></li>

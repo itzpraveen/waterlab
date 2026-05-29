@@ -1,0 +1,112 @@
+{% extends 'core/base.html' %}
+
+{% block title %}AI Settings - WaterLab LIMS{% endblock %}
+
+{% block page_header %}
+<div class="page-header">
+    <div class="page-heading">
+        <h1 class="page-title">AI settings</h1>
+        <p class="page-subtitle">Configure automatic consultant remark drafts for English and Malayalam reports.</p>
+    </div>
+    <a href="{% url 'core:dashboard' %}" class="btn btn-outline-secondary">
+        <i class="material-icons me-1 align-middle">arrow_back</i>
+        Back to dashboard
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<form method="post" novalidate class="form-shell">
+    {% csrf_token %}
+
+    {% if form.non_field_errors %}
+    <div class="alert alert-danger" role="alert">
+        {% for error in form.non_field_errors %}
+            <div>{{ error }}</div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="info-card">
+        <div class="form-section-title"><i class="material-icons">auto_awesome</i>AI draft generation</div>
+        <div class="row g-3">
+            <div class="col-12">
+                <div class="form-check">
+                    {{ form.is_enabled }}
+                    <label for="{{ form.is_enabled.id_for_label }}" class="form-check-label">Enable AI draft generation</label>
+                </div>
+                {% if form.is_enabled.errors %}<div class="invalid-feedback d-block small">{{ form.is_enabled.errors.0 }}</div>{% endif %}
+            </div>
+            <div class="col-md-6">
+                <label for="{{ form.model_name.id_for_label }}" class="form-label">Model</label>
+                {{ form.model_name }}
+                {% if form.model_name.errors %}<div class="invalid-feedback d-block small">{{ form.model_name.errors.0 }}</div>{% endif %}
+                <div class="form-text">Default: gpt-5-mini.</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="info-card">
+        <div class="form-section-title"><i class="material-icons">key</i>API key</div>
+        <div class="row g-3">
+            <div class="col-md-7">
+                <label for="{{ form.api_key.id_for_label }}" class="form-label">OpenAI API key</label>
+                {{ form.api_key }}
+                {% if form.api_key.errors %}<div class="invalid-feedback d-block small">{{ form.api_key.errors.0 }}</div>{% endif %}
+                <div class="form-text">{{ form.api_key.help_text }}</div>
+            </div>
+            <div class="col-md-5">
+                <span class="text-muted d-block small mb-2">Current key</span>
+                {% if masked_api_key %}
+                    <p class="mb-2 fw-semibold">{{ masked_api_key }}</p>
+                    <div class="form-check">
+                        {{ form.clear_api_key }}
+                        <label for="{{ form.clear_api_key.id_for_label }}" class="form-check-label">Clear stored API key</label>
+                    </div>
+                {% elif env_api_key_configured %}
+                    <p class="mb-0 fw-semibold">Using Render environment key</p>
+                {% else %}
+                    <p class="mb-0 text-muted">No API key configured</p>
+                {% endif %}
+                {% if form.clear_api_key.errors %}<div class="invalid-feedback d-block small">{{ form.clear_api_key.errors.0 }}</div>{% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="info-card">
+        <div class="form-section-title"><i class="material-icons">verified_user</i>Status</div>
+        <dl class="data-pairs mb-0">
+            <div class="data-pair">
+                <dt>Runtime source</dt>
+                <dd>
+                    {% if runtime_config.source == 'admin' %}
+                        Encrypted admin setting
+                    {% elif runtime_config.source == 'environment' %}
+                        Render environment variable
+                    {% elif runtime_config.source == 'disabled' %}
+                        Disabled
+                    {% else %}
+                        Not configured
+                    {% endif %}
+                </dd>
+            </div>
+            <div class="data-pair">
+                <dt>AI button</dt>
+                <dd>{% if runtime_config.enabled and runtime_config.api_key %}Enabled{% else %}Disabled{% endif %}</dd>
+            </div>
+            <div class="data-pair">
+                <dt>Last updated</dt>
+                <dd>{{ form.instance.updated_at|date:"M d, Y H:i"|default:"Not saved yet" }}</dd>
+            </div>
+        </dl>
+    </div>
+
+    <div class="form-actions">
+        <a href="{% url 'core:dashboard' %}" class="btn btn-outline-secondary">Cancel</a>
+        <button type="submit" class="btn btn-primary">
+            <i class="material-icons me-1 align-middle">save</i>
+            Save AI settings
+        </button>
+    </div>
+</form>
+{% endblock %}
