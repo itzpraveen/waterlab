@@ -38,10 +38,15 @@
                 {% if form.is_enabled.errors %}<div class="invalid-feedback d-block small">{{ form.is_enabled.errors.0 }}</div>{% endif %}
             </div>
             <div class="col-md-6">
-                <label for="{{ form.model_name.id_for_label }}" class="form-label">Model</label>
-                {{ form.model_name }}
-                {% if form.model_name.errors %}<div class="invalid-feedback d-block small">{{ form.model_name.errors.0 }}</div>{% endif %}
-                <div class="form-text">Default: gpt-5-mini.</div>
+                <label for="{{ form.model_choice.id_for_label }}" class="form-label">Model</label>
+                {{ form.model_choice }}
+                {% if form.model_choice.errors %}<div class="invalid-feedback d-block small">{{ form.model_choice.errors.0 }}</div>{% endif %}
+                <div class="mt-2{% if form.model_choice.value != '__custom__' %} d-none{% endif %}" id="custom-model-wrap">
+                    <label for="{{ form.model_name.id_for_label }}" class="form-label small">Custom model ID</label>
+                    {{ form.model_name }}
+                    {% if form.model_name.errors %}<div class="invalid-feedback d-block small">{{ form.model_name.errors.0 }}</div>{% endif %}
+                </div>
+                <div class="form-text">Default: gpt-5-mini. Choose “Custom…” to enter any model ID.</div>
             </div>
         </div>
     </div>
@@ -109,4 +114,15 @@
         </button>
     </div>
 </form>
+
+<script>
+(function () {
+  var sel = document.getElementById('id_model_choice');
+  var wrap = document.getElementById('custom-model-wrap');
+  if (!sel || !wrap) { return; }
+  function sync() { wrap.classList.toggle('d-none', sel.value !== '__custom__'); }
+  sel.addEventListener('change', sync);
+  sync();
+})();
+</script>
 {% endblock %}

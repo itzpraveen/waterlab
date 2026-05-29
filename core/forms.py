@@ -649,6 +649,9 @@ class LabProfileForm(forms.ModelForm):
 
 
 class AISettingsForm(forms.ModelForm):
+    MODEL_PRESETS = ['gpt-5', 'gpt-5-mini', 'gpt-4.1', 'gpt-4o-mini']
+    CUSTOM_CHOICE = '__custom__'
+
     api_key = forms.CharField(
         label='OpenAI API key',
         required=False,
@@ -664,6 +667,11 @@ class AISettingsForm(forms.ModelForm):
         required=False,
         widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}),
     )
+    model_choice = forms.ChoiceField(
+        label='Model',
+        required=False,
+        widget=forms.Select(attrs={'class': 'form-select', 'id': 'id_model_choice'}),
+    )
 
     class Meta:
         model = AISettings
@@ -672,16 +680,44 @@ class AISettingsForm(forms.ModelForm):
             'is_enabled': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'model_name': forms.TextInput(attrs={
                 'class': 'form-control',
-                'placeholder': 'gpt-5-mini',
+                'placeholder': 'e.g. gpt-5',
+                'id': 'id_model_name',
             }),
         }
         labels = {
             'is_enabled': 'Enable AI draft generation',
-            'model_name': 'Model',
+            'model_name': 'Custom model',
         }
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['model_choice'].choices = (
+            [(name, name) for name in self.MODEL_PRESETS]
+            + [(self.CUSTOM_CHOICE, 'Custom…')]
+        )
+        self.fields['model_name'].required = False
+        current = (getattr(self.instance, 'model_name', '') or '').strip()
+        if self.is_bound:
+            return
+        if current in self.MODEL_PRESETS:
+            self.fields['model_choice'].initial = current
+        elif current:
+            self.fields['model_choice'].initial = self.CUSTOM_CHOICE
+        else:
+            self.fields['model_choice'].initial = self.MODEL_PRESETS[0]
+
+    def clean(self):
+        cleaned = super().clean()
+        choice = (cleaned.get('model_choice') or '').strip()
+        typed = (cleaned.get('model_name') or '').strip()
+        if choice and choice != self.CUSTOM_CHOICE:
+            cleaned['model_name'] = choice
+        else:
+            cleaned['model_name'] = typed or 'gpt-5-mini'
+        return cleaned
+
     def clean_model_name(self):
-        return (self.cleaned_data.get('model_name') or 'gpt-5-mini').strip()
+        return (self.cleaned_data.get('model_name') or '').strip()
 
     def save(self, commit=True):
         instance = super().save(commit=False)

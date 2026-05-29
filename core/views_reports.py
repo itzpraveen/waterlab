@@ -100,11 +100,6 @@ def download_sample_report_view(request, pk):
                 return JsonResponse({'status': 'error', 'message': 'Session expired.'}, status=404)
             return JsonResponse({'status': job.get('status', 'pending'), 'message': job.get('message', '')})
 
-        review = getattr(sample, 'review', None)
-        has_saved_review = bool(
-            review and ((review.comments or '').strip() or (review.recommendations or '').strip())
-        )
-
         if ai_job_id:
             job = load_ai_job(ai_job_id)
             if not job or str(job.get('sample_pk')) != str(sample.pk):
@@ -121,12 +116,9 @@ def download_sample_report_view(request, pk):
             elif status == 'ready':
                 ai_override = (job.get('comments', ''), job.get('recommendations', ''))
             delete_ai_job(ai_job_id)
-        elif has_saved_review:
-            # A review (often a previously generated AI draft) already exists -> reuse it,
-            # no model call needed.
-            pass
         else:
-            # Nothing saved yet -> kick off the background draft and show the wait page.
+            # The AI report always drafts fresh remarks via the model (in the background),
+            # independent of the consultant's saved review.
             try:
                 return _render_ai_preparing(request, sample, start_ai_job(sample))
             except Exception:
