@@ -420,7 +420,7 @@ def consultant_review(request, sample_id):
         else:
             action = request.POST.get('status')
 
-            if action in ['APPROVED', 'REJECTED']:
+            if action in ['PENDING', 'APPROVED', 'REJECTED']:
                 try:
                     with transaction.atomic():
                         if review:
@@ -471,7 +471,7 @@ def consultant_review(request, sample_id):
                         else:
                             messages.info(
                                 request,
-                                f'Review for sample {sample.sample_id} saved with status {action}.',
+                                f'Draft review for sample {sample.sample_id} saved. It remains pending until you approve or reject.',
                             )
 
                         return redirect('core:sample_detail', pk=sample.sample_id)

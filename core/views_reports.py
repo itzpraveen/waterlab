@@ -16,6 +16,8 @@ from django.utils.text import slugify
 from reportlab.lib.utils import ImageReader
 
 from .models import Invoice, LabProfile, Sample
+from .services.ai_remarks import split_bilingual_remarks
+from .services.malayalam_report import append_pdf_pages, render_malayalam_remarks_pdf
 from .views_common import (
     _choose_signer_with_signature,
     _format_error_message,
@@ -556,6 +558,13 @@ def download_sample_report_view(request, pk):
     else:
         recommendations_text = ''
         comments_text = ''
+
+    # The AI draft stores English and Malayalam together. Keep only English on the
+    # main (ReportLab) report and carry the Malayalam onto a separate WeasyPrint page,
+    # since ReportLab cannot shape Malayalam script.
+    comments_text, comments_text_ml = split_bilingual_remarks(comments_text)
+    recommendations_text, recommendations_text_ml = split_bilingual_remarks(recommendations_text)
+
     signatories = sample.resolve_signatories()
 
     def _signatory_name(user):
@@ -702,10 +711,23 @@ def download_sample_report_view(request, pk):
     doc.build(elements)
 
     buffer.seek(0)
+    pdf_bytes = buffer.getvalue()
+
+    # Append a Malayalam-language remarks page (rendered with WeasyPrint for correct
+    # script shaping). Degrades gracefully to English-only if WeasyPrint is unavailable.
+    malayalam_pdf = render_malayalam_remarks_pdf(
+        sample=sample,
+        remarks_ml=comments_text_ml,
+        recommendations_ml=recommendations_text_ml,
+        branded=include_branding,
+    )
+    if malayalam_pdf:
+        pdf_bytes = append_pdf_pages(pdf_bytes, malayalam_pdf)
+
     filename_suffix = '_plain' if not include_branding else ''
     customer_fragment = _customer_filename_fragment(sample)
     response = FileResponse(
-        buffer,
+        BytesIO(pdf_bytes),
         as_attachment=True,
         filename=f'WaterQualityReport_{customer_fragment}_{sample.display_id}{filename_suffix}.pdf',
     )

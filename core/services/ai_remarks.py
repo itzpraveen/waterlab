@@ -1,5 +1,6 @@
 import json
 import logging
+import re
 import urllib.error
 import urllib.request
 from dataclasses import dataclass
@@ -145,6 +146,33 @@ def _combine_language_sections(english, malayalam):
     if malayalam:
         sections.append(f"Malayalam:\n{malayalam}")
     return "\n\n".join(sections)
+
+
+_MALAYALAM_MARKER = re.compile(r'(?im)^[ \t]*malayalam[ \t]*:[ \t]*')
+_ENGLISH_MARKER = re.compile(r'(?im)^[ \t]*english[ \t]*:[ \t]*\n?')
+
+
+def split_bilingual_remarks(text):
+    """Split combined ``English:/Malayalam:`` remark text into ``(english, malayalam)``.
+
+    This is the inverse of :func:`_combine_language_sections`. Consultants may edit
+    the drafted text, so the parsing is forgiving: when no ``Malayalam:`` marker is
+    present the whole value is treated as English, and the leading ``English:`` label
+    (if any) is stripped from the English portion.
+    """
+    text = _clean_text(text)
+    if not text:
+        return '', ''
+
+    marker = _MALAYALAM_MARKER.search(text)
+    if marker:
+        english_part = text[:marker.start()]
+        malayalam_part = text[marker.end():]
+    else:
+        english_part, malayalam_part = text, ''
+
+    english_part = _ENGLISH_MARKER.sub('', english_part, count=1).strip()
+    return english_part, malayalam_part.strip()
 
 
 def get_ai_review_runtime_config() -> dict:

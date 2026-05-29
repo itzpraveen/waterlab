@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="ml">
+<head>
+  <meta charset="utf-8">
+  <style>
+    {% if font_regular_url %}
+    @font-face {
+      font-family: 'Noto Sans Malayalam';
+      src: url('{{ font_regular_url }}') format('truetype');
+      font-weight: 400;
+      font-style: normal;
+    }
+    {% endif %}
+    {% if font_bold_url %}
+    @font-face {
+      font-family: 'Noto Sans Malayalam';
+      src: url('{{ font_bold_url }}') format('truetype');
+      font-weight: 700;
+      font-style: normal;
+    }
+    {% endif %}
+
+    @page {
+      size: A4;
+      {% if branded %}
+      margin: 48mm 18mm 32mm 18mm;
+      {% else %}
+      margin: 22mm 18mm 20mm 18mm;
+      {% endif %}
+    }
+
+    html, body { margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Noto Sans Malayalam', sans-serif;
+      color: #0F172A;
+      font-size: 11pt;
+      line-height: 1.75;
+    }
+
+    .page-bg, .watermark { position: fixed; }
+
+    .page-bg {
+      top: 0;
+      left: 0;
+      width: 210mm;
+      height: 297mm;
+      z-index: -2;
+    }
+
+    .watermark {
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 115mm;
+      opacity: 0.12;
+      z-index: -1;
+    }
+
+    h1 {
+      color: #3BBCA3;
+      font-size: 16pt;
+      font-weight: 700;
+      text-align: center;
+      margin: 0 0 4mm 0;
+    }
+
+    .meta {
+      color: #6B7280;
+      text-align: center;
+      font-size: 9.5pt;
+      margin-bottom: 8mm;
+    }
+
+    h2 {
+      color: #3BBCA3;
+      font-size: 12.5pt;
+      font-weight: 700;
+      margin: 7mm 0 2mm 0;
+      border-bottom: 0.6pt solid #E2E8F0;
+      padding-bottom: 1.5mm;
+    }
+
+    .section-text {
+      white-space: pre-wrap;
+      margin: 0;
+    }
+
+    .empty {
+      color: #6B7280;
+      font-style: italic;
+      margin: 0;
+    }
+  </style>
+</head>
+<body>
+  {% if background_url %}<img class="page-bg" src="{{ background_url }}" alt="">{% endif %}
+  {% if watermark_url %}<img class="watermark" src="{{ watermark_url }}" alt="">{% endif %}
+
+  <h1>ജല പരിശോധന റിപ്പോർട്ട് — മലയാളം</h1>
+  <div class="meta">
+    സാമ്പിൾ കോഡ്: {{ sample_code }}{% if report_number %} &nbsp;|&nbsp; റിപ്പോർട്ട് നമ്പർ: {{ report_number }}{% endif %}{% if customer_name %} &nbsp;|&nbsp; ഉപഭോക്താവ്: {{ customer_name }}{% endif %}
+  </div>
+
+  <h2>അഭിപ്രായങ്ങൾ (Remarks)</h2>
+  {% if remarks_ml %}<p class="section-text">{{ remarks_ml }}</p>{% else %}<p class="empty">—</p>{% endif %}
+
+  <h2>ശുപാർശകൾ (Recommendations)</h2>
+  {% if recommendations_ml %}<p class="section-text">{{ recommendations_ml }}</p>{% else %}<p class="empty">—</p>{% endif %}
+</body>
+</html>

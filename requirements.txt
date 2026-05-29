@@ -24,6 +24,12 @@ django-cors-headers==4.3.1
 Pillow==11.2.1
 openpyxl==3.1.2
 
+# Malayalam report page (HTML -> PDF with complex-script shaping) + PDF merge.
+# WeasyPrint needs native libraries (pango, cairo, gdk-pixbuf) on the host; the
+# report degrades to English-only if they are missing.
+weasyprint>=60,<66
+pypdf>=4.0,<6
+
 # Environment configuration
 python-dotenv>=0.21.0 # For loading .env files
 pdfminer.six==20250506
