@@ -113,9 +113,14 @@
       .hridhyam-print-field--result {
         left: 113.5mm;
         width: 41mm;
-        text-align: center;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-sizing: border-box;
         font-size: 11pt;
-        transform: translateY(-50%);
+        line-height: 1;
+        text-align: center;
+        transform: none;
       }
 
       .hridhyam-print-field--remarks {
@@ -184,7 +189,7 @@
         <div class="hridhyam-print-field hridhyam-print-field--source">{{ source_label }}</div>
 
         {% for entry in entries %}
-        <div class="hridhyam-print-field hridhyam-print-field--result" style="top: {{ entry.spec.print_top_mm }}mm;">{{ entry.value }}</div>
+        <div class="hridhyam-print-field hridhyam-print-field--result" style="top: {{ entry.spec.print_top_mm }}mm; height: {{ entry.spec.print_height_mm }}mm;">{{ entry.value }}</div>
         {% endfor %}
 
         {% if remarks %}

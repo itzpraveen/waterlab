@@ -38,6 +38,7 @@ class HridhyamParameterSpec:
     max_value: Decimal | None
     placeholder: str
     print_top_mm: Decimal
+    print_height_mm: Decimal
 
     @property
     def field_name(self) -> str:
@@ -45,13 +46,13 @@ class HridhyamParameterSpec:
 
 
 HRIDHYAM_PARAMETERS = [
-    HridhyamParameterSpec('colour', 'Colour', 'Colour', 'Manual', 'Score', '0 - 5', Decimal('0'), Decimal('5'), '0-5', Decimal('125.6')),
-    HridhyamParameterSpec('taste', 'Taste', 'Taste', 'Manual', 'Score', '0 - 5', Decimal('0'), Decimal('5'), '0-5', Decimal('136.3')),
-    HridhyamParameterSpec('odor', 'Odor', 'Odor', 'Manual', 'Score', '0 - 5', Decimal('0'), Decimal('5'), '0-5', Decimal('147.2')),
-    HridhyamParameterSpec('electrical_conductivity', 'Electrical Conductivity', 'Electrical Conductivity', 'E.C Meter', 'uS/cm', '50 - 500', Decimal('50'), Decimal('500'), '50-500', Decimal('158.7')),
-    HridhyamParameterSpec('turbidity', 'Turbidity', 'Turbidity', 'Turbidity Meter', 'NTU', '0 - 5', Decimal('0'), Decimal('5'), '0-5', Decimal('170.3')),
-    HridhyamParameterSpec('tds', 'TDS (Total Dissolved Solids)', 'TDS (Total Dissolved Solids)', 'TDS Meter', 'mg/L', '500', None, Decimal('500'), 'Max 500', Decimal('181.8')),
-    HridhyamParameterSpec('ph', 'pH.', 'pH', 'pH Meter', 'pH', '6.5 - 8.5', Decimal('6.5'), Decimal('8.5'), '6.5-8.5', Decimal('193.3')),
+    HridhyamParameterSpec('colour', 'Colour', 'Colour', 'Manual', 'Score', '0 - 5', Decimal('0'), Decimal('5'), '0-5', Decimal('119.6'), Decimal('10.8')),
+    HridhyamParameterSpec('taste', 'Taste', 'Taste', 'Manual', 'Score', '0 - 5', Decimal('0'), Decimal('5'), '0-5', Decimal('130.4'), Decimal('10.4')),
+    HridhyamParameterSpec('odor', 'Odor', 'Odor', 'Manual', 'Score', '0 - 5', Decimal('0'), Decimal('5'), '0-5', Decimal('140.8'), Decimal('11.4')),
+    HridhyamParameterSpec('electrical_conductivity', 'Electrical Conductivity', 'Electrical Conductivity', 'E.C Meter', 'uS/cm', '50 - 500', Decimal('50'), Decimal('500'), '50-500', Decimal('152.2'), Decimal('11.6')),
+    HridhyamParameterSpec('turbidity', 'Turbidity', 'Turbidity', 'Turbidity Meter', 'NTU', '0 - 5', Decimal('0'), Decimal('5'), '0-5', Decimal('163.8'), Decimal('11.5')),
+    HridhyamParameterSpec('tds', 'TDS (Total Dissolved Solids)', 'TDS (Total Dissolved Solids)', 'TDS Meter', 'mg/L', '500', None, Decimal('500'), 'Max 500', Decimal('175.3'), Decimal('11.4')),
+    HridhyamParameterSpec('ph', 'pH.', 'pH', 'pH Meter', 'pH', '6.5 - 8.5', Decimal('6.5'), Decimal('8.5'), '6.5-8.5', Decimal('186.7'), Decimal('11.6')),
 ]
 
 
