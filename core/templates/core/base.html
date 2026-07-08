@@ -65,6 +65,14 @@
                             Samples
                         </a>
                     </li>
+                    {% if user.is_frontdesk or user.is_lab_technician or user.is_admin or user.role == 'bio_manager' or user.role == 'chem_manager' or user.role == 'solutions_manager' %}
+                    <li class="nav-item">
+                        <a class="nav-link {% if 'hridhyam' in request.resolver_match.url_name %}active{% endif %}" href="{% url 'core:hridhyam_campaign' %}">
+                            <i class="material-icons align-middle me-1">local_hospital</i>
+                            Hridhyam
+                        </a>
+                    </li>
+                    {% endif %}
                     {% if user.is_lab_technician or user.is_admin %}
                     <li class="nav-item">
                         <a class="nav-link {% if 'test_result_list' == request.resolver_match.url_name %}active{% endif %}" href="{% url 'core:test_result_list' %}">

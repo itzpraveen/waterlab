@@ -44,6 +44,10 @@ from .views_results import (
     TestResultDetailView,
     test_result_entry,
 )
+from .views_hridhyam import (
+    hridhyam_campaign,
+    hridhyam_print,
+)
 from .views_customers import (
     CustomerListView,
     CustomerDetailView,
@@ -104,6 +108,8 @@ __all__ = [
     'TestResultListView',
     'TestResultDetailView',
     'test_result_entry',
+    'hridhyam_campaign',
+    'hridhyam_print',
     'CustomerListView',
     'CustomerDetailView',
     'CustomerCreateView',

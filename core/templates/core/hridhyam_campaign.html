@@ -1,0 +1,166 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Hridhyam Campaign - WaterLab LIMS{% endblock %}
+
+{% block page_header %}
+<div class="page-header">
+    <div class="page-heading">
+        <span class="page-eyebrow">Campaign testing</span>
+        <h1 class="page-title">Hridhyam live water test</h1>
+        <p class="page-subtitle">Collect participant details, enter field results, and print the campaign report immediately.</p>
+    </div>
+    <div class="page-actions">
+        <button type="submit" form="hridhyam-form" class="btn btn-primary">
+            <i class="material-icons align-middle me-1">print</i>
+            Save &amp; print
+        </button>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="hridhyam-layout">
+    <form id="hridhyam-form" method="post" novalidate class="form-shell hridhyam-form">
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+        <div class="alert alert-danger" role="alert">
+            {% for error in form.non_field_errors %}
+                <div>{{ error }}</div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <section class="info-card">
+            <div class="form-section-title"><i class="material-icons">assignment_ind</i>Participant details</div>
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label" for="{{ form.name.id_for_label }}">Name *</label>
+                    {{ form.name }}
+                    {% if form.name.errors %}<div class="invalid-feedback d-block small">{{ form.name.errors.0 }}</div>{% endif %}
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label" for="{{ form.registration_number.id_for_label }}">Reg.No.</label>
+                    {{ form.registration_number }}
+                    {% if form.registration_number.errors %}<div class="invalid-feedback d-block small">{{ form.registration_number.errors.0 }}</div>{% endif %}
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label" for="{{ form.place.id_for_label }}">Place *</label>
+                    {{ form.place }}
+                    {% if form.place.errors %}<div class="invalid-feedback d-block small">{{ form.place.errors.0 }}</div>{% endif %}
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label" for="{{ form.contact.id_for_label }}">Contact *</label>
+                    {{ form.contact }}
+                    {% if form.contact.errors %}<div class="invalid-feedback d-block small">{{ form.contact.errors.0 }}</div>{% endif %}
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label" for="{{ form.source.id_for_label }}">Source *</label>
+                    {{ form.source }}
+                    {% if form.source.errors %}<div class="invalid-feedback d-block small">{{ form.source.errors.0 }}</div>{% endif %}
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label" for="{{ form.collection_datetime.id_for_label }}">Collected at *</label>
+                    {{ form.collection_datetime }}
+                    {% if form.collection_datetime.errors %}<div class="invalid-feedback d-block small">{{ form.collection_datetime.errors.0 }}</div>{% endif %}
+                </div>
+            </div>
+        </section>
+
+        <section class="info-card">
+            <div class="form-section-title"><i class="material-icons">science</i>Physical water test report</div>
+            <div class="hridhyam-result-grid">
+                {% for item in result_fields %}
+                <div class="hridhyam-result-row">
+                    <div class="hridhyam-result-row__meta">
+                        <label for="{{ item.field.id_for_label }}">{{ item.spec.display_name }}</label>
+                        <span>{{ item.spec.method }} · Limit {{ item.spec.limit_text }}</span>
+                    </div>
+                    <div>
+                        {{ item.field }}
+                        <small class="form-hint" data-role="hridhyam-status"></small>
+                        {% if item.field.errors %}<div class="invalid-feedback d-block small">{{ item.field.errors.0 }}</div>{% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+
+        <section class="info-card">
+            <div class="form-section-title"><i class="material-icons">notes</i>Remarks</div>
+            {{ form.remarks }}
+            {% if form.remarks.errors %}<div class="invalid-feedback d-block small">{{ form.remarks.errors.0 }}</div>{% endif %}
+        </section>
+
+        <div class="form-actions">
+            <a href="{% url 'core:dashboard' %}" class="btn btn-outline-secondary">Cancel</a>
+            <button type="submit" class="btn btn-primary">
+                <i class="material-icons align-middle me-1">print</i>
+                Save &amp; print
+            </button>
+        </div>
+    </form>
+
+    <aside class="info-card hridhyam-recent">
+        <div class="section-title"><i class="material-icons">history</i>Recent Hridhyam reports</div>
+        {% if recent_samples %}
+        <div class="hridhyam-recent-list">
+            {% for sample in recent_samples %}
+            <a class="hridhyam-recent-row" href="{% url 'core:hridhyam_print' sample.sample_id %}">
+                <span>
+                    <strong>{{ sample.report_number|default:sample.display_id }}</strong>
+                    <small>{{ sample.customer.name }} · {{ sample.sampling_location|default:sample.customer.village_town_city }}</small>
+                </span>
+                <i class="material-icons" aria-hidden="true">print</i>
+            </a>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-muted mb-0">No Hridhyam reports have been saved yet.</p>
+        {% endif %}
+    </aside>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script>
+(() => {
+  const updateResultStatus = (input) => {
+    const wrapper = input.closest('.hridhyam-result-row');
+    const status = wrapper ? wrapper.querySelector('[data-role="hridhyam-status"]') : null;
+    if (!status) return;
+
+    const rawValue = input.value.trim().replace(',', '');
+    const value = Number(rawValue);
+    const min = input.dataset.min === '' ? null : Number(input.dataset.min);
+    const max = input.dataset.max === '' ? null : Number(input.dataset.max);
+    const limit = input.dataset.limit || '';
+
+    status.className = 'form-hint';
+    if (!rawValue || Number.isNaN(value)) {
+      status.textContent = limit ? `Limit ${limit}` : '';
+      return;
+    }
+
+    if (min !== null && value < min) {
+      status.textContent = `Below limit ${limit}`;
+      status.className = 'form-hint warning';
+      return;
+    }
+    if (max !== null && value > max) {
+      status.textContent = `Above limit ${limit}`;
+      status.className = 'form-hint danger';
+      return;
+    }
+    status.textContent = 'Within limit';
+    status.className = 'form-hint success';
+  };
+
+  document.querySelectorAll('.hridhyam-result-input').forEach((input) => {
+    input.addEventListener('input', () => updateResultStatus(input));
+    updateResultStatus(input);
+  });
+})();
+</script>
+{% endblock %}

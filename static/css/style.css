@@ -2911,6 +2911,121 @@ main {
   color: var(--wl-danger);
 }
 
+.hridhyam-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
+  gap: 1.25rem;
+  align-items: start;
+}
+
+.hridhyam-form {
+  min-width: 0;
+}
+
+.hridhyam-result-grid {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.hridhyam-result-row {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) minmax(160px, 220px);
+  gap: 1rem;
+  align-items: start;
+  min-height: 76px;
+  padding: 0.85rem;
+  border: 1px solid rgba(226, 232, 240, 0.95);
+  border-radius: var(--wl-radius);
+  background: #fff;
+}
+
+.hridhyam-result-row__meta {
+  display: grid;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.hridhyam-result-row__meta label {
+  margin: 0;
+  font-weight: 650;
+  color: #0f172a;
+}
+
+.hridhyam-result-row__meta span {
+  color: var(--wl-muted);
+  font-size: 0.85rem;
+}
+
+.hridhyam-recent {
+  position: sticky;
+  top: 6.25rem;
+}
+
+.hridhyam-recent-list {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.hridhyam-recent-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.75rem;
+  align-items: center;
+  min-height: 62px;
+  padding: 0.75rem 0.85rem;
+  border: 1px solid rgba(226, 232, 240, 0.95);
+  border-radius: var(--wl-radius);
+  color: #0f172a;
+  text-decoration: none;
+  background: #fff;
+  transition: border-color 0.16s ease, box-shadow 0.16s ease, transform 0.16s ease;
+}
+
+.hridhyam-recent-row:hover,
+.hridhyam-recent-row:focus {
+  color: #0f172a;
+  border-color: rgba(15, 118, 110, 0.34);
+  box-shadow: var(--wl-shadow-sm);
+  transform: translateY(-1px);
+}
+
+.hridhyam-recent-row span {
+  display: grid;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.hridhyam-recent-row strong,
+.hridhyam-recent-row small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hridhyam-recent-row small {
+  color: var(--wl-muted);
+}
+
+.hridhyam-recent-row .material-icons {
+  color: var(--wl-primary);
+}
+
+@media (max-width: 1100px) {
+  .hridhyam-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .hridhyam-recent {
+    position: static;
+  }
+}
+
+@media (max-width: 640px) {
+  .hridhyam-result-row {
+    grid-template-columns: 1fr;
+  }
+}
+
 .alert-card {
   display: flex;
   align-items: flex-start;
