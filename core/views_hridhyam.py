@@ -45,13 +45,13 @@ class HridhyamParameterSpec:
 
 
 HRIDHYAM_PARAMETERS = [
-    HridhyamParameterSpec('colour', 'Colour', 'Colour', 'Manual', 'Score', '0 - 5', Decimal('0'), Decimal('5'), '0-5', Decimal('140.2')),
-    HridhyamParameterSpec('taste', 'Taste', 'Taste', 'Manual', 'Score', '0 - 5', Decimal('0'), Decimal('5'), '0-5', Decimal('151.9')),
-    HridhyamParameterSpec('odor', 'Odor', 'Odor', 'Manual', 'Score', '0 - 5', Decimal('0'), Decimal('5'), '0-5', Decimal('164.2')),
-    HridhyamParameterSpec('electrical_conductivity', 'Electrical Conductivity', 'Electrical Conductivity', 'E.C Meter', 'uS/cm', '50 - 500', Decimal('50'), Decimal('500'), '50-500', Decimal('177.0')),
-    HridhyamParameterSpec('turbidity', 'Turbidity', 'Turbidity', 'Turbidity Meter', 'NTU', '0 - 5', Decimal('0'), Decimal('5'), '0-5', Decimal('190.0')),
-    HridhyamParameterSpec('tds', 'TDS (Total Dissolved Solids)', 'TDS (Total Dissolved Solids)', 'TDS Meter', 'mg/L', '500', None, Decimal('500'), 'Max 500', Decimal('202.7')),
-    HridhyamParameterSpec('ph', 'pH.', 'pH', 'pH Meter', 'pH', '6.5 - 8.5', Decimal('6.5'), Decimal('8.5'), '6.5-8.5', Decimal('215.3')),
+    HridhyamParameterSpec('colour', 'Colour', 'Colour', 'Manual', 'Score', '0 - 5', Decimal('0'), Decimal('5'), '0-5', Decimal('124.9')),
+    HridhyamParameterSpec('taste', 'Taste', 'Taste', 'Manual', 'Score', '0 - 5', Decimal('0'), Decimal('5'), '0-5', Decimal('135.6')),
+    HridhyamParameterSpec('odor', 'Odor', 'Odor', 'Manual', 'Score', '0 - 5', Decimal('0'), Decimal('5'), '0-5', Decimal('146.5')),
+    HridhyamParameterSpec('electrical_conductivity', 'Electrical Conductivity', 'Electrical Conductivity', 'E.C Meter', 'uS/cm', '50 - 500', Decimal('50'), Decimal('500'), '50-500', Decimal('158.0')),
+    HridhyamParameterSpec('turbidity', 'Turbidity', 'Turbidity', 'Turbidity Meter', 'NTU', '0 - 5', Decimal('0'), Decimal('5'), '0-5', Decimal('169.6')),
+    HridhyamParameterSpec('tds', 'TDS (Total Dissolved Solids)', 'TDS (Total Dissolved Solids)', 'TDS Meter', 'mg/L', '500', None, Decimal('500'), 'Max 500', Decimal('181.1')),
+    HridhyamParameterSpec('ph', 'pH.', 'pH', 'pH Meter', 'pH', '6.5 - 8.5', Decimal('6.5'), Decimal('8.5'), '6.5-8.5', Decimal('192.6')),
 ]
 
 

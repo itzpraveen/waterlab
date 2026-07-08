@@ -65,33 +65,42 @@
 
       .hridhyam-print-field--name {
         left: 25mm;
-        top: 99mm;
+        top: 96mm;
         width: 132mm;
       }
 
       .hridhyam-print-field--reg {
-        left: 177mm;
-        top: 99mm;
-        width: 26mm;
+        left: 178.5mm;
+        top: 96mm;
+        width: 28mm;
         text-align: left;
+        font-size: 9.5pt;
       }
 
       .hridhyam-print-field--place {
         left: 24mm;
-        top: 111.8mm;
+        top: 105mm;
         width: 48mm;
       }
 
       .hridhyam-print-field--contact {
-        left: 83mm;
-        top: 111.8mm;
-        width: 56mm;
+        left: 90mm;
+        top: 105mm;
+        width: 49mm;
       }
 
       .hridhyam-print-field--source {
-        left: 157mm;
-        top: 111.8mm;
-        width: 42mm;
+        left: 164mm;
+        top: 105mm;
+        width: 35mm;
+      }
+
+      .hridhyam-print-field--name,
+      .hridhyam-print-field--reg,
+      .hridhyam-print-field--place,
+      .hridhyam-print-field--contact,
+      .hridhyam-print-field--source {
+        transform: translateY(-86%);
       }
 
       .hridhyam-print-field--result {
@@ -99,15 +108,18 @@
         width: 41mm;
         text-align: center;
         font-size: 11pt;
+        transform: translateY(-50%);
       }
 
       .hridhyam-print-field--remarks {
         left: 27mm;
-        top: 234.9mm;
+        top: 217.5mm;
         width: 168mm;
-        height: 8mm;
+        height: 14mm;
         white-space: normal;
         font-size: 9.5pt;
+        line-height: 1.15;
+        transform: translateY(-86%);
       }
 
       @media print {
